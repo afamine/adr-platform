@@ -1,0 +1,19 @@
+<svg width="300" height="120" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon -->
+  <g>
+    <path d="M20 80 L50 20 L80 80" stroke="black" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+
+    <line x1="40" y1="65" x2="60" y2="65" stroke="black" stroke-width="2"></line>
+    <line x1="40" y1="65" x2="50" y2="50" stroke="black" stroke-width="2"></line>
+    <line x1="60" y1="65" x2="50" y2="50" stroke="black" stroke-width="2"></line>
+
+    <circle cx="40" cy="65" r="4" fill="#4F7CFF"></circle>
+    <circle cx="60" cy="65" r="4" fill="black"></circle>
+    <circle cx="50" cy="50" r="4" fill="black"></circle>
+  </g>
+
+  <!-- Text -->
+  <text x="110" y="65" font-family="Arial, Helvetica, sans-serif" font-size="36" fill="black">
+    Axiom
+  </text>
+</svg>

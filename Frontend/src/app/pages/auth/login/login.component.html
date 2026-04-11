@@ -1,0 +1,89 @@
+<div class="auth-layout">
+  <div class="left-panel">
+    <img src="assets/logos/full-logo-white.svg" alt="Axiom logo" class="left-logo" />
+
+    <div class="left-content">
+      <h1 class="headline">Govern your architecture decisions with confidence.</h1>
+      <p class="description">
+        Capture, validate, and search architectural decisions with AI assistance.
+      </p>
+
+      <ul class="bullets">
+        <li>
+          <span class="dot"></span>
+          <span>Smart AI suggestions as you write your decisions</span>
+        </li>
+        <li>
+          <span class="dot"></span>
+          <span>Structured validation workflows for your team</span>
+        </li>
+        <li>
+          <span class="dot"></span>
+          <span>Semantic search across all architectural decisions</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="left-footer">
+      <div class="divider"></div>
+      <div class="footer-text">ADR Manager · Final Year Project 2026</div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="mobile-topbar">
+      <img src="assets/logos/full-logo-white.svg" alt="Axiom logo" />
+    </div>
+
+    <div class="form-wrapper">
+      <h2 class="title">Welcome back</h2>
+      <p class="subtitle">Sign in to your workspace to continue</p>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <div class="field-group">
+          <label for="email">Email address</label>
+          <div class="input-wrapper" [class.invalid]="hasError('email','required') || hasError('email','email')">
+            <mat-icon class="input-icon" fontIcon="mail_outline"></mat-icon>
+            <input id="email" type="email" placeholder="you@company.com" formControlName="email" />
+          </div>
+          <div class="error" *ngIf="hasError('email','required')">Email address is required</div>
+          <div class="error" *ngIf="!hasError('email','required') && hasError('email','email')">Please enter a valid email address</div>
+        </div>
+
+        <div class="field-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper" [class.invalid]="hasError('password','required') || hasError('password','minlength')">
+            <mat-icon class="input-icon" fontIcon="lock_outline"></mat-icon>
+            <input id="password" [type]="passwordVisible() ? 'text' : 'password'" placeholder="••••••••" formControlName="password" />
+            <button type="button" class="eye-toggle" (click)="togglePasswordVisibility()" aria-label="Toggle password visibility">
+              <mat-icon>{{ passwordVisible() ? 'visibility' : 'visibility_off' }}</mat-icon>
+            </button>
+          </div>
+          <div class="error" *ngIf="hasError('password','required')">Password is required</div>
+          <div class="error" *ngIf="!hasError('password','required') && hasError('password','minlength')">Password must be at least 8 characters</div>
+
+          <a routerLink="/forgot-password" class="forgot">Forgot password?</a>
+        </div>
+
+        <button class="submit" type="submit" [disabled]="isLoading()">
+          {{ isLoading() ? 'Signing in...' : 'Sign in' }}
+        </button>
+      </form>
+
+      <div class="or">
+        <span class="line"></span>
+        <span>or</span>
+        <span class="line"></span>
+      </div>
+
+      <div class="register">
+        Don't have an account? <a routerLink="/register">Create one</a>
+      </div>
+
+      <div class="error-alert" *ngIf="errorMessage() as msg">
+        <span class="red-dot"></span>
+        <span>{{ msg }}</span>
+      </div>
+    </div>
+  </div>
+</div>

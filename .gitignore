@@ -1,0 +1,22 @@
+# Backend (Spring Boot / Maven)
+target/
+*.class
+*.log
+.idea/
+*.iml
+*.iws
+*.ipr
+.mvn/
+mvnw
+mvnw.cmd
+.DS_Store
+
+# Frontend (Angular / Node)
+node_modules/
+dist/
+.angular/
+tmp/
+out-tsc/
+npm-debug.log
+yarn-error.log
+.DS_Store

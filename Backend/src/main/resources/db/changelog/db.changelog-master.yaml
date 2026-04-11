@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0-enable-pgcrypto
+      author: cascade
+      dbms: postgresql
+      changes:
+        - sql:
+            sql: CREATE EXTENSION IF NOT EXISTS pgcrypto;
+  - include:
+      file: db/changelog/V1__init_auth.sql
+  - include:
+      file: db/changelog/V2__add_refresh_token_table.sql

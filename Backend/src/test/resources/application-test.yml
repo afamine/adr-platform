@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:adr_project_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: false
+  liquibase:
+    enabled: false
+  h2:
+    console:
+      enabled: true
+
+jwt:
+  secret: 7e3f4f17f9a94f56a2b6d676a2390ae87e3f4f17f9a94f56a2b6d676a2390ae8
+  access-token-ttl-ms: 86400000
+  refresh-token-ttl-ms: 604800000
+
+cors:
+  allowed-origins:
+    - http://localhost:4200
+
+springdoc:
+  swagger-ui:
+    enabled: false

@@ -1,0 +1,177 @@
+<div class="register-layout">
+  <section class="hero-panel">
+    <div class="brand-pill">
+      <img src="assets/logos/full-logo-white.svg" alt="Axiom logo" />
+    </div>
+
+    <div class="hero-content">
+      <h1>Your team's architectural memory, powered by AI.</h1>
+      <p>
+        Stop losing decisions in meeting notes. Capture, validate, and retrieve them instantly.
+      </p>
+
+      <ul class="feature-list">
+        <li><span class="dot"></span><span>AI suggestions while writing decisions</span></li>
+        <li><span class="dot"></span><span>Structured validation workflows</span></li>
+        <li><span class="dot"></span><span>Semantic search across decisions</span></li>
+      </ul>
+
+      <div class="steps">
+        <div class="step-item active">
+          <span class="step-number">1</span>
+          <span class="step-label">Create account</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item">
+          <span class="step-number">2</span>
+          <span class="step-label">Join workspace</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item">
+          <span class="step-number">3</span>
+          <span class="step-label">Start deciding</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-footer">ADR Manager · Final Year Project 2026</div>
+  </section>
+
+  <section class="form-panel">
+    <div class="mobile-brand">
+      <img src="assets/logos/full-logo-black.svg" alt="Axiom logo" />
+    </div>
+
+    <mat-card class="register-card">
+      <h2>Create your account</h2>
+      <p class="subtitle">Join workspace and start capturing decisions</p>
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" novalidate>
+        <div class="field-group">
+          <label>Full Name</label>
+          <mat-form-field appearance="outline" class="app-field">
+            <mat-icon matPrefix>person_outline</mat-icon>
+            <input matInput formControlName="fullName" placeholder="John Doe" />
+            <mat-error *ngIf="controlHasError('fullName', 'required')">Full name is required</mat-error>
+            <mat-error *ngIf="!controlHasError('fullName', 'required') && controlHasError('fullName', 'minlength')">
+              Full name must be at least 2 characters
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="field-group">
+          <label>Email</label>
+          <mat-form-field appearance="outline" class="app-field">
+            <mat-icon matPrefix>mail_outline</mat-icon>
+            <input matInput formControlName="email" type="email" placeholder="you@company.com" />
+            <mat-error *ngIf="controlHasError('email', 'required')">Email is required</mat-error>
+            <mat-error *ngIf="!controlHasError('email', 'required') && controlHasError('email', 'email')">
+              Please enter a valid email address
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="field-group">
+          <label>Password</label>
+          <mat-form-field appearance="outline" class="app-field">
+            <mat-icon matPrefix>lock_outline</mat-icon>
+            <input
+              matInput
+              formControlName="password"
+              [type]="hidePassword() ? 'password' : 'text'"
+              placeholder="••••••••"
+            />
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="togglePassword()"
+              [attr.aria-label]="hidePassword() ? 'Show password' : 'Hide password'"
+            >
+              <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <mat-hint>8+ chars with letter and number</mat-hint>
+            <mat-error *ngIf="controlHasError('password', 'required')">Password is required</mat-error>
+            <mat-error *ngIf="!controlHasError('password', 'required') && controlHasError('password', 'minlength')">
+              Password must be at least 8 characters
+            </mat-error>
+            <mat-error
+              *ngIf="
+                !controlHasError('password', 'required') &&
+                !controlHasError('password', 'minlength') &&
+                controlHasError('password', 'pattern')
+              "
+            >
+              Password must include at least one letter and one number
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="field-group">
+          <label>Confirm Password</label>
+          <mat-form-field appearance="outline" class="app-field">
+            <mat-icon matPrefix>lock_outline</mat-icon>
+            <input
+              matInput
+              formControlName="confirmPassword"
+              [type]="hideConfirmPassword() ? 'password' : 'text'"
+              placeholder="••••••••"
+            />
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="toggleConfirmPassword()"
+              [attr.aria-label]="hideConfirmPassword() ? 'Show confirm password' : 'Hide confirm password'"
+            >
+              <mat-icon>{{ hideConfirmPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <mat-error *ngIf="controlHasError('confirmPassword', 'required')">Confirm password is required</mat-error>
+            <mat-error *ngIf="!controlHasError('confirmPassword', 'required') && showPasswordMismatch">
+              Passwords do not match
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="field-group">
+          <div class="label-row">
+            <label>Workspace Slug</label>
+            <span class="optional-pill">optional</span>
+          </div>
+          <mat-form-field appearance="outline" class="app-field">
+            <mat-icon matPrefix>domain</mat-icon>
+            <input matInput formControlName="workspaceSlug" placeholder="your-workspace" />
+            <mat-hint>Used as URL identifier (e.g., adr.app/your-workspace)</mat-hint>
+            <mat-error *ngIf="controlHasError('workspaceSlug', 'pattern')">
+              Workspace slug can only contain lowercase letters, numbers, and hyphens
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          class="submit-button"
+          [disabled]="registerForm.invalid || isLoading()"
+        >
+          {{ isLoading() ? 'Creating Account...' : 'Create Account' }}
+        </button>
+      </form>
+
+      <div class="signin-link">
+        Already have an account? <a routerLink="/login">Sign in</a>
+      </div>
+
+      <div class="status-message success" *ngIf="successMessage() as success">
+        <mat-icon>check_circle</mat-icon>
+        <span>{{ success }}</span>
+      </div>
+
+      <div class="status-message error" *ngIf="errorMessage() as error">
+        <mat-icon>error</mat-icon>
+        <span>{{ error }}</span>
+      </div>
+    </mat-card>
+  </section>
+</div>

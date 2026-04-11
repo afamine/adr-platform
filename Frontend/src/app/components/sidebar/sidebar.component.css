@@ -1,0 +1,137 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 10px 7px;
+  background: #ffffff;
+}
+
+.sidebar__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.sidebar__brand-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.sidebar__brand-text {
+  width: 44px;
+  height: auto;
+  display: block;
+}
+
+.sidebar__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #111827;
+}
+
+.sidebar__new-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 9px;
+  border: none;
+  border-radius: 7px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sidebar__new-button span:first-child {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.sidebar__controls {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.sidebar__search-field,
+.sidebar__filter-field {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 31px;
+  padding: 0 9px;
+  border: 1px solid #edf1f7;
+  border-radius: 8px;
+  background: #f7f9fc;
+  color: #667085;
+}
+
+.sidebar__search-field svg,
+.sidebar__filter-field svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+}
+
+.sidebar__search-field input,
+.sidebar__filter-field select {
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 10px;
+  color: #111827;
+}
+
+.sidebar__filter-field select {
+  appearance: none;
+  cursor: pointer;
+}
+
+.sidebar__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.sidebar__empty-state {
+  display: grid;
+  gap: 4px;
+  padding: 16px 12px;
+  border: 1px dashed #d7dfec;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.sidebar__empty-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.sidebar__empty-text {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #667085;
+}

@@ -1,0 +1,36 @@
+:host {
+  display: block;
+}
+
+.tab-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #e8edf6;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.tab-nav__button {
+  border: none;
+  background: transparent;
+  color: #475467;
+  height: 28px;
+  padding: 0 14px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tab-nav__button:hover {
+  background: #eef2f8;
+}
+
+.tab-nav__button--active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}

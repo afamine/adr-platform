@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: AdrProject
+  datasource:
+    url: jdbc:postgresql://localhost:5432/Adr_Project
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    database-change-log-lock-table: databasechangeloglock_adr
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  error:
+    include-message: always
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-ttl-ms: 86400000
+  refresh-token-ttl-ms: 604800000
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+cors:
+  allowed-origins:
+    - http://localhost:4200
+
+logging:
+  level:
+    org.springframework.security: INFO
+    com.adrplatform.auth: DEBUG

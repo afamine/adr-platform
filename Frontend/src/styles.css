@@ -1,0 +1,38 @@
+/* You can add global styles to this file, and also import other style files */
+
+@import '@angular/material/prebuilt-themes/azure-blue.css';
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: #f7f9fc;
+  color: #111827;
+  font-family: Inter, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+body {
+  min-width: 320px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+textarea {
+  resize: vertical;
+}
+
+app-root {
+  display: block;
+  min-height: 100vh;
+}

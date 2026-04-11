@@ -1,0 +1,20 @@
+<button class="adr-card" type="button" [class.adr-card--selected]="selected()" (click)="onSelect()">
+  <div class="adr-card__header">
+    <span class="adr-card__bullet"></span>
+    <span class="adr-card__title">{{ adr().title }}</span>
+  </div>
+
+  <p class="adr-card__summary">{{ adr().summary }}</p>
+
+  <div class="adr-card__meta">
+    <span class="adr-card__status" [class]="'adr-card__status adr-card__status--' + adr().status">
+      {{ statusLabels[adr().status] }}
+    </span>
+
+    <div class="adr-card__tags">
+      @for (tag of adr().tags; track tag) {
+        <span class="adr-card__tag">{{ tag }}</span>
+      }
+    </div>
+  </div>
+</button>

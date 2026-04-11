@@ -1,0 +1,12 @@
+<nav class="tab-nav" aria-label="ADR sections">
+  @for (tab of tabs(); track tab.key) {
+    <button
+      class="tab-nav__button"
+      type="button"
+      [class.tab-nav__button--active]="activeTab() === tab.key"
+      (click)="tabChange.emit(tab.key)"
+    >
+      {{ tab.label }}
+    </button>
+  }
+</nav>

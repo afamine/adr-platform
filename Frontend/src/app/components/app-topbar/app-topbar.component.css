@@ -1,0 +1,74 @@
+:host {
+  display: block;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  padding: 0 12px;
+  background: #ffffff;
+  border-bottom: 1px solid #e8edf6;
+}
+
+.topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar__logo-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  flex: 0 0 22px;
+}
+
+.topbar__brand-copy {
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar__logo-text {
+  width: 56px;
+  height: auto;
+  display: block;
+}
+
+.topbar__subtitle {
+  font-size: 9px;
+  color: #7c879c;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.topbar__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #111827;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.topbar__icon-button:hover {
+  background: #f1f5fb;
+  color: #0f172a;
+}
+
+.topbar__icon-button svg {
+  width: 13px;
+  height: 13px;
+}

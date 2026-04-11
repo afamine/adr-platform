@@ -1,0 +1,64 @@
+<aside class="sidebar">
+  <div class="sidebar__header">
+    <div>
+      <div class="sidebar__brand" aria-label="Axiom branding">
+        <img class="sidebar__brand-icon" src="assets/logos/icon-logo-black.svg" alt="Axiom icon" />
+        <img class="sidebar__brand-text" src="assets/logos/text-logo-black.svg" alt="Axiom" />
+      </div>
+      <h1 class="sidebar__title">Architecture Decisions</h1>
+    </div>
+
+    <button class="sidebar__new-button" type="button" (click)="createAdr.emit()">
+      <span>+</span>
+      <span>New ADR</span>
+    </button>
+  </div>
+
+  <div class="sidebar__controls">
+    <label class="sidebar__search-field">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10.5" cy="10.5" r="5.5" stroke="currentColor" stroke-width="1.5" />
+        <path d="M15 15l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      </svg>
+      <input
+        type="search"
+        [value]="searchQuery()"
+        (input)="searchQueryChange.emit($any($event.target).value)"
+        placeholder="Search ADRs..."
+        aria-label="Search ADRs"
+      >
+    </label>
+
+    <label class="sidebar__filter-field">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      </svg>
+      <select
+        [value]="statusFilter()"
+        (change)="statusFilterChange.emit($any($event.target).value)"
+        aria-label="Filter ADRs by status"
+      >
+        @for (filter of filters; track filter.value) {
+          <option [value]="filter.value">{{ filter.label }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <div class="sidebar__list">
+    @if (adrs().length > 0) {
+      @for (adr of adrs(); track adr.id) {
+        <app-adr-card
+          [adr]="adr"
+          [selected]="selectedAdrId() === adr.id"
+          (selectAdr)="adrSelected.emit($event)"
+        />
+      }
+    } @else {
+      <div class="sidebar__empty-state">
+        <div class="sidebar__empty-title">No ADRs found</div>
+        <div class="sidebar__empty-text">Adjust the search or status filter to see more architecture records.</div>
+      </div>
+    }
+  </div>
+</aside>

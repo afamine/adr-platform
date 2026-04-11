@@ -1,0 +1,151 @@
+:host {
+  display: block;
+}
+
+.editor-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editor-header__top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.editor-header__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.editor-header__title-input {
+  width: min(100%, 390px);
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid #e7ecf5;
+  border-radius: 8px;
+  background: #f6f8fc;
+  font-size: 11px;
+  font-weight: 600;
+  color: #111827;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.editor-header__title-input:focus {
+  border-color: #8db2ff;
+  box-shadow: 0 0 0 3px rgba(47, 107, 255, 0.12);
+}
+
+.editor-header__date-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid #e7ecf5;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #667085;
+  font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.editor-header__date-pill svg {
+  width: 12px;
+  height: 12px;
+}
+
+.editor-header__actions-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.editor-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.action-button,
+.save-button {
+  --mdc-outlined-button-container-shape: 8px;
+  --mdc-filled-button-container-shape: 8px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 11px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.action-button {
+  border-color: #e1e8f5;
+  color: #1f2937;
+  background: #ffffff;
+}
+
+.action-button__content {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1;
+}
+
+.action-button__content svg {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+}
+
+.action-button--active {
+  border-color: #bed2ff;
+  background: #eef4ff;
+}
+
+.save-button {
+  --mdc-filled-button-container-color: #0f172a;
+  --mdc-filled-button-label-text-color: #ffffff;
+}
+
+.editor-header__author-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid #e7ecf5;
+  border-radius: 999px;
+  background: #ffffff;
+  font-size: 9px;
+  font-weight: 600;
+  color: #334155;
+}
+
+@media (max-width: 1080px) {
+  .editor-header__top-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .editor-header__title-wrap,
+  .editor-header__actions-block {
+    width: 100%;
+  }
+
+  .editor-header__actions-block {
+    align-items: flex-start;
+  }
+
+  .editor-header__actions {
+    justify-content: flex-start;
+  }
+}
