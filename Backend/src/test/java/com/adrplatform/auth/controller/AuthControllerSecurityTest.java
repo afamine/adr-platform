@@ -2,6 +2,7 @@ package com.adrplatform.auth.controller;
 
 import com.adrplatform.auth.dto.AuthResponse;
 import com.adrplatform.auth.service.AuthService;
+import com.adrplatform.auth.service.PasswordResetService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -26,6 +27,9 @@ class AuthControllerSecurityTest {
 
     @MockBean
     private AuthService authService;
+
+    @MockBean
+    private PasswordResetService passwordResetService;
 
     @Test
     void loginShouldBePublic() throws Exception {

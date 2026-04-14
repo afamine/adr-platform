@@ -40,6 +40,12 @@ cors:
   allowed-origins:
     - http://localhost:4200
 
+password-reset:
+  token-ttl: 20m
+  frontend-url: http://localhost:4200/reset-password
+  email-from: no-reply@adrplatform.com
+  email-subject: Reset your ADR Platform password
+
 logging:
   level:
     org.springframework.security: INFO

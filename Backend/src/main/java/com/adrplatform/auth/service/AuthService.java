@@ -23,14 +23,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.regex.Pattern;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-
-    private static final Pattern PASSWORD_POLICY = Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d).{8,}$");
 
     private final UserRepository userRepository;
     private final WorkspaceRepository workspaceRepository;
@@ -40,6 +36,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final TokenBlacklistService tokenBlacklistService;
     private final AuditService auditService;
+    private final PasswordPolicyValidator passwordPolicyValidator;
 
     /**
      * Registers a user in the resolved workspace and returns access and refresh tokens.
@@ -50,7 +47,7 @@ public class AuthService {
             throw new BadRequestException("Email already registered");
         }
 
-        validatePassword(request.getPassword());
+        passwordPolicyValidator.validate(request.getPassword());
 
         String workspaceSlug = request.getWorkspaceSlug() == null || request.getWorkspaceSlug().isBlank()
                 ? "default"
@@ -158,9 +155,4 @@ public class AuthService {
         auditService.record(user, user.getWorkspace(), "USER_LOGGED_OUT", "USER", user.getId(), null, null);
     }
 
-    private void validatePassword(String rawPassword) {
-        if (!PASSWORD_POLICY.matcher(rawPassword).matches()) {
-            throw new BadRequestException("Password must be at least 8 chars and contain at least one letter and one number");
-        }
-    }
 }
