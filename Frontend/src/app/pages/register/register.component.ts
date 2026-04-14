@@ -8,7 +8,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { AuthMockService, RegisterRequest } from '../../services/auth-mock.service';
+import { AuthService } from '../../services/auth.service';
+import { AuthResponse, RegisterRequest } from '../../models/auth.models';
 
 const slugPattern = /^[a-z0-9-]+$/;
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d).+$/;
@@ -43,7 +44,7 @@ const matchPasswordsValidator: ValidatorFn = (group): ValidationErrors | null =>
 export class RegisterComponent {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
-  private readonly authMockService = inject(AuthMockService);
+  private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly hidePassword = signal(true);
@@ -93,20 +94,39 @@ export class RegisterComponent {
       workspaceSlug: payload.workspaceSlug?.trim() || undefined
     };
 
-    this.authMockService
+    this.authService
       .register(request)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => {
-          this.isLoading.set(false);
-          this.successMessage.set('Account created! Redirecting...');
-          setTimeout(() => {
-            this.router.navigateByUrl('/login');
-          }, 2000);
+        next: (response: AuthResponse) => {
+          this.authService.saveTokens(response);
+          this.router.navigate(['/adrs']);
         },
-        error: (error) => {
+        error: (err) => {
           this.isLoading.set(false);
-          this.errorMessage.set(error?.message || 'Something went wrong. Please try again.');
+          if (err.status === 409) {
+            this.errorMessage.set('An account with this email already exists.');
+            return;
+          }
+
+          if (err.status === 400) {
+            const errors = err.error?.errors;
+            if (errors && Array.isArray(errors) && errors.length > 0) {
+              this.errorMessage.set(errors.map((e: any) => e?.message || e).join('. '));
+              return;
+            }
+
+            const message = err.error?.message;
+            this.errorMessage.set(
+              message === 'Email already registered' ? 'An account with this email already exists.' : message || 'Please check your information.'
+            );
+            return;
+          }
+
+          this.errorMessage.set('Unable to connect to server. Please try again.');
+        },
+        complete: () => {
+          this.isLoading.set(false);
         }
       });
   }

@@ -1,31 +1,53 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable } from 'rxjs';
-import { AuthResponse, AuthUser, LoginRequest } from '../models/auth.models';
+import { catchError, finalize, Observable, of, take } from 'rxjs';
+import {
+  AuthResponse,
+  AuthUser,
+  LoginRequest,
+  RefreshTokenRequest,
+  RegisterRequest,
+  Role
+} from '../models/auth.models';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
 
-  private readonly BASE_URL = 'http://localhost:8080';
+  private readonly API_URL = environment.apiUrl;
   private readonly TOKEN_KEY = 'adr_token';
-  private readonly REFRESH_TOKEN_KEY = 'adr_refresh_token';
+  private readonly REFRESH_KEY = 'adr_refresh_token';
   private readonly USER_KEY = 'adr_user';
+  private isLoggingOut = false;
 
   login(request: LoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.BASE_URL}/api/auth/login`, request);
+    return this.http.post<AuthResponse>(`${this.API_URL}/api/auth/login`, request);
+  }
+
+  register(request: RegisterRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.API_URL}/api/auth/register`, request);
+  }
+
+  refreshToken(refreshToken: string): Observable<AuthResponse> {
+    const payload: RefreshTokenRequest = { refreshToken };
+    return this.http.post<AuthResponse>(`${this.API_URL}/api/auth/refresh`, payload);
   }
 
   saveTokens(response: AuthResponse): void {
     localStorage.setItem(this.TOKEN_KEY, response.token);
-    localStorage.setItem(this.REFRESH_TOKEN_KEY, response.refreshToken);
+    localStorage.setItem(this.REFRESH_KEY, response.refreshToken);
     localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
   }
 
   getToken(): string | null {
     return localStorage.getItem(this.TOKEN_KEY);
+  }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem(this.REFRESH_KEY);
   }
 
   getCurrentUser(): AuthUser | null {
@@ -39,25 +61,66 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     const token = this.getToken();
-    if (!token) return false;
-
-    const parts = token.split('.');
-    if (parts.length !== 3) return false;
-
-    try {
-      const payload = JSON.parse(atob(parts[1]));
-      if (!payload || typeof payload.exp !== 'number') return true; // if no exp, assume valid
-      const now = Math.floor(Date.now() / 1000);
-      return payload.exp > now;
-    } catch {
+    if (!token) {
       return false;
     }
+
+    const payload = this.decodeJwtPayload(token);
+    if (!payload || typeof payload['exp'] !== 'number') {
+      return false;
+    }
+
+    return payload['exp'] * 1000 > Date.now();
+  }
+
+  hasRole(role: Role): boolean {
+    const user = this.getCurrentUser();
+    return user?.role === role;
   }
 
   logout(): void {
+    if (this.isLoggingOut) {
+      return;
+    }
+
+    this.isLoggingOut = true;
+    const token = this.getToken();
+
+    if (!token) {
+      this.finishLogout();
+      return;
+    }
+
+    this.http
+      .post<void>(`${this.API_URL}/api/auth/logout`, {}, { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) })
+      .pipe(
+        take(1),
+        catchError(() => of(null)),
+        finalize(() => this.finishLogout())
+      )
+      .subscribe();
+  }
+
+  private decodeJwtPayload(token: string): Record<string, any> | null {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return null;
+    }
+
+    try {
+      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const normalized = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+      return JSON.parse(atob(normalized));
+    } catch {
+      return null;
+    }
+  }
+
+  private finishLogout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+    localStorage.removeItem(this.REFRESH_KEY);
     localStorage.removeItem(this.USER_KEY);
     this.router.navigateByUrl('/login');
+    this.isLoggingOut = false;
   }
 }

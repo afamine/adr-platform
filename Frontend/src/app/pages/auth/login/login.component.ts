@@ -35,24 +35,36 @@ export class LoginComponent {
   onSubmit(): void {
     this.submitted.set(true);
     this.errorMessage.set(null);
-    if (this.form.invalid) {
+
+    if (this.form.invalid || this.isLoading()) {
       this.form.markAllAsTouched();
       return;
     }
 
-    const payload: LoginRequest = this.form.getRawValue() as LoginRequest;
+    const request: LoginRequest = this.form.getRawValue() as LoginRequest;
 
     this.isLoading.set(true);
-    this.auth.login(payload).subscribe({
-      next: (res: AuthResponse) => {
-        this.auth.saveTokens(res);
-        this.isLoading.set(false);
-        this.router.navigateByUrl('/adrs');
+    this.auth.login(request).subscribe({
+      next: (response: AuthResponse) => {
+        this.auth.saveTokens(response);
+        this.router.navigate(['/adrs']);
       },
       error: (err) => {
         this.isLoading.set(false);
-        const msg = err?.error?.message || 'Invalid email or password. Please try again.';
-        this.errorMessage.set(msg);
+        if (err.status === 401) {
+          this.errorMessage.set('Invalid email or password. Please try again.');
+          return;
+        }
+
+        if (err.status === 400) {
+          this.errorMessage.set(err.error?.message || 'Please check your information.');
+          return;
+        }
+
+        this.errorMessage.set('Unable to connect to server. Please try again.');
+      },
+      complete: () => {
+        this.isLoading.set(false);
       }
     });
   }
