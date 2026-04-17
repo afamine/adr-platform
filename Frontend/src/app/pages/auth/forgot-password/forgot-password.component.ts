@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -16,6 +17,8 @@ export class ForgotPasswordComponent {
   isLoading = false;
   successMessage = '';
   errorMessage = '';
+
+  private readonly auth = inject(AuthService);
 
   constructor(private fb: FormBuilder) {
     this.forgotForm = this.fb.group({
@@ -33,13 +36,20 @@ export class ForgotPasswordComponent {
     this.successMessage = '';
     this.errorMessage = '';
 
-    // Mock service call (simulate API delay)
-    setTimeout(() => {
-      this.isLoading = false;
-      // Always show success — mock backend never reveals if email exists
-      this.successMessage = 'If this email is registered, you will receive a reset link shortly. Check your inbox (and spam folder).';
-      this.forgotForm.reset();
-    }, 1000);
+    const email = this.forgotForm.get('email')?.value as string;
+
+    this.auth.forgotPassword(email).subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.successMessage =
+          'If this email is registered, you will receive a reset link shortly. Check your inbox (and spam folder).';
+        this.forgotForm.reset();
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.errorMessage = err?.error?.message || 'Unable to send reset link. Please try again later.';
+      }
+    });
   }
 
   resetToForm(): void {

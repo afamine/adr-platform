@@ -31,6 +31,16 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.API_URL}/api/auth/register`, request);
   }
 
+  forgotPassword(email: string): Observable<void> {
+    const payload = { email };
+    return this.http.post<void>(`${this.API_URL}/api/auth/forgot-password`, payload);
+  }
+
+  resetPassword(token: string, newPassword: string): Observable<void> {
+    const payload = { token, newPassword };
+    return this.http.post<void>(`${this.API_URL}/api/auth/reset-password`, payload);
+  }
+
   refreshToken(refreshToken: string): Observable<AuthResponse> {
     const payload: RefreshTokenRequest = { refreshToken };
     return this.http.post<AuthResponse>(`${this.API_URL}/api/auth/refresh`, payload);

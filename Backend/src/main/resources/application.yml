@@ -20,6 +20,17 @@ spring:
     database-change-log-lock-table: databasechangeloglock_adr
   jackson:
     default-property-inclusion: non_null
+  mail:
+    host: in-v3.mailjet.com
+    port: 587
+    username: 7fbc7c4cae7f4ecf881419a8bf7e5286
+    password: 4227d8f76f878948bba964cd94ff0c09
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 server:
   error:
@@ -43,7 +54,7 @@ cors:
 password-reset:
   token-ttl: 20m
   frontend-url: http://localhost:4200/reset-password
-  email-from: no-reply@adrplatform.com
+  email-from: adrplatform.reset@outlook.com
   email-subject: Reset your ADR Platform password
 
 logging:
