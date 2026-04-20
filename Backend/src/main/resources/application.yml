@@ -31,7 +31,6 @@ spring:
           auth: true
           starttls:
             enable: true
-
             required: true
 
 server:
