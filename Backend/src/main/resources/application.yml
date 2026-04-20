@@ -21,16 +21,17 @@ spring:
   jackson:
     default-property-inclusion: non_null
   mail:
-    host: in-v3.mailjet.com
+    host: smtp-relay.brevo.com
     port: 587
-    username: 7fbc7c4cae7f4ecf881419a8bf7e5286
-    password: 4227d8f76f878948bba964cd94ff0c09
+    username: ${MAIL_SMTP_USERNAME}
+    password: ${MAIL_SMTP_PASSWORD}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+            required: true
 
 server:
   error:

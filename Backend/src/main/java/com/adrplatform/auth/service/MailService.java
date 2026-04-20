@@ -18,6 +18,7 @@ public class MailService {
 
     public void sendPlainText(String from, String to, String subject, String body) {
         try {
+            log.debug("Attempting to send email to {} with subject '{}'", to, subject);
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
             helper.setFrom(from != null ? from : passwordResetProperties.getEmailFrom());
