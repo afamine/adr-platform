@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class MailService {
 
+
     private final JavaMailSender mailSender;
     private final PasswordResetProperties passwordResetProperties;
 
