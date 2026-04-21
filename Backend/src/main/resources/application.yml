@@ -18,7 +18,6 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     database-change-log-lock-table: databasechangeloglock_adr
-
   jackson:
     default-property-inclusion: non_null
   mail:
