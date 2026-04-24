@@ -15,12 +15,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Map;
 import java.util.HexFormat;
 
 @Slf4j
@@ -95,17 +98,95 @@ public class PasswordResetService {
     private void sendResetEmail(User user, String rawToken, Duration ttl) {
         String link = passwordResetProperties.getFrontendUrl() + "?token=" + rawToken;
         long minutes = ttl.toMinutes();
-        String body = "Hello " + user.getFullName() + ",\n\n" +
-                "We received a request to reset your ADR Platform password. " +
-                "Use the link below to set a new password.\n\n" +
-                link + "\n\n" +
-                "This link will expire in " + minutes + " minutes.";
-        mailService.sendPlainText(
+        String html = buildResetEmailHtml(user.getFullName(), link, minutes);
+        mailService.sendHtmlWithInlines(
                 passwordResetProperties.getEmailFrom(),
                 user.getEmail(),
                 passwordResetProperties.getEmailSubject(),
-                body
+                html,
+                Map.of(
+                        "logo_header", selectHeaderLogoPath(),
+                        "brand_icon", selectBrandIconPath()
+                )
         );
+    }
+
+    private String selectHeaderLogoPath() {
+        String[] candidates = new String[] {
+                "assets/logos/logo-horizontal-light.png",
+                "assets/logos/logo-horizontal-light-accent.png",
+                "assets/logos/logo-horizontal-dark.png",
+                "assets/logos/logo-horizontal-dark-accent.png",
+                "assets/logos/logo-horizontal-light.svg",
+                "assets/logos/logo-horizontal-light-accent.svg",
+                "assets/logos/logo-horizontal-dark.svg",
+                "assets/logos/logo-horizontal-dark-accent.svg",
+                "assets/logos/icon-light.png",
+                "assets/logos/icon-accent-light.png",
+                "assets/logos/icon-dark.png",
+                "assets/logos/icon-accent-dark.png",
+                "assets/logos/icon-light.svg",
+                "assets/logos/icon-accent-light.svg",
+                "assets/logos/icon-dark.svg",
+                "assets/logos/icon-accent-dark.svg"
+        };
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        for (String c : candidates) {
+            if (cl.getResource(c) != null) {
+                return c;
+            }
+        }
+        return "assets/logos/logo-horizontal-light.svg";
+    }
+
+    private String selectBrandIconPath() {
+        String[] candidates = new String[] {
+                "assets/logos/icon-dark.png",
+                "assets/logos/icon-accent-dark.png",
+                "assets/logos/icon-light.png",
+                "assets/logos/icon-accent-light.png",
+                "assets/logos/icon-dark.svg",
+                "assets/logos/icon-accent-dark.svg",
+                "assets/logos/icon-light.svg",
+                "assets/logos/icon-accent-light.svg"
+        };
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        for (String c : candidates) {
+            if (cl.getResource(c) != null) {
+                return c;
+            }
+        }
+        return "assets/logos/icon-dark.svg";
+    }
+
+    private String buildResetEmailHtml(String fullName, String link, long minutes) {
+        String template = loadTemplate("templates/password-reset-email.html");
+        return template
+                .replace("{{fullName}}", escapeHtml(fullName))
+                .replace("{{link}}", link)
+                .replace("{{minutes}}", Long.toString(minutes));
+    }
+
+    private String loadTemplate(String path) {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        try (InputStream is = cl.getResourceAsStream(path)) {
+            if (is == null) {
+                throw new IllegalStateException("Template not found: " + path);
+            }
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to load email template", e);
+        }
+    }
+
+    private String escapeHtml(String s) {
+        if (s == null) return "";
+        return s
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
     private String generateRawToken() {
