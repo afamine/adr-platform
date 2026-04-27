@@ -3,8 +3,11 @@ package com.adrplatform.auth.controller;
 import com.adrplatform.auth.dto.AuthResponse;
 import com.adrplatform.auth.dto.ForgotPasswordRequest;
 import com.adrplatform.auth.dto.LoginRequest;
+import com.adrplatform.auth.dto.MessageResponse;
 import com.adrplatform.auth.dto.RefreshRequest;
 import com.adrplatform.auth.dto.RegisterRequest;
+import com.adrplatform.auth.dto.RegisterResponse;
+import com.adrplatform.auth.dto.ResendVerificationRequest;
 import com.adrplatform.auth.dto.ResetPasswordRequest;
 import com.adrplatform.auth.service.AuthService;
 import com.adrplatform.auth.service.PasswordResetService;
@@ -13,10 +16,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -33,7 +38,7 @@ public class AuthController {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @ApiResponse(responseCode = "404", description = "Workspace not found")
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 
@@ -84,5 +89,21 @@ public class AuthController {
     public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         passwordResetService.resetPassword(request);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Verify the user email address using the provided token")
+    @ApiResponse(responseCode = "200", description = "Email verified successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid or expired token (errorType=INVALID|EXPIRED)")
+    @GetMapping("/verify-email")
+    public ResponseEntity<MessageResponse> verifyEmail(@RequestParam("token") String token) {
+        return ResponseEntity.ok(authService.verifyEmail(token));
+    }
+
+    @Operation(summary = "Re-send the email verification link")
+    @ApiResponse(responseCode = "200", description = "Verification link dispatched (or silently ignored for unknown emails)")
+    @ApiResponse(responseCode = "400", description = "Email is already verified")
+    @PostMapping("/resend-verification")
+    public ResponseEntity<MessageResponse> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+        return ResponseEntity.ok(authService.resendVerification(request));
     }
 }

@@ -56,6 +56,12 @@ public class User implements UserDetails {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive;
+
     @PrePersist
     void prePersist() {
         if (id == null) {
@@ -98,6 +104,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return isActive;
     }
 }

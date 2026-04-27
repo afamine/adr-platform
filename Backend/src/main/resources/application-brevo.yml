@@ -13,4 +13,4 @@ spring:
             required: true
 
 password-reset:
-  email-from: ADR Platform <adrplatform.reset@outlook.com>
+  email-from: ADR Platform <adrplatform.no-reply@outlook.com>

@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../services/auth.service';
-import { LoginRequest, AuthResponse } from '../../../models/auth.models';
+import { ApiErrorBody, LoginRequest, AuthResponse } from '../../../models/auth.models';
 
 @Component({
   selector: 'app-login',
@@ -22,6 +22,9 @@ export class LoginComponent {
   isLoading = signal(false);
   submitted = signal(false);
   errorMessage = signal<string | null>(null);
+  emailNotVerified = signal(false);
+  resending = signal(false);
+  resendNotice = signal<string | null>(null);
 
   form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -35,6 +38,8 @@ export class LoginComponent {
   onSubmit(): void {
     this.submitted.set(true);
     this.errorMessage.set(null);
+    this.emailNotVerified.set(false);
+    this.resendNotice.set(null);
 
     if (this.form.invalid || this.isLoading()) {
       this.form.markAllAsTouched();
@@ -51,13 +56,21 @@ export class LoginComponent {
       },
       error: (err) => {
         this.isLoading.set(false);
+        const body = err?.error as ApiErrorBody | undefined;
+
+        if (err.status === 403 && body?.errorType === 'EMAIL_NOT_VERIFIED') {
+          this.emailNotVerified.set(true);
+          this.errorMessage.set(null);
+          return;
+        }
+
         if (err.status === 401) {
           this.errorMessage.set('Invalid email or password. Please try again.');
           return;
         }
 
         if (err.status === 400) {
-          this.errorMessage.set(err.error?.message || 'Please check your information.');
+          this.errorMessage.set(body?.message || 'Please check your information.');
           return;
         }
 
@@ -65,6 +78,33 @@ export class LoginComponent {
       },
       complete: () => {
         this.isLoading.set(false);
+      }
+    });
+  }
+
+  resendVerification(): void {
+    const email = this.form.controls.email.value;
+    if (!email || this.resending()) {
+      return;
+    }
+
+    this.resending.set(true);
+    this.resendNotice.set(null);
+
+    this.auth.resendVerification(email).subscribe({
+      next: () => {
+        this.resending.set(false);
+        this.resendNotice.set('A new verification link has been sent to your email.');
+      },
+      error: (err) => {
+        this.resending.set(false);
+        const body = err?.error as ApiErrorBody | undefined;
+        if (err.status === 400 && body?.message?.toLowerCase().includes('already verified')) {
+          this.emailNotVerified.set(false);
+          this.resendNotice.set('Email already verified — please sign in.');
+          return;
+        }
+        this.resendNotice.set('A new verification link has been sent to your email.');
       }
     });
   }

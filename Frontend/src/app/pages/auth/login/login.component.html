@@ -84,6 +84,26 @@
         <span class="red-dot"></span>
         <span>{{ msg }}</span>
       </div>
+
+      <div class="verify-banner" *ngIf="emailNotVerified()">
+        <div class="verify-banner__title">Your email isn't verified yet.</div>
+        <p class="verify-banner__text">
+          Please check your inbox for the verification link we sent when you registered.
+        </p>
+        <button
+          type="button"
+          class="verify-banner__btn"
+          (click)="resendVerification()"
+          [disabled]="resending()"
+        >
+          {{ resending() ? 'Sending…' : 'Resend verification email' }}
+        </button>
+        <div class="verify-banner__notice" *ngIf="resendNotice() as notice">{{ notice }}</div>
+      </div>
+
+      <div class="info-alert" *ngIf="!emailNotVerified() && resendNotice() as notice">
+        {{ notice }}
+      </div>
     </div>
   </div>
 </div>

@@ -9,7 +9,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { AuthService } from '../../services/auth.service';
-import { AuthResponse, RegisterRequest } from '../../models/auth.models';
+import { RegisterRequest, RegisterResponse } from '../../models/auth.models';
 
 const slugPattern = /^[a-z0-9-]+$/;
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d).+$/;
@@ -98,9 +98,13 @@ export class RegisterComponent {
       .register(request)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response: AuthResponse) => {
-          this.authService.saveTokens(response);
-          this.router.navigate(['/adrs']);
+        next: (response: RegisterResponse) => {
+          this.router.navigate(['/verify-email-pending'], {
+            state: {
+              maskedEmail: response.email,
+              email: request.email
+            }
+          });
         },
         error: (err) => {
           this.isLoading.set(false);

@@ -27,7 +27,7 @@ import java.util.List;
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
-@EnableConfigurationProperties({JwtProperties.class, CorsProperties.class, PasswordResetProperties.class})
+@EnableConfigurationProperties({JwtProperties.class, CorsProperties.class, PasswordResetProperties.class, AppProperties.class})
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -42,7 +42,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh",
-                                "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
+                                "/api/auth/forgot-password", "/api/auth/reset-password",
+                                "/api/auth/verify-email", "/api/auth/resend-verification").permitAll()
                         .requestMatchers("/api/auth/logout").authenticated()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/assets/**").permitAll()

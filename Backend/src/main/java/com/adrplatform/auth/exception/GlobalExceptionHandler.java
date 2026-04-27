@@ -41,6 +41,21 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.BAD_REQUEST, "Validation failed", request.getRequestURI());
     }
 
+    @ExceptionHandler(TokenExpiredException.class)
+    public ResponseEntity<ErrorResponse> handleTokenExpired(TokenExpiredException ex, HttpServletRequest request) {
+        return buildErrorWithType(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI(), ex.getErrorType());
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException ex, HttpServletRequest request) {
+        return buildErrorWithType(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI(), ex.getErrorType());
+    }
+
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleEmailNotVerified(EmailNotVerifiedException ex, HttpServletRequest request) {
+        return buildErrorWithType(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI(), "EMAIL_NOT_VERIFIED");
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex, HttpServletRequest request) {
         return buildError(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request.getRequestURI());
@@ -53,6 +68,18 @@ public class GlobalExceptionHandler {
                 .error(status.getReasonPhrase())
                 .message(message)
                 .path(path)
+                .build();
+        return ResponseEntity.status(status).body(response);
+    }
+
+    private ResponseEntity<ErrorResponse> buildErrorWithType(HttpStatus status, String message, String path, String errorType) {
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .status(status.value())
+                .error(status.getReasonPhrase())
+                .message(message)
+                .path(path)
+                .errorType(errorType)
                 .build();
         return ResponseEntity.status(status).body(response);
     }

@@ -1,6 +1,8 @@
 package com.adrplatform.auth.service;
 
+import com.adrplatform.auth.config.AppProperties;
 import com.adrplatform.auth.domain.Role;
+import com.adrplatform.auth.domain.TokenType;
 import com.adrplatform.auth.domain.User;
 import com.adrplatform.auth.domain.Workspace;
 import com.adrplatform.auth.dto.LoginRequest;
@@ -52,6 +54,12 @@ class AuthServiceTest {
     private AuditService auditService;
     @Spy
     private PasswordPolicyValidator passwordPolicyValidator;
+    @Mock
+    private VerificationTokenService verificationTokenService;
+    @Mock
+    private MailService mailService;
+    @Mock
+    private AppProperties appProperties;
 
     @InjectMocks
     private AuthService authService;
@@ -68,7 +76,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void registerShouldCreateUserAndTokens() {
+    void registerShouldCreatePendingUserAndSendVerificationEmail() {
         RegisterRequest request = new RegisterRequest();
         request.setFullName("John Doe");
         request.setEmail("john@adr.com");
@@ -82,21 +90,27 @@ class AuthServiceTest {
                 .fullName("John Doe")
                 .passwordHash("hashed")
                 .role(Role.AUTHOR)
+                .emailVerified(false)
+                .isActive(false)
                 .build();
+
+        AppProperties.Token tokenProps = new AppProperties.Token();
+        tokenProps.setEmailVerificationExpiryHours(24);
 
         when(userRepository.findByEmail("john@adr.com")).thenReturn(Optional.empty());
         when(workspaceRepository.findBySlug("default")).thenReturn(Optional.of(workspace));
         when(passwordEncoder.encode("Pass1234")).thenReturn("hashed");
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(jwtService.generateAccessToken(savedUser)).thenReturn("access");
-        when(jwtService.generateRefreshToken(savedUser)).thenReturn("refresh");
+        when(appProperties.getToken()).thenReturn(tokenProps);
+        when(appProperties.getFrontendUrl()).thenReturn("http://localhost:4200");
+        when(verificationTokenService.createToken(savedUser, TokenType.EMAIL_VERIFICATION, 24)).thenReturn("verif-token");
 
         var response = authService.register(request);
 
-        assertThat(response.getToken()).isEqualTo("access");
-        assertThat(response.getRefreshToken()).isEqualTo("refresh");
-        assertThat(response.getUser().getRole()).isEqualTo(Role.AUTHOR);
-        verify(refreshTokenService).create(savedUser, "refresh");
+        assertThat(response.getMessage()).contains("check your email");
+        assertThat(response.getEmail()).contains("@adr.com");
+        verify(mailService).sendVerificationEmail("john@adr.com", "John Doe",
+                "http://localhost:4200/verify-email?token=verif-token");
     }
 
     @Test
@@ -126,6 +140,8 @@ class AuthServiceTest {
                 .fullName("John Doe")
                 .passwordHash("hashed")
                 .role(Role.AUTHOR)
+                .emailVerified(true)
+                .isActive(true)
                 .build();
 
         when(userRepository.findByEmail("john@adr.com")).thenReturn(Optional.of(user));
