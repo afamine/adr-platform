@@ -21,15 +21,15 @@ spring:
   jackson:
     default-property-inclusion: non_null
   mail:
-    host: smtp.resend.com
-    port: 465
-    username: resend
-    password: ${MAIL_SMTP_PASSWORD}
+    host: ${MAIL_SMTP_HOST:localhost}
+    port: ${MAIL_SMTP_PORT:2525}
+    username: ${MAIL_SMTP_USERNAME:username}
+    password: ${MAIL_SMTP_PASSWORD:password}
     properties:
       mail:
         smtp:
           auth: true
-          ssl:
+          starttls:
             enable: true
 
 server:
@@ -54,8 +54,9 @@ cors:
 password-reset:
   token-ttl: 20m
   frontend-url: http://localhost:4200/reset-password
-  email-from: ADR Platform <onboarding@resend.dev>
+  email-from: ADR Platform <noreply@example.local>
   email-subject: Reset your ADR Platform password
+  app-base-url: ${APP_BASE_URL:http://localhost:8080}
 
 logging:
   level:

@@ -14,17 +14,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.Map;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -99,64 +100,16 @@ public class PasswordResetService {
         String link = passwordResetProperties.getFrontendUrl() + "?token=" + rawToken;
         long minutes = ttl.toMinutes();
         String html = buildResetEmailHtml(user.getFullName(), link, minutes);
+        Map<String, String> inlines = new LinkedHashMap<>();
+        inlines.put("logo_header", "assets/logos/logo-horizontal-dark-accent.png");
+        inlines.put("brand_icon", "assets/logos/lock.png");
         mailService.sendHtmlWithInlines(
                 passwordResetProperties.getEmailFrom(),
                 user.getEmail(),
                 passwordResetProperties.getEmailSubject(),
                 html,
-                Map.of(
-                        "logo_header", selectHeaderLogoPath(),
-                        "brand_icon", selectBrandIconPath()
-                )
+                inlines
         );
-    }
-
-    private String selectHeaderLogoPath() {
-        String[] candidates = new String[] {
-                "assets/logos/logo-horizontal-light.png",
-                "assets/logos/logo-horizontal-light-accent.png",
-                "assets/logos/logo-horizontal-dark.png",
-                "assets/logos/logo-horizontal-dark-accent.png",
-                "assets/logos/logo-horizontal-light.svg",
-                "assets/logos/logo-horizontal-light-accent.svg",
-                "assets/logos/logo-horizontal-dark.svg",
-                "assets/logos/logo-horizontal-dark-accent.svg",
-                "assets/logos/icon-light.png",
-                "assets/logos/icon-accent-light.png",
-                "assets/logos/icon-dark.png",
-                "assets/logos/icon-accent-dark.png",
-                "assets/logos/icon-light.svg",
-                "assets/logos/icon-accent-light.svg",
-                "assets/logos/icon-dark.svg",
-                "assets/logos/icon-accent-dark.svg"
-        };
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        for (String c : candidates) {
-            if (cl.getResource(c) != null) {
-                return c;
-            }
-        }
-        return "assets/logos/logo-horizontal-light.svg";
-    }
-
-    private String selectBrandIconPath() {
-        String[] candidates = new String[] {
-                "assets/logos/icon-dark.png",
-                "assets/logos/icon-accent-dark.png",
-                "assets/logos/icon-light.png",
-                "assets/logos/icon-accent-light.png",
-                "assets/logos/icon-dark.svg",
-                "assets/logos/icon-accent-dark.svg",
-                "assets/logos/icon-light.svg",
-                "assets/logos/icon-accent-light.svg"
-        };
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        for (String c : candidates) {
-            if (cl.getResource(c) != null) {
-                return c;
-            }
-        }
-        return "assets/logos/icon-dark.svg";
     }
 
     private String buildResetEmailHtml(String fullName, String link, long minutes) {
@@ -193,6 +146,7 @@ public class PasswordResetService {
         byte[] bytes = new byte[TOKEN_BYTE_LENGTH];
         secureRandom.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+
     }
 
     private String hashToken(String rawToken) {
