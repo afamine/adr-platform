@@ -3,6 +3,8 @@ import { Routes } from '@angular/router';
 import { AdrEditorPageComponent } from './pages/adr-editor-page/adr-editor-page.component';
 import { ForgotPasswordComponent } from './pages/auth/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './pages/auth/reset-password/reset-password.component';
+import { VerifyEmailComponent } from './pages/auth/verify-email/verify-email.component';
+import { VerifyEmailPendingComponent } from './pages/auth/verify-email-pending/verify-email-pending.component';
 import { LoginComponent } from './pages/auth/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
 import { UnauthorizedComponent } from './pages/unauthorized/unauthorized.component';
@@ -13,6 +15,8 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'reset-password', component: ResetPasswordComponent },
+  { path: 'verify-email', component: VerifyEmailComponent },
+  { path: 'verify-email-pending', component: VerifyEmailPendingComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'adrs', component: AdrEditorPageComponent, canActivate: [authGuard] },
   { path: 'unauthorized', component: UnauthorizedComponent },

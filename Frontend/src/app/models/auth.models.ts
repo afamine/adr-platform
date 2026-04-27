@@ -43,3 +43,23 @@ export interface ErrorResponse {
   message: string;
   path: string;
 }
+
+export interface RegisterResponse {
+  message: string;
+  email: string;
+}
+
+export interface MessageResponse {
+  message: string;
+}
+
+export type AuthErrorType = 'EXPIRED' | 'INVALID' | 'EMAIL_NOT_VERIFIED' | string;
+
+export interface ApiErrorBody {
+  status: number;
+  message: string;
+  errorType?: AuthErrorType;
+  timestamp?: string;
+  error?: string;
+  path?: string;
+}

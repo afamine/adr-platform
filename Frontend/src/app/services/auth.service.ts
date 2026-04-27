@@ -6,8 +6,10 @@ import {
   AuthResponse,
   AuthUser,
   LoginRequest,
+  MessageResponse,
   RefreshTokenRequest,
   RegisterRequest,
+  RegisterResponse,
   Role
 } from '../models/auth.models';
 import { environment } from '../../environments/environment';
@@ -27,8 +29,8 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.API_URL}/api/auth/login`, request);
   }
 
-  register(request: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.API_URL}/api/auth/register`, request);
+  register(request: RegisterRequest): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>(`${this.API_URL}/api/auth/register`, request);
   }
 
   forgotPassword(email: string): Observable<void> {
@@ -39,6 +41,15 @@ export class AuthService {
   resetPassword(token: string, newPassword: string): Observable<void> {
     const payload = { token, newPassword };
     return this.http.post<void>(`${this.API_URL}/api/auth/reset-password`, payload);
+  }
+
+  verifyEmail(token: string): Observable<MessageResponse> {
+    const params = new URLSearchParams({ token }).toString();
+    return this.http.get<MessageResponse>(`${this.API_URL}/api/auth/verify-email?${params}`);
+  }
+
+  resendVerification(email: string): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.API_URL}/api/auth/resend-verification`, { email });
   }
 
   refreshToken(refreshToken: string): Observable<AuthResponse> {
