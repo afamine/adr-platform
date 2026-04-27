@@ -1,0 +1,16 @@
+spring:
+  mail:
+    host: smtp-relay.brevo.com
+    port: 587
+    username: ${BREVO_SMTP_USERNAME:${MAIL_SMTP_USERNAME}}
+    password: ${BREVO_SMTP_PASSWORD:${MAIL_SMTP_PASSWORD}}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+password-reset:
+  email-from: ADR Platform <adrplatform.reset@outlook.com>

@@ -1,0 +1,15 @@
+spring:
+  mail:
+    host: smtp.resend.com
+    port: 465
+    username: resend
+    password: ${RESEND_API_KEY:${MAIL_SMTP_PASSWORD}}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+
+password-reset:
+  email-from: ADR Platform <onboarding@resend.dev>
