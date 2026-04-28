@@ -101,8 +101,8 @@ public class PasswordResetService {
         long minutes = ttl.toMinutes();
         String html = buildResetEmailHtml(user.getFullName(), link, minutes);
         Map<String, String> inlines = new LinkedHashMap<>();
-        inlines.put("logo_header", "assets/logos/logo-horizontal-dark-accent.png");
-        inlines.put("brand_icon", "assets/logos/lock.png");
+        inlines.put("logo_header", "assets/logos/png/logo-horizontal-dark-accent.png");
+        inlines.put("brand_icon", "assets/logos/png/lock.png");
         mailService.sendHtmlWithInlines(
                 passwordResetProperties.getEmailFrom(),
                 user.getEmail(),

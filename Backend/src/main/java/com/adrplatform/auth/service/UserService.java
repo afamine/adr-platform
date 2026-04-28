@@ -3,6 +3,7 @@ package com.adrplatform.auth.service;
 import com.adrplatform.auth.domain.Role;
 import com.adrplatform.auth.domain.User;
 import com.adrplatform.auth.dto.UserDto;
+import com.adrplatform.auth.exception.BadRequestException;
 import com.adrplatform.auth.exception.ResourceNotFoundException;
 import com.adrplatform.auth.repository.UserRepository;
 import com.adrplatform.auth.security.TenantContext;
@@ -47,23 +48,53 @@ public class UserService {
     }
 
     /**
-     * Updates user role inside current workspace.
+     * Updates user role inside current workspace. ADMIN cannot change their own role.
      */
     @Transactional
     public UserDto updateRole(UUID userId, Role newRole) {
+        User actor = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (actor.getId().equals(userId)) {
+            throw new BadRequestException("Cannot change your own role.");
+        }
+
         User user = userRepository.findByIdAndWorkspace_Id(userId, tenantContext.getWorkspaceId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found in workspace"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
         String oldValue = user.getRole().name();
         user.setRole(newRole);
         User saved = userRepository.save(user);
 
-        User actor = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         auditService.record(actor, actor.getWorkspace(), "ROLE_CHANGED", "USER", saved.getId(),
                 "{\"role\":\"" + oldValue + "\"}",
                 "{\"role\":\"" + saved.getRole().name() + "\"}");
 
-        log.info("Role updated for user {} from {} to {}", saved.getEmail(), oldValue, saved.getRole());
+        log.info("Role updated for user {} from {} to {} by {}", saved.getEmail(), oldValue, saved.getRole(), actor.getEmail());
+        return UserDto.fromEntity(saved);
+    }
+
+    /**
+     * Activates or deactivates a user account inside the current workspace.
+     * ADMIN cannot deactivate their own account.
+     */
+    @Transactional
+    public UserDto updateStatus(UUID userId, boolean isActive) {
+        User actor = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (actor.getId().equals(userId)) {
+            throw new BadRequestException("Cannot change your own active status.");
+        }
+
+        User user = userRepository.findByIdAndWorkspace_Id(userId, tenantContext.getWorkspaceId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+
+        boolean oldValue = user.isActive();
+        user.setActive(isActive);
+        User saved = userRepository.save(user);
+
+        auditService.record(actor, actor.getWorkspace(), "STATUS_CHANGED", "USER", saved.getId(),
+                "{\"isActive\":" + oldValue + "}",
+                "{\"isActive\":" + saved.isActive() + "}");
+
+        log.info("Status updated for user {} from {} to {} by {}", saved.getEmail(), oldValue, saved.isActive(), actor.getEmail());
         return UserDto.fromEntity(saved);
     }
 }

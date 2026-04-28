@@ -110,7 +110,7 @@ class AuthServiceTest {
         assertThat(response.getMessage()).contains("check your email");
         assertThat(response.getEmail()).contains("@adr.com");
         verify(mailService).sendVerificationEmail("john@adr.com", "John Doe",
-                "http://localhost:4200/verify-email?token=verif-token");
+                "http://localhost:4200/verify-email?token=verif-token", 24);
     }
 
     @Test

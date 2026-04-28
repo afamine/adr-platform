@@ -14,6 +14,7 @@ import com.adrplatform.auth.dto.RegisterRequest;
 import com.adrplatform.auth.dto.RegisterResponse;
 import com.adrplatform.auth.dto.ResendVerificationRequest;
 import com.adrplatform.auth.dto.UserDto;
+import com.adrplatform.auth.exception.AccountDeactivatedException;
 import com.adrplatform.auth.exception.BadRequestException;
 import com.adrplatform.auth.exception.EmailNotVerifiedException;
 import com.adrplatform.auth.exception.ResourceNotFoundException;
@@ -79,10 +80,10 @@ public class AuthService {
 
         User saved = userRepository.save(user);
 
-        String token = verificationTokenService.createToken(saved, TokenType.EMAIL_VERIFICATION,
-                appProperties.getToken().getEmailVerificationExpiryHours());
+        int expiryHours = appProperties.getToken().getEmailVerificationExpiryHours();
+        String token = verificationTokenService.createToken(saved, TokenType.EMAIL_VERIFICATION, expiryHours);
         String verificationUrl = appProperties.getFrontendUrl() + "/verify-email?token=" + token;
-        mailService.sendVerificationEmail(saved.getEmail(), saved.getFullName(), verificationUrl);
+        mailService.sendVerificationEmail(saved.getEmail(), saved.getFullName(), verificationUrl, expiryHours);
 
         auditService.record(saved, workspace, "USER_REGISTERED", "USER", saved.getId(), null,
                 "{\"email\":\"" + saved.getEmail() + "\",\"role\":\"" + saved.getRole().name() + "\"}");
@@ -104,8 +105,12 @@ public class AuthService {
                 .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
         if (!user.isActive()) {
-            throw new EmailNotVerifiedException(
-                    "Your email address has not been verified. Please check your inbox.");
+            if (!user.isEmailVerified()) {
+                throw new EmailNotVerifiedException(
+                        "Please verify your email address before signing in. Check your inbox for the verification link.");
+            }
+            throw new AccountDeactivatedException(
+                    "Your account has been deactivated. Please contact the platform administrator.");
         }
 
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
@@ -213,10 +218,10 @@ public class AuthService {
         if (user.isEmailVerified()) {
             throw new BadRequestException("This email is already verified.");
         }
-        String token = verificationTokenService.createToken(user, TokenType.EMAIL_VERIFICATION,
-                appProperties.getToken().getEmailVerificationExpiryHours());
+        int expiryHours = appProperties.getToken().getEmailVerificationExpiryHours();
+        String token = verificationTokenService.createToken(user, TokenType.EMAIL_VERIFICATION, expiryHours);
         String verificationUrl = appProperties.getFrontendUrl() + "/verify-email?token=" + token;
-        mailService.sendVerificationEmail(user.getEmail(), user.getFullName(), verificationUrl);
+        mailService.sendVerificationEmail(user.getEmail(), user.getFullName(), verificationUrl, expiryHours);
 
         log.info("Verification email re-sent for user {}", user.getEmail());
         return MessageResponse.builder()

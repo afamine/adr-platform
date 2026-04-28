@@ -13,6 +13,10 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Slf4j
@@ -59,47 +63,39 @@ public class MailService {
 
     /**
      * Sends the email-verification message asynchronously so registration is not blocked.
-     * Reuses the existing Brevo SMTP configuration via {@link #sendHtml}.
+     * Loads the HTML template from classpath, embeds the brand logo inline
+     * via cid, and uses the existing Brevo SMTP configuration.
      */
     @org.springframework.scheduling.annotation.Async
-    public void sendVerificationEmail(String toEmail, String fullName, String verificationUrl) {
-        String safeName = fullName == null ? "" : fullName;
-        String html = """
-                <!DOCTYPE html>
-                <html lang="en">
-                <head><meta charset="UTF-8"/></head>
-                <body style="margin:0;padding:0;background:#f4f4f7;font-family:Arial,Helvetica,sans-serif;">
-                  <table width="100%%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f4f4f7;padding:24px 0;">
-                    <tr><td align="center">
-                      <table width="100%%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;background:#ffffff;border-radius:8px;overflow:hidden;">
-                        <tr><td style="background:#111827;padding:18px 24px;color:#ffffff;font-size:18px;font-weight:700;">ADR Manager</td></tr>
-                        <tr><td style="padding:32px;">
-                          <h1 style="margin:0 0 12px 0;color:#111827;font-size:22px;">Verify your email address</h1>
-                          <p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 20px 0;">Hello %s,</p>
-                          <p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 24px 0;">
-                            Thank you for creating your ADR Manager account. Please verify your email address by clicking the button below.
-                          </p>
-                          <table width="100%%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:20px;">
-                            <tr><td align="center">
-                              <a href="%s" style="background:#020617;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:6px;font-size:16px;font-weight:bold;display:inline-block;">
-                                Verify Email Address
-                              </a>
-                            </td></tr>
-                          </table>
-                          <p style="color:#9ca3af;font-size:13px;text-align:center;margin:0;">
-                            This link expires in 24 hours. If you didn't create this account, you can safely ignore this email.
-                          </p>
-                        </td></tr>
-                        <tr><td style="border-top:1px solid #e5e7eb;padding:18px 32px;text-align:center;color:#9ca3af;font-size:12px;">
-                          &copy; 2026 ADR Manager &middot; Final Year Project
-                        </td></tr>
-                      </table>
-                    </td></tr>
-                  </table>
-                </body>
-                </html>
-                """.formatted(escapeHtml(safeName), verificationUrl);
-        sendHtml(null, toEmail, "Verify your ADR Manager account", html);
+    public void sendVerificationEmail(String toEmail, String fullName, String verificationUrl, int expiryHours) {
+        String template = loadTemplate("templates/email-verification.html");
+        String html = template
+                .replace("{{fullName}}", escapeHtml(fullName == null ? "" : fullName))
+                .replace("{{link}}", verificationUrl)
+                .replace("{{expiryHours}}", Integer.toString(expiryHours));
+
+        Map<String, String> inlines = new LinkedHashMap<>();
+        inlines.put("logo_header", "assets/logos/png/logo-horizontal-dark-accent.png");
+
+        sendHtmlWithInlines(
+                passwordResetProperties.getEmailFrom(),
+                toEmail,
+                "Verify your ADR Manager account",
+                html,
+                inlines
+        );
+    }
+
+    private String loadTemplate(String path) {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        try (InputStream is = cl.getResourceAsStream(path)) {
+            if (is == null) {
+                throw new IllegalStateException("Template not found: " + path);
+            }
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to load email template", e);
+        }
     }
 
     private String escapeHtml(String s) {

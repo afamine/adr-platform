@@ -1,6 +1,9 @@
 package com.adrplatform.auth.controller;
 
 import com.adrplatform.auth.dto.UpdateRoleRequest;
+import com.adrplatform.auth.dto.UpdateRoleResponse;
+import com.adrplatform.auth.dto.UpdateStatusRequest;
+import com.adrplatform.auth.dto.UpdateStatusResponse;
 import com.adrplatform.auth.dto.UserDto;
 import com.adrplatform.auth.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,13 +52,36 @@ public class UserController {
 
     @Operation(summary = "Update a user role")
     @ApiResponse(responseCode = "200", description = "Role updated")
-    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "400", description = "Invalid request or self-edit attempt")
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @ApiResponse(responseCode = "403", description = "Forbidden")
     @ApiResponse(responseCode = "404", description = "User not found")
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/role")
-    public ResponseEntity<UserDto> updateRole(@PathVariable UUID id, @Valid @RequestBody UpdateRoleRequest request) {
-        return ResponseEntity.ok(userService.updateRole(id, request.getRole()));
+    public ResponseEntity<UpdateRoleResponse> updateRole(@PathVariable UUID id,
+                                                         @Valid @RequestBody UpdateRoleRequest request) {
+        UserDto updated = userService.updateRole(id, request.getRole());
+        return ResponseEntity.ok(UpdateRoleResponse.builder()
+                .message("Role updated successfully.")
+                .userId(updated.getId().toString())
+                .newRole(updated.getRole().name())
+                .build());
+    }
+
+    @Operation(summary = "Activate or deactivate a user account")
+    @ApiResponse(responseCode = "200", description = "Status updated")
+    @ApiResponse(responseCode = "400", description = "Invalid request or self-edit attempt")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
+    @ApiResponse(responseCode = "404", description = "User not found")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{id}/status")
+    public ResponseEntity<UpdateStatusResponse> updateStatus(@PathVariable UUID id,
+                                                             @Valid @RequestBody UpdateStatusRequest request) {
+        UserDto updated = userService.updateStatus(id, request.getIsActive());
+        return ResponseEntity.ok(UpdateStatusResponse.builder()
+                .message("User status updated.")
+                .isActive(updated.isActive())
+                .build());
     }
 }

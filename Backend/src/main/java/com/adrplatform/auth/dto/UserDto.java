@@ -16,6 +16,8 @@ public class UserDto {
     private String email;
     private String fullName;
     private Role role;
+    private boolean emailVerified;
+    private boolean isActive;
     private Instant createdAt;
 
     public static UserDto fromEntity(User user) {
@@ -25,6 +27,8 @@ public class UserDto {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .role(user.getRole())
+                .emailVerified(user.isEmailVerified())
+                .isActive(user.isActive())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

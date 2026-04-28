@@ -16,3 +16,5 @@ databaseChangeLog:
       file: db/changelog/V4__add_email_verification_fields.sql
   - include:
       file: db/changelog/V5__create_verification_token_table.sql
+  - include:
+      file: db/changelog/V6__create_admin_user.sql
