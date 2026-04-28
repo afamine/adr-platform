@@ -95,8 +95,35 @@ export class AuthService {
   }
 
   hasRole(role: Role): boolean {
-    const user = this.getCurrentUser();
-    return user?.role === role;
+    return this.getCurrentUser()?.role === role;
+  }
+
+  isAdmin(): boolean {
+    return this.getCurrentUser()?.role === Role.ADMIN;
+  }
+
+  canApprove(): boolean {
+    const r = this.getCurrentUser()?.role;
+    return r === Role.APPROVER || r === Role.ADMIN;
+  }
+
+  canReview(): boolean {
+    const r = this.getCurrentUser()?.role;
+    return r === Role.REVIEWER || r === Role.APPROVER || r === Role.ADMIN;
+  }
+
+  getUsersInWorkspace(): Observable<AuthUser[]> {
+    return this.http.get<AuthUser[]>(`${this.API_URL}/api/users`);
+  }
+
+  updateUserRole(
+    userId: string,
+    role: Role
+  ): Observable<{ message: string; userId: string; newRole: string }> {
+    return this.http.put<{ message: string; userId: string; newRole: string }>(
+      `${this.API_URL}/api/users/${userId}/role`,
+      { role }
+    );
   }
 
   logout(): void {

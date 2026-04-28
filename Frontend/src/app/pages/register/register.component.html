@@ -1,7 +1,7 @@
 <div class="register-layout">
   <section class="hero-panel">
     <div class="brand-pill">
-      <img src="assets/logos/logo-horizontal-dark-accent.svg" alt="Axiom" />
+      <img src="assets/logos/svg/logo-horizontal-dark-accent.svg" alt="Axiom" />
     </div>
 
     <div class="hero-content">
@@ -39,7 +39,7 @@
 
   <section class="form-panel">
     <div class="mobile-brand">
-      <img src="assets/logos/logo-horizontal-light-accent.svg" alt="Axiom" />
+      <img src="assets/logos/svg/logo-horizontal-light-accent.svg" alt="Axiom" />
     </div>
 
     <mat-card class="register-card">
@@ -141,7 +141,7 @@
           <mat-form-field appearance="outline" class="app-field">
             <mat-icon matPrefix>domain</mat-icon>
             <input matInput formControlName="workspaceSlug" placeholder="your-workspace" />
-            <mat-hint>Used as URL identifier (e.g., adr.app/your-workspace)</mat-hint>
+            <mat-hint>Optional. Leave empty to join the default workspace. Ask your admin for a workspace slug if you need to join a specific team.</mat-hint>
             <mat-error *ngIf="controlHasError('workspaceSlug', 'pattern')">
               Workspace slug can only contain lowercase letters, numbers, and hyphens
             </mat-error>

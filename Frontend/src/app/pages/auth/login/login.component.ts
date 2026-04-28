@@ -52,7 +52,13 @@ export class LoginComponent {
     this.auth.login(request).subscribe({
       next: (response: AuthResponse) => {
         this.auth.saveTokens(response);
-        this.router.navigate(['/adrs']);
+
+        // Redirect based on role
+        if (response.user.role === 'ADMIN') {
+          this.router.navigate(['/admin/users']);
+        } else {
+          this.router.navigate(['/adrs']);
+        }
       },
       error: (err) => {
         this.isLoading.set(false);

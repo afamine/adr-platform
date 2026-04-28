@@ -98,12 +98,10 @@ export class RegisterComponent {
       .register(request)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response: RegisterResponse) => {
-          this.router.navigate(['/verify-email-pending'], {
-            state: {
-              maskedEmail: response.email,
-              email: request.email
-            }
+        next: (_response: RegisterResponse) => {
+          // Navigate to "check your inbox" page, passing the email
+          this.router.navigate(['/verify-email-sent'], {
+            state: { email: request.email }
           });
         },
         error: (err) => {
