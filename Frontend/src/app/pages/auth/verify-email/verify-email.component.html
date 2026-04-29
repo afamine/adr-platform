@@ -1,0 +1,118 @@
+<div class="verify-page">
+  <div class="verify-card">
+    <div class="card-header">
+      <a class="brand" routerLink="/login" aria-label="Axiom home">
+        <img src="assets/logos/svg/logo-horizontal-light-accent.svg" alt="Axiom" />
+      </a>
+      <div class="divider"></div>
+      <h1 class="title">Email Verification</h1>
+    </div>
+
+    <!-- STATE 1: Verifying -->
+    <ng-container *ngIf="state() === 'LOADING'">
+      <div class="state-block">
+        <div class="spinner-wrapper">
+          <app-axiom-logo stage="loading" [size]="72" iconColor="#6366F1"></app-axiom-logo>
+        </div>
+        <p class="primary-text">Verifying your email address...</p>
+        <p class="secondary-text">Please wait while we confirm your account.</p>
+        <p class="tertiary-text">This usually takes just a moment.</p>
+      </div>
+    </ng-container>
+
+    <!-- STATE 2: Success -->
+    <ng-container *ngIf="state() === 'SUCCESS'">
+      <div class="state-block">
+        <div class="axiom-logo-wrapper" aria-hidden="true">
+          <app-axiom-logo
+            stage="success"
+            [size]="72"
+            iconColor="#1d9e75"
+            accentColor="#34d399">
+          </app-axiom-logo>
+        </div>
+        <h2 class="state-title">Email verified successfully!</h2>
+        <p class="state-message">
+          Your account is now active. You can sign in and start managing your architectural decisions.
+        </p>
+        <button type="button" class="btn btn--primary" (click)="goToLogin()">
+          Continue to sign in
+        </button>
+        <p class="muted-text">You will be redirected automatically in {{ redirectSeconds() }} seconds</p>
+      </div>
+    </ng-container>
+
+    <!-- STATE 3a: Error - Expired -->
+    <ng-container *ngIf="state() === 'ERROR_EXPIRED'">
+      <div class="state-block">
+        <div class="axiom-logo-wrapper" aria-hidden="true">
+          <app-axiom-logo
+            stage="error"
+            [size]="72"
+            iconColor="#ef4444"
+            [autoReplayMs]="4000">
+          </app-axiom-logo>
+        </div>
+        <h2 class="state-title">Verification failed</h2>
+        <p class="state-message">This verification link has expired. Valid for 24 hours.</p>
+
+        <button
+          *ngIf="!showResendForm()"
+          type="button"
+          class="btn btn--primary"
+          (click)="openResendForm()"
+        >
+          Request a new verification link
+        </button>
+
+        <form
+          *ngIf="showResendForm()"
+          [formGroup]="resendForm"
+          (ngSubmit)="resendVerification()"
+          class="resend-form"
+          novalidate
+        >
+          <input
+            type="email"
+            placeholder="your@email.com"
+            formControlName="email"
+            class="resend-input"
+            [class.invalid]="resendForm.controls['email'].touched && resendForm.controls['email'].invalid"
+            autocomplete="email"
+          />
+          <button
+            type="submit"
+            class="btn btn--primary btn--send"
+            [disabled]="resending()"
+          >
+            <span class="btn-spinner" *ngIf="resending()"></span>
+            <span>{{ resending() ? 'Sending…' : 'Send' }}</span>
+          </button>
+        </form>
+
+        <p class="resend-notice" *ngIf="resendNotice() as notice">{{ notice }}</p>
+
+        <a routerLink="/login" class="text-link">Back to sign in</a>
+      </div>
+    </ng-container>
+
+    <!-- STATE 3b: Error - Invalid / Used -->
+    <ng-container *ngIf="state() === 'ERROR_INVALID'">
+      <div class="state-block">
+        <div class="axiom-logo-wrapper" aria-hidden="true">
+          <app-axiom-logo
+            stage="error"
+            [size]="72"
+            iconColor="#ef4444"
+            [autoReplayMs]="4000">
+          </app-axiom-logo>
+        </div>
+        <h2 class="state-title">Verification failed</h2>
+        <p class="state-message state-message--error">
+          This verification link is invalid or already used.
+        </p>
+        <a routerLink="/login" class="btn btn--outline">Back to sign in</a>
+      </div>
+    </ng-container>
+  </div>
+</div>
