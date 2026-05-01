@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+﻿import { Component, input, output } from '@angular/core';
 import { Adr, AdrStatusFilter } from '../../models/adr.model';
 import { AdrCardComponent } from '../adr-card/adr-card.component';
 
@@ -12,7 +12,7 @@ export class SidebarComponent {
   readonly adrs = input.required<Adr[]>();
   readonly selectedAdrId = input.required<string>();
   readonly searchQuery = input('');
-  readonly statusFilter = input<AdrStatusFilter>('all');
+  readonly statusFilter = input<AdrStatusFilter>('ALL');
 
   readonly createAdr = output<void>();
   readonly searchQueryChange = output<string>();
@@ -20,10 +20,12 @@ export class SidebarComponent {
   readonly adrSelected = output<string>();
 
   protected readonly filters: ReadonlyArray<{ value: AdrStatusFilter; label: string }> = [
-    { value: 'all', label: 'All Status' },
-    { value: 'accepted', label: 'Accepted' },
-    { value: 'proposed', label: 'Proposed' },
-    { value: 'draft', label: 'Draft' },
-    { value: 'rejected', label: 'Rejected' }
+    { value: 'ALL', label: 'All Status' },
+    { value: 'DRAFT', label: 'Draft' },
+    { value: 'PROPOSED', label: 'Proposed' },
+    { value: 'UNDER_REVIEW', label: 'Under Review' },
+    { value: 'ACCEPTED', label: 'Accepted' },
+    { value: 'REJECTED', label: 'Rejected' },
+    { value: 'SUPERSEDED', label: 'Superseded' }
   ];
 }

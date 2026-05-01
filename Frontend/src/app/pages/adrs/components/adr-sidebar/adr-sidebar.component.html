@@ -1,0 +1,57 @@
+<aside class="adr-sidebar">
+  <div class="adr-sidebar__top">
+    <span class="adr-sidebar__heading">Architecture Decisions</span>
+
+    <button class="adr-sidebar__new-button" type="button" (click)="createNew.emit()">
+      <span>+</span>
+      <span>New ADR</span>
+    </button>
+  </div>
+
+  <div class="adr-sidebar__controls">
+    <label class="adr-sidebar__control adr-sidebar__control--search">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.6"></circle>
+        <path d="M20 20l-4.35-4.35" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+      </svg>
+
+      <input
+        type="search"
+        [ngModel]="searchQuery"
+        (ngModelChange)="onSearchInput($event)"
+        placeholder="Search ADRs..."
+        aria-label="Search ADRs"
+      >
+    </label>
+
+    <label class="adr-sidebar__control adr-sidebar__control--filter">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+      </svg>
+
+      <select
+        [ngModel]="statusFilter"
+        (ngModelChange)="filterChanged.emit($event)"
+        aria-label="Filter ADRs by status"
+      >
+        @for (option of filterOptions; track option.value) {
+          <option [ngValue]="option.value">{{ option.label }}</option>
+        }
+      </select>
+
+      <svg class="adr-sidebar__chevron" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+    </label>
+  </div>
+
+  <div class="adr-sidebar__list">
+    @if (adrs.length) {
+      @for (adr of adrs; track adr.id) {
+        <app-adr-card [adr]="adr" [isSelected]="selectedId === adr.id" (selected)="adrSelected.emit($event)" />
+      }
+    } @else {
+      <div class="adr-sidebar__empty">No ADRs found.</div>
+    }
+  </div>
+</aside>

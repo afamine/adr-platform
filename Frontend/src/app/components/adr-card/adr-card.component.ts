@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+﻿import { Component, input, output } from '@angular/core';
 import { Adr } from '../../models/adr.model';
 
 @Component({
@@ -12,11 +12,19 @@ export class AdrCardComponent {
   readonly selectAdr = output<string>();
 
   protected readonly statusLabels: Record<Adr['status'], string> = {
-    accepted: 'Accepted',
-    proposed: 'Proposed',
-    draft: 'Draft',
-    rejected: 'Rejected'
+    DRAFT: 'Draft',
+    PROPOSED: 'Proposed',
+    UNDER_REVIEW: 'Under Review',
+    ACCEPTED: 'Accepted',
+    REJECTED: 'Rejected',
+    SUPERSEDED: 'Superseded'
   };
+
+  protected get summary(): string {
+    const adr = this.adr();
+    const source = adr.context || adr.decision || adr.consequences || adr.alternatives || '';
+    return source.trim() || 'No summary available.';
+  }
 
   protected onSelect(): void {
     this.selectAdr.emit(this.adr().id);

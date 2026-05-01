@@ -1,0 +1,74 @@
+<section class="collab-panel">
+  <header class="collab-panel__header">
+    <div class="collab-panel__header-row">
+      <span class="collab-panel__header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3Z" stroke="currentColor" stroke-width="1.4" />
+          <path d="M8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3Z" stroke="currentColor" stroke-width="1.4" />
+          <path d="M2.5 19c.9-3 3-4.5 5.5-4.5s4.6 1.5 5.5 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          <path d="M10.5 19c.7-2.4 2.4-3.7 4.5-3.7 2.2 0 3.9 1.3 4.5 3.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+        </svg>
+      </span>
+      <div class="collab-panel__header-title">Collaboration</div>
+      <button class="collab-panel__close" type="button" (click)="closePanel.emit()">Close</button>
+    </div>
+    <div class="collab-panel__header-subtitle">Comments, version history, and team activity</div>
+  </header>
+
+  <div class="collab-panel__tabs" role="tablist" aria-label="Collaboration tabs">
+    <button class="collab-panel__tab" type="button" [class.collab-panel__tab--active]="activeTab === 'comments'" (click)="setTab('comments')">Comments</button>
+    <button class="collab-panel__tab" type="button" [class.collab-panel__tab--active]="activeTab === 'history'" (click)="setTab('history')">History</button>
+    <button class="collab-panel__tab" type="button" [class.collab-panel__tab--active]="activeTab === 'team'" (click)="setTab('team')">Team</button>
+  </div>
+
+  <div class="collab-panel__body">
+    @if (activeTab === 'comments') {
+      <div class="collab-panel__list">
+        @for (comment of mockComments; track comment.text) {
+          <div class="collab-panel__comment">
+            <div class="collab-panel__comment-row">
+              <div class="collab-panel__avatar">{{ comment.initials }}</div>
+              <div class="collab-panel__comment-meta">
+                <div class="collab-panel__comment-name">{{ comment.name }}</div>
+                <div class="collab-panel__comment-time">{{ comment.time }}</div>
+              </div>
+              @if (comment.resolved) {
+                <span class="collab-panel__resolved">Resolved</span>
+              }
+            </div>
+            <div class="collab-panel__comment-text">{{ comment.text }}</div>
+            <div class="collab-panel__comment-actions">
+              <button class="collab-panel__link" type="button">Reply</button>
+              <button class="collab-panel__link" type="button">Resolve</button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    @if (activeTab === 'history') {
+      <div class="collab-panel__placeholder">
+        @for (entry of mockHistory; track entry) {
+          <div class="collab-panel__history-item">{{ entry }}</div>
+        }
+      </div>
+    }
+
+    @if (activeTab === 'team') {
+      <div class="collab-panel__placeholder">
+        @for (member of mockTeam; track member.name) {
+          <div class="collab-panel__team-row">
+            <div class="collab-panel__avatar">{{ member.initials }}</div>
+            <div class="collab-panel__team-name">{{ member.name }}</div>
+            <span [class]="getRoleBadgeClass(member.role)">{{ member.role }}</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="collab-panel__composer" *ngIf="activeTab === 'comments'">
+    <textarea class="collab-panel__textarea" [(ngModel)]="newComment" [ngModelOptions]="{ standalone: true }" placeholder="Add a comment..."></textarea>
+    <button class="collab-panel__send" type="button" (click)="sendComment()">Send</button>
+  </div>
+</section>

@@ -1,0 +1,218 @@
+<section class="adr-editor">
+  @if (isEditing) {
+    <form class="adr-editor__form" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="adr-editor__form-field">
+        <label class="adr-editor__label" for="adr-title">Title</label>
+        <input id="adr-title" class="adr-editor__input" type="text" formControlName="title" maxlength="255">
+        @if (form.controls.title.invalid && form.controls.title.touched) {
+          <div class="adr-editor__error">Title is required and must be 255 characters or fewer.</div>
+        }
+      </div>
+
+      <div class="adr-editor__form-field">
+        <label class="adr-editor__label" for="adr-context">Context</label>
+        <textarea id="adr-context" class="adr-editor__textarea adr-editor__textarea--edit" formControlName="context"></textarea>
+      </div>
+
+      <div class="adr-editor__form-field">
+        <label class="adr-editor__label" for="adr-decision">Decision</label>
+        <textarea id="adr-decision" class="adr-editor__textarea adr-editor__textarea--edit" formControlName="decision"></textarea>
+      </div>
+
+      <div class="adr-editor__form-field">
+        <label class="adr-editor__label" for="adr-consequences">Consequences</label>
+        <textarea id="adr-consequences" class="adr-editor__textarea adr-editor__textarea--edit" formControlName="consequences"></textarea>
+      </div>
+
+      <div class="adr-editor__form-field">
+        <label class="adr-editor__label" for="adr-alternatives">Alternatives</label>
+        <textarea id="adr-alternatives" class="adr-editor__textarea adr-editor__textarea--edit" formControlName="alternatives"></textarea>
+      </div>
+
+      <div class="adr-editor__form-field">
+        <label class="adr-editor__label" for="adr-tag-input">Tags</label>
+        <div class="adr-editor__tag-editor">
+          <input id="adr-tag-input" class="adr-editor__input" type="text" [(ngModel)]="tagInput" [ngModelOptions]="{ standalone: true }">
+          <button class="adr-editor__ghost-button" type="button" (click)="onAddTag()">Add</button>
+        </div>
+
+        <div class="adr-editor__tags adr-editor__tags--editable">
+          @for (tag of currentTags; track tag) {
+            <button class="adr-editor__tag" type="button" (click)="onRemoveTag(tag)">
+              <span>{{ tag }}</span>
+              <span class="adr-editor__tag-remove">×</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="adr-editor__form-actions">
+        <button class="adr-editor__save-button adr-editor__save-button--full" type="submit" [disabled]="isSaving">
+          {{ isSaving ? 'Saving...' : 'Save' }}
+        </button>
+        <button class="adr-editor__ghost-button adr-editor__ghost-button--full" type="button" (click)="cancelEdit.emit()">Cancel</button>
+      </div>
+    </form>
+  } @else if (adr; as currentAdr) {
+    <div class="adr-editor__topbar">
+      <div class="adr-editor__title-block">ADR-{{ currentAdr.adrNumber }} — {{ currentAdr.title }}</div>
+
+      <div class="adr-editor__date">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.5"></circle>
+          <path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>{{ formattedCreatedAt }}</span>
+      </div>
+
+      <div class="adr-editor__actions">
+        <button class="adr-editor__ghost-button" type="button" [class.adr-editor__ghost-button--active]="isPreviewMode" (click)="togglePreview()">
+          @if (!isPreviewMode) {
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6S2.5 12 2.5 12Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path>
+              <circle cx="12" cy="12" r="2.75" stroke="currentColor" stroke-width="1.5"></circle>
+            </svg>
+            <span>Preview</span>
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M4 4l16 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+              <path d="M2.5 12s3.5-6 9.5-6c2.07 0 3.92.6 5.47 1.46M21.5 12s-3.5 6-9.5 6c-2.07 0-3.92-.6-5.47-1.46" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+              <path d="M9.9 9.9a2.75 2.75 0 0 0 3.85 3.85" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+            </svg>
+            <span>Edit</span>
+          }
+        </button>
+        <button class="adr-editor__ghost-button" type="button" [class.adr-editor__ghost-button--active]="showCollabPanel" (click)="showCollab.emit()">Collaborate</button>
+        <button class="adr-editor__ghost-button" type="button" [class.adr-editor__ghost-button--active]="showAIPanel" (click)="showAI.emit()">AI Assist</button>
+
+        @if (canEdit) {
+          <button class="adr-editor__ghost-button" type="button" (click)="onEditClick()">Edit</button>
+        }
+
+        @if (canDelete) {
+          <button class="adr-editor__danger-button" type="button" (click)="deleteRequested.emit()">Delete ADR</button>
+        }
+      </div>
+    </div>
+
+    <div class="status-tags-bar">
+      <div class="status-group">
+        <span class="bar-label">Status:</span>
+        <select class="status-select" [ngModel]="currentAdr.status" [ngModelOptions]="{ standalone: true }" (ngModelChange)="statusChanged.emit($event)">
+          @for (option of statusOptions; track option.value) {
+            <option [ngValue]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="tags-group">
+        <span class="bar-label">Tags:</span>
+        @if ((currentAdr.tags || []).length) {
+          @for (tag of (currentAdr.tags || []); track tag) {
+            <span class="tag-chip">{{ tag }}</span>
+          }
+        } @else {
+          <span class="bar-label">No tags</span>
+        }
+      </div>
+
+      <div class="author-label">Author: {{ currentAdr.authorName }}</div>
+    </div>
+
+    @if (transitions.length) {
+      <div class="adr-editor__transitions">
+        @for (status of transitions; track status) {
+          <button class="adr-editor__transition-button" type="button" (click)="transitionRequested.emit(status)">
+            {{ getTransitionLabel(status) }}
+          </button>
+        }
+      </div>
+    }
+
+    <div class="adr-editor__tabs" role="tablist" aria-label="ADR sections">
+      @for (tab of tabs; track tab.key) {
+        <button
+          class="adr-editor__tab"
+          type="button"
+          [class.adr-editor__tab--active]="activeTab === tab.key"
+          (click)="tabChanged.emit(tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    <div class="adr-editor__content">
+      @if (isPreviewMode) {
+        <div class="preview-content">
+          <div class="preview-title">{{ adr.title }}</div>
+
+          <div class="preview-meta-grid">
+            <div class="meta-row">
+              <span class="meta-label">Status:</span>
+              <span class="meta-value">{{ adr.status | lowercase }}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Author:</span>
+              <span class="meta-value">{{ adr.authorName }}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Date:</span>
+              <span class="meta-value">{{ adr.createdAt | date:'yyyy-MM-dd' }}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Tags:</span>
+              @if (adr.tags.length) {
+                <span class="meta-value">{{ adr.tags.join(', ') }}</span>
+              } @else {
+                <span class="meta-value meta-empty">No tags</span>
+              }
+            </div>
+          </div>
+
+          <hr class="preview-divider" />
+
+          <div class="preview-section">
+            <div class="preview-section-title">Context</div>
+            @if (adr.context) {
+              <div class="preview-section-body">{{ adr.context }}</div>
+            } @else {
+              <div class="preview-empty">No context provided yet.</div>
+            }
+          </div>
+
+          <div class="preview-section">
+            <div class="preview-section-title">Decision</div>
+            @if (adr.decision) {
+              <div class="preview-section-body">{{ adr.decision }}</div>
+            } @else {
+              <div class="preview-empty">No decision documented yet.</div>
+            }
+          </div>
+
+          <div class="preview-section">
+            <div class="preview-section-title">Consequences</div>
+            @if (adr.consequences) {
+              <div class="preview-section-body">{{ adr.consequences }}</div>
+            } @else {
+              <div class="preview-empty">No consequences outlined yet.</div>
+            }
+          </div>
+
+          <div class="preview-section">
+            <div class="preview-section-title">Alternatives Considered</div>
+            @if (adr.alternatives) {
+              <div class="preview-section-body">{{ adr.alternatives }}</div>
+            } @else {
+              <div class="preview-empty">No alternatives documented yet.</div>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="adr-editor__read-panel">{{ currentContent || 'No content provided.' }}</div>
+      }
+    </div>
+  } @else {
+    <div class="adr-editor__empty-state">Select an ADR to start editing.</div>
+  }
+</section>

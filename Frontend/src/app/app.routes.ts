@@ -1,6 +1,6 @@
-import { Routes } from '@angular/router';
+﻿import { Routes } from '@angular/router';
 
-import { AdrEditorPageComponent } from './pages/adr-editor-page/adr-editor-page.component';
+import { AdrDashboardComponent } from './pages/adrs/adr-dashboard.component';
 import { ForgotPasswordComponent } from './pages/auth/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './pages/auth/reset-password/reset-password.component';
 import { VerifyEmailComponent } from './pages/auth/verify-email/verify-email.component';
@@ -22,7 +22,7 @@ export const routes: Routes = [
   { path: 'verify-email-pending', component: VerifyEmailPendingComponent },
   { path: 'verify-email-sent', component: VerifyEmailSentComponent },
   { path: 'register', component: RegisterComponent },
-  { path: 'adrs', component: AdrEditorPageComponent, canActivate: [authGuard] },
+  { path: 'adrs', component: AdrDashboardComponent, canActivate: [authGuard] },
   {
     path: 'admin',
     canActivate: [adminGuard],

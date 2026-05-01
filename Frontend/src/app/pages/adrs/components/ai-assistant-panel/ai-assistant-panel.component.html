@@ -1,0 +1,65 @@
+<section class="ai-panel">
+  <header class="ai-panel__header">
+    <div class="ai-panel__header-row">
+      <span class="ai-panel__header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2l1.1 4.2 3.9-1.9-1.9 3.9L19 9.3l-4.2 1.1 1.9 3.9-3.9-1.9L12 22l-1.1-4.2-3.9 1.9 1.9-3.9L5 14.7l4.2-1.1-1.9-3.9 3.9 1.9L12 2Z" fill="#6366f1" opacity="0.15" />
+          <path d="M12 3.5l.8 3 2.8-1.4-1.4 2.8 3 .8-3 .8 1.4 2.8-2.8-1.4-.8 3-.8-3-2.8 1.4 1.4-2.8-3-.8 3-.8-1.4-2.8 2.8 1.4.8-3Z" stroke="#6366f1" stroke-width="1.4" stroke-linejoin="round" />
+        </svg>
+      </span>
+      <div class="ai-panel__header-title">AI Assistant</div>
+      <button class="ai-panel__close" type="button" (click)="closePanel.emit()">Close</button>
+    </div>
+    <div class="ai-panel__header-subtitle">AI-powered insights and recommendations for your architectural decision</div>
+  </header>
+
+  <div class="ai-panel__summary">
+    <div class="ai-panel__summary-title">
+      <span class="ai-panel__summary-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2l1.1 4.2 3.9-1.9-1.9 3.9L19 9.3l-4.2 1.1 1.9 3.9-3.9-1.9L12 22l-1.1-4.2-3.9 1.9 1.9-3.9L5 14.7l4.2-1.1-1.9-3.9 3.9 1.9L12 2Z" stroke="#6366f1" stroke-width="1.4" stroke-linejoin="round" />
+        </svg>
+      </span>
+      <span>AI Analysis Complete</span>
+    </div>
+    <div class="ai-panel__summary-text">Found 4 insights based on your context and historical patterns from 1,240+ similar decisions.</div>
+  </div>
+
+  <div class="ai-panel__insights">
+    @for (insight of aiInsights; track insight.title) {
+      <article class="ai-panel__card">
+        <div class="ai-panel__card-row">
+          <span class="ai-panel__card-icon" aria-hidden="true">{{ getInsightIcon(insight.icon) }}</span>
+          <div class="ai-panel__card-title">{{ insight.title }}</div>
+          <span class="ai-panel__confidence" [class]="'ai-panel__confidence ' + getConfidenceBadgeClass(insight.impact)">
+            {{ insight.confidence }}% confidence
+          </span>
+        </div>
+
+        <div class="ai-panel__impact" [class]="'ai-panel__impact ai-panel__impact--' + insight.impact">{{ getImpactLabel(insight.impact) }}</div>
+
+        <div class="ai-panel__description">{{ insight.description }}</div>
+
+        <div class="ai-panel__confidence-row">
+          <span class="ai-panel__confidence-label">Confidence Score</span>
+          <div class="ai-panel__progress">
+            <div class="ai-panel__progress-fill" [style.width.%]="insight.confidence"></div>
+          </div>
+        </div>
+
+        <div class="ai-panel__rationale">
+          <div class="ai-panel__rationale-title">Rationale</div>
+          <div class="ai-panel__rationale-text">{{ insight.rationale }}</div>
+        </div>
+
+        <div class="ai-panel__source"><span>Source:</span> {{ insight.source }}</div>
+
+        <div class="ai-panel__buttons">
+          <button class="ai-panel__action" type="button">👍 Helpful</button>
+          <button class="ai-panel__action" type="button">👎 Not Helpful</button>
+          <button class="ai-panel__apply" type="button">Apply</button>
+        </div>
+      </article>
+    }
+  </div>
+</section>

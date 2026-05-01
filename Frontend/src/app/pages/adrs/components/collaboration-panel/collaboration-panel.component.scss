@@ -1,0 +1,253 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.collab-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: #ffffff;
+}
+
+.collab-panel__header {
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.collab-panel__header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.collab-panel__header-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  color: #374151;
+}
+
+.collab-panel__header-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.collab-panel__header-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.collab-panel__close {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #6b7280;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.collab-panel__header-subtitle {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.collab-panel__tabs {
+  display: flex;
+  gap: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 12px;
+}
+
+.collab-panel__tab {
+  border: 0;
+  background: transparent;
+  padding: 10px 4px;
+  font-size: 13px;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.collab-panel__tab--active {
+  border-bottom-color: #0f172a;
+  color: #111827;
+  font-weight: 500;
+}
+
+.collab-panel__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.collab-panel__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.collab-panel__comment {
+  padding: 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.collab-panel__comment-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.collab-panel__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #0f172a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.collab-panel__comment-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.collab-panel__comment-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.collab-panel__comment-time {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.collab-panel__resolved {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.collab-panel__comment-text {
+  margin-left: 40px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.collab-panel__comment-actions {
+  margin-left: 40px;
+  margin-top: 8px;
+  display: flex;
+  gap: 12px;
+}
+
+.collab-panel__link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 11px;
+  color: #6b7280;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.collab-panel__placeholder {
+  padding: 12px;
+}
+
+.collab-panel__history-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13px;
+  color: #374151;
+}
+
+.collab-panel__team-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.collab-panel__team-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.collab-panel__role {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.collab-panel__role--author {
+  background: #e1f5ee;
+  color: #0f6e56;
+}
+
+.collab-panel__role--reviewer {
+  background: #faeeda;
+  color: #854f0b;
+}
+
+.collab-panel__role--approver {
+  background: #eeedfe;
+  color: #3c3489;
+}
+
+.collab-panel__role--admin {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.collab-panel__composer {
+  border-top: 1px solid #e5e7eb;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.collab-panel__textarea {
+  width: 100%;
+  height: 60px;
+  resize: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  outline: none;
+}
+
+.collab-panel__send {
+  margin-top: 10px;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}

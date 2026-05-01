@@ -1,0 +1,35 @@
+<button class="adr-card" type="button" [class.adr-card--selected]="isSelected" (click)="onSelect()">
+  <div class="adr-card__header">
+    <svg
+      class="adr-card__icon"
+      [class.adr-card__icon--accepted]="adr.status === 'ACCEPTED'"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      @if (adr.status === 'ACCEPTED') {
+        <circle cx="12" cy="12" r="9" fill="currentColor"></circle>
+        <path d="M8.5 12.2l2.2 2.2 4.8-5.1" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+      } @else {
+        <circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.5"></circle>
+      }
+    </svg>
+
+    <span class="adr-card__title">#{{ adr.adrNumber }} — {{ adr.title }}</span>
+  </div>
+
+  <p class="adr-card__summary">{{ summary }}</p>
+
+  <div class="adr-card__meta">
+    <span [class]="badgeClass">{{ statusLabels[adr.status] }}</span>
+
+    @for (tag of visibleTags; track tag) {
+      <span class="adr-card__tag">{{ tag }}</span>
+    }
+
+    @if (hiddenTagCount > 0) {
+      <span class="adr-card__tag adr-card__tag--more">+{{ hiddenTagCount }} more</span>
+    }
+  </div>
+</button>

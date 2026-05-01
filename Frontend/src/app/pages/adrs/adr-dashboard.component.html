@@ -1,0 +1,184 @@
+<div class="adr-dashboard">
+  <div class="adr-dashboard__toasts">
+    @for (item of notificationService.notifications(); track item.id) {
+      <div class="adr-dashboard__toast" [class]="'adr-dashboard__toast adr-dashboard__toast--' + item.type">
+        <span>{{ item.message }}</span>
+        <button class="adr-dashboard__toast-close" type="button" (click)="notificationService.remove(item.id)">×</button>
+      </div>
+    }
+  </div>
+
+  <header class="adr-dashboard__header">
+    <div class="adr-dashboard__branding">
+      <div class="adr-dashboard__logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 3.75h6.5L19.25 8.5V19A1.75 1.75 0 0 1 17.5 20.75h-9A1.75 1.75 0 0 1 6.75 19V5.5A1.75 1.75 0 0 1 8.5 3.75H8z" stroke="#ffffff" stroke-width="1.7" stroke-linejoin="round"></path>
+          <path d="M14.5 3.75V8.5h4.75" stroke="#ffffff" stroke-width="1.7" stroke-linejoin="round"></path>
+        </svg>
+      </div>
+
+      <div class="adr-dashboard__brand-copy">
+        <div class="adr-dashboard__title">ADR Manager</div>
+        <div class="adr-dashboard__subtitle">AI-Assisted Architecture Decision Records</div>
+      </div>
+    </div>
+
+    <div class="adr-dashboard__header-actions">
+      <div class="adr-dashboard__dropdown-anchor">
+        <button class="adr-dashboard__icon-button" type="button" aria-label="Settings" (click)="toggleSettings($event)">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5z" stroke="currentColor" stroke-width="1.5"></path>
+            <path d="M19.4 13.5a1.5 1.5 0 0 0 .3 1.65l.05.05a1.8 1.8 0 0 1 0 2.54 1.8 1.8 0 0 1-2.54 0l-.05-.05a1.5 1.5 0 0 0-1.65-.3 1.5 1.5 0 0 0-.9 1.37V19a1.8 1.8 0 0 1-1.8 1.8 1.8 1.8 0 0 1-1.8-1.8v-.08a1.5 1.5 0 0 0-.97-1.4 1.5 1.5 0 0 0-1.58.33l-.05.05a1.8 1.8 0 0 1-2.54 0 1.8 1.8 0 0 1 0-2.54l.05-.05a1.5 1.5 0 0 0 .33-1.58 1.5 1.5 0 0 0-1.4-.97H5a1.8 1.8 0 0 1-1.8-1.8A1.8 1.8 0 0 1 5 10.2h.08a1.5 1.5 0 0 0 1.4-.97 1.5 1.5 0 0 0-.33-1.58L6.1 7.6a1.8 1.8 0 0 1 0-2.54 1.8 1.8 0 0 1 2.54 0l.05.05a1.5 1.5 0 0 0 1.58.33 1.5 1.5 0 0 0 .97-1.4V4A1.8 1.8 0 0 1 13.04 2.2 1.8 1.8 0 0 1 14.84 4v.08a1.5 1.5 0 0 0 .9 1.37 1.5 1.5 0 0 0 1.65-.3l.05-.05a1.8 1.8 0 0 1 2.54 0 1.8 1.8 0 0 1 0 2.54l-.05.05a1.5 1.5 0 0 0-.3 1.65 1.5 1.5 0 0 0 1.37.9H20A1.8 1.8 0 0 1 21.8 12 1.8 1.8 0 0 1 20 13.8h-.08a1.5 1.5 0 0 0-1.37.9z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </button>
+
+        @if (showSettings) {
+          <div class="dropdown-panel dropdown-panel--settings">
+            <div class="dropdown-header">
+              <div class="dropdown-title">Settings</div>
+            </div>
+
+            <div class="dropdown-section">
+              <div class="section-label">Workspace</div>
+              <div class="setting-row">
+                <div>
+                  <div class="setting-name">Workspace name</div>
+                  <div class="setting-value">Default Workspace</div>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-name">Email notifications</div>
+                <label class="toggle">
+                  <input type="checkbox" [(ngModel)]="emailNotifications" [ngModelOptions]="{ standalone: true }">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="setting-row">
+                <div>
+                  <div class="setting-name">Slack webhook</div>
+                  <div class="setting-value setting-link">Configure</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dropdown-section">
+              <div class="section-label">About</div>
+              <div class="setting-row">
+                <div>
+                  <div class="setting-name">Version</div>
+                  <div class="setting-value">1.0.0 — Final Year Project</div>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div>
+                  <div class="setting-name">Platform</div>
+                  <div class="setting-value">Axiom ADR Manager</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="adr-dashboard__dropdown-anchor">
+        <button class="adr-dashboard__icon-button" type="button" aria-label="User" (click)="toggleProfile($event)">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="8" r="3.25" stroke="currentColor" stroke-width="1.5"></circle>
+            <path d="M5.5 19c1.2-3.2 3.6-4.8 6.5-4.8s5.3 1.6 6.5 4.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+          </svg>
+        </button>
+
+        @if (showProfile) {
+          <div class="dropdown-panel dropdown-panel--profile">
+            <div class="profile-header">
+              <div class="avatar-circle">{{ userInitials }}</div>
+              <div>
+                <div class="profile-name">{{ currentUser?.fullName }}</div>
+                <div class="profile-email">{{ currentUser?.email }}</div>
+                <span class="role-badge" [class.role-admin]="currentUser?.role === 'ADMIN'" [class.role-approver]="currentUser?.role === 'APPROVER'" [class.role-reviewer]="currentUser?.role === 'REVIEWER'" [class.role-author]="currentUser?.role === 'AUTHOR'">
+                  {{ currentUser?.role }}
+                </span>
+              </div>
+            </div>
+
+            <div class="dropdown-divider"></div>
+
+            <button class="dropdown-item" type="button" (click)="onChangePassword()">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 10V8a5 5 0 0 1 10 0v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+                <rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6"></rect>
+              </svg>
+              <span>Change Password</span>
+            </button>
+
+            <button class="dropdown-item danger" type="button" (click)="onSignOut()">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 17l5-5-5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M15 12H4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+                <path d="M20 4v16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+              </svg>
+              <span>Sign Out</span>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </header>
+
+  <div class="adr-dashboard__workspace">
+    <app-adr-sidebar
+      [adrs]="filteredAdrs"
+      [selectedId]="selectedAdr?.id ?? null"
+      [searchQuery]="searchQuery"
+      [statusFilter]="statusFilter"
+      (adrSelected)="onSelectAdr($event)"
+      (createNew)="onCreateNew()"
+      (searchChanged)="onSearch($event)"
+      (filterChanged)="onFilterChange($event)"
+    />
+
+    <div class="dashboard-layout">
+      <div class="editor-area">
+        <app-adr-editor
+          [adr]="selectedAdr"
+          [editingAdr]="editingAdr"
+          [isEditing]="isEditing"
+          [activeTab]="activeTab"
+          [showAIPanel]="showAIPanel"
+          [showCollabPanel]="showCollabPanel"
+          [isSaving]="isSaving"
+          [canEdit]="canEdit()"
+          [canDelete]="currentUser?.role === 'ADMIN'"
+          [transitions]="getAllowedTransitions()"
+          (tabChanged)="onTabChange($event)"
+          (statusChanged)="onStatusChange($event)"
+          (editRequested)="onEditCurrent()"
+          (deleteRequested)="onDelete()"
+          (transitionRequested)="onTransitionStatus($event)"
+          (saveCreate)="onSaveCreate($event)"
+          (saveUpdate)="onSaveUpdate($event)"
+          (cancelEdit)="onCancelEdit()"
+          (showAI)="toggleAI()"
+          (showCollab)="toggleCollab()"
+        />
+      </div>
+
+      @if (showAIPanel) {
+        <app-ai-assistant-panel [selectedAdr]="selectedAdr" (closePanel)="toggleAI()" />
+      }
+
+      @if (showCollabPanel) {
+        <app-collaboration-panel
+          [selectedAdr]="selectedAdr"
+          [currentUserInitials]="userInitials"
+          [currentUserName]="currentUserName"
+          (closePanel)="toggleCollab()"
+        />
+      }
+    </div>
+  </div>
+
+  @if (showChangePassword) {
+    <app-change-password-modal (closed)="onCloseChangePassword()" />
+  }
+</div>
