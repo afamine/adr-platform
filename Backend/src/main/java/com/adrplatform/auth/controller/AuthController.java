@@ -1,6 +1,7 @@
 package com.adrplatform.auth.controller;
 
 import com.adrplatform.auth.dto.AuthResponse;
+import com.adrplatform.auth.dto.ChangePasswordRequest;
 import com.adrplatform.auth.dto.ForgotPasswordRequest;
 import com.adrplatform.auth.dto.LoginRequest;
 import com.adrplatform.auth.dto.MessageResponse;
@@ -9,6 +10,7 @@ import com.adrplatform.auth.dto.RegisterRequest;
 import com.adrplatform.auth.dto.RegisterResponse;
 import com.adrplatform.auth.dto.ResendVerificationRequest;
 import com.adrplatform.auth.dto.ResetPasswordRequest;
+import com.adrplatform.auth.domain.User;
 import com.adrplatform.auth.service.AuthService;
 import com.adrplatform.auth.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,8 +18,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -105,5 +109,24 @@ public class AuthController {
     @PostMapping("/resend-verification")
     public ResponseEntity<MessageResponse> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
         return ResponseEntity.ok(authService.resendVerification(request));
+    }
+
+    @PutMapping("/change-password")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Change password for authenticated user",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Password changed successfully"),
+            @ApiResponse(responseCode = "400", description = "Validation error or wrong current password"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated")
+        })
+    public ResponseEntity<MessageResponse> changePassword(
+        @Valid @RequestBody ChangePasswordRequest request
+    ) {
+        User user = (User) org.springframework.security.core.context.SecurityContextHolder
+            .getContext().getAuthentication().getPrincipal();
+        authService.changePassword(request, user.getId());
+        return ResponseEntity.ok(MessageResponse.builder()
+            .message("Password updated successfully. Please log in again.")
+            .build());
     }
 }

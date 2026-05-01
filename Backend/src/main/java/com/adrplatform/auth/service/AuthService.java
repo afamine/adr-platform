@@ -229,6 +229,52 @@ public class AuthService {
                 .build();
     }
 
+    /**
+     * Changes the password for the currently authenticated user.
+     * Validates current password, enforces password policy, and
+     * invalidates all existing refresh tokens after the change.
+     *
+     * @param request ChangePasswordRequest with currentPassword, newPassword, confirmPassword
+     * @param userId  UUID of the authenticated user (from SecurityContext)
+     * @throws BadRequestException if current password is wrong, passwords don't match, or policy fails
+     */
+    @Transactional
+    public void changePassword(com.adrplatform.auth.dto.ChangePasswordRequest request, java.util.UUID userId) {
+        // 1. Load user
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new org.springframework.security.core.userdetails.UsernameNotFoundException("User not found"));
+
+        // 2. Validate confirmPassword == newPassword
+        if (!request.newPassword().equals(request.confirmPassword())) {
+            throw new BadRequestException("Passwords do not match.");
+        }
+
+        // 3. Validate current password
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("Current password is incorrect.");
+        }
+
+        // 4. Validate new password != current password
+        if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("New password must be different from the current password.");
+        }
+
+        // 5. Validate password policy: min 8 chars, at least one letter and one number
+        passwordPolicyValidator.validate(request.newPassword());
+
+        // 6. Update password
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+
+        // 7. Invalidate all refresh tokens (force re-login after password change)
+        refreshTokenService.revokeAllForUser(user);
+
+        // 8. Generate audit event
+        auditService.record(user, user.getWorkspace(), "PASSWORD_CHANGED", "USER", user.getId(), null, null);
+
+        log.info("Password changed for user {}", user.getEmail());
+    }
+
     private String maskEmail(String email) {
         if (email == null) return null;
         int at = email.indexOf('@');

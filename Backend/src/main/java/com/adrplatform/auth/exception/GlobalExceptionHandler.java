@@ -1,6 +1,9 @@
 package com.adrplatform.auth.exception;
 
 import com.adrplatform.auth.dto.ErrorResponse;
+import com.adrplatform.adr.exception.AdrAccessDeniedException;
+import com.adrplatform.adr.exception.AdrNotFoundException;
+import com.adrplatform.adr.exception.InvalidTransitionException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -31,14 +34,29 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(AdrAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAdrAccessDenied(AdrAccessDeniedException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
         return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(AdrNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAdrNotFound(AdrNotFoundException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.NOT_FOUND, "ADR not found.", request.getRequestURI());
+    }
+
     @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class})
     public ResponseEntity<ErrorResponse> handleValidation(Exception ex, HttpServletRequest request) {
         return buildError(HttpStatus.BAD_REQUEST, "Validation failed", request.getRequestURI());
+    }
+
+    @ExceptionHandler(InvalidTransitionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTransition(InvalidTransitionException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler(TokenExpiredException.class)

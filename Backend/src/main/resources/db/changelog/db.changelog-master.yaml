@@ -18,3 +18,7 @@ databaseChangeLog:
       file: db/changelog/V5__create_verification_token_table.sql
   - include:
       file: db/changelog/V6__create_admin_user.sql
+  - include:
+      file: db/changelog/V7__upgrade_adr_table.sql
+  - include:
+      file: db/changelog/V8__adr_audit_indexes.sql
