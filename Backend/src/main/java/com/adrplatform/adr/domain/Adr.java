@@ -47,7 +47,7 @@ public class Adr {
     private String alternatives;
 
     // Stored as comma-separated string in DB
-    @Column(name = "tags")
+    @Column(name = "tags", columnDefinition = "TEXT")
     private String tagsCsv;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

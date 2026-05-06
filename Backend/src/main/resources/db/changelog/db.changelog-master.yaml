@@ -22,3 +22,9 @@ databaseChangeLog:
       file: db/changelog/V7__upgrade_adr_table.sql
   - include:
       file: db/changelog/V8__adr_audit_indexes.sql
+  - include:
+      file: db/changelog/V9__create_vote_table.sql
+  - include:
+      file: db/changelog/V10__add_workspace_quorum.sql
+  - include:
+      file: db/changelog/V11__normalize_adr_tags_column.sql

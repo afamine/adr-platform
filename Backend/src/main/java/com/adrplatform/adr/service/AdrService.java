@@ -16,6 +16,8 @@ import com.adrplatform.auth.service.AuditService;
 import com.adrplatform.auth.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,10 @@ public class AdrService {
     @Transactional(readOnly = true)
     public List<AdrDto> getAllAdrs(AdrStatus status, String search) {
         UUID workspaceId = tenantContext.getWorkspaceId();
+        if (workspaceId == null) {
+            log.error("TenantContext.workspaceId is null — JWT filter may not be populating it correctly");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Workspace context not available");
+        }
         List<Adr> list = (status == null && (search == null || search.isBlank()))
                 ? adrRepository.findAllByWorkspace_IdOrderByAdrNumberDesc(workspaceId)
                 : adrRepository.search(workspaceId, status, (search == null || search.isBlank()) ? null : search.trim());
@@ -58,6 +64,8 @@ public class AdrService {
         UUID workspaceId = tenantContext.getWorkspaceId();
         int nextNumber = adrRepository.findMaxAdrNumber(workspaceId) + 1;
 
+        log.debug("Saving ADR with tags: {}", request.tags());
+
         Adr adr = Adr.builder()
                 .workspace(actor.getWorkspace())
                 .adrNumber(nextNumber)
@@ -71,6 +79,8 @@ public class AdrService {
                 .author(actor)
                 .build();
         Adr saved = adrRepository.save(adr);
+
+        log.debug("Loaded ADR tags raw: '{}', parsed: {}", saved.getTagsCsv(), AdrDto.fromEntity(saved).tags());
 
         String createdJson = "{" +
                 "\"adrNumber\":" + saved.getAdrNumber() + "," +
@@ -105,7 +115,7 @@ public class AdrService {
         if (request.decision() != null) adr.setDecision(request.decision());
         if (request.consequences() != null) adr.setConsequences(request.consequences());
         if (request.alternatives() != null) adr.setAlternatives(request.alternatives());
-        if (request.tags() != null) adr.setTagsCsv(joinTags(request.tags()));
+        if (request.tags() != null && !request.tags().isEmpty()) adr.setTagsCsv(joinTags(request.tags()));
 
         Adr saved = adrRepository.save(adr);
         String updatedJson = "{" +
@@ -200,7 +210,7 @@ public class AdrService {
     }
 
     private String joinTags(List<String> tags) {
-        if (tags == null || tags.isEmpty()) return null;
+        if (tags == null || tags.isEmpty()) return "";
         return String.join(",", tags.stream().map(String::trim).filter(s -> !s.isEmpty()).toList());
     }
 

@@ -2,9 +2,11 @@ package com.adrplatform.adr.controller;
 
 import com.adrplatform.adr.domain.AdrStatus;
 import com.adrplatform.adr.dto.AdrDto;
+import com.adrplatform.adr.dto.AuditEventDto;
 import com.adrplatform.adr.dto.CreateAdrRequest;
 import com.adrplatform.adr.dto.StatusTransitionRequest;
 import com.adrplatform.adr.dto.UpdateAdrRequest;
+import com.adrplatform.adr.service.AdrAuditService;
 import com.adrplatform.adr.service.AdrService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,6 +28,7 @@ import java.util.UUID;
 public class AdrController {
 
     private final AdrService adrService;
+    private final AdrAuditService adrAuditService;
 
     @Operation(summary = "List all ADRs in the current workspace")
     @ApiResponse(responseCode = "200", description = "List returned")
@@ -79,5 +82,13 @@ public class AdrController {
     public ResponseEntity<Void> delete(@PathVariable("id") UUID id) {
         adrService.deleteAdr(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Get audit log for an ADR")
+    @ApiResponse(responseCode = "200", description = "Audit log returned")
+    @ApiResponse(responseCode = "404", description = "ADR not found", content = @Content)
+    @GetMapping("/{id}/audit")
+    public ResponseEntity<List<AuditEventDto>> audit(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(adrAuditService.getAuditLog(id));
     }
 }

@@ -4,6 +4,8 @@ import com.adrplatform.auth.dto.ErrorResponse;
 import com.adrplatform.adr.exception.AdrAccessDeniedException;
 import com.adrplatform.adr.exception.AdrNotFoundException;
 import com.adrplatform.adr.exception.InvalidTransitionException;
+import com.adrplatform.vote.exception.AlreadyVotedException;
+import com.adrplatform.vote.exception.InvalidVoteException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -36,7 +38,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AdrAccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAdrAccessDenied(AdrAccessDeniedException ex, HttpServletRequest request) {
-        return buildError(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
+        return buildErrorWithType(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI(), "ACCESS_DENIED");
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -57,6 +59,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidTransitionException.class)
     public ResponseEntity<ErrorResponse> handleInvalidTransition(InvalidTransitionException ex, HttpServletRequest request) {
         return buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(AlreadyVotedException.class)
+    public ResponseEntity<ErrorResponse> handleAlreadyVoted(AlreadyVotedException ex, HttpServletRequest request) {
+        return buildErrorWithType(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI(), ex.getErrorType());
+    }
+
+    @ExceptionHandler(InvalidVoteException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidVote(InvalidVoteException ex, HttpServletRequest request) {
+        return buildErrorWithType(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI(), ex.getErrorType());
     }
 
     @ExceptionHandler(TokenExpiredException.class)

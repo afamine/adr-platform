@@ -35,6 +35,10 @@ public class Workspace {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Builder.Default
+    @Column(name = "vote_quorum", nullable = false)
+    private Integer voteQuorum = 2;
+
     @PrePersist
     void prePersist() {
         if (id == null) {
