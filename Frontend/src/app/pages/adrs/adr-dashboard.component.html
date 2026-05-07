@@ -139,6 +139,12 @@
 
     <div class="dashboard-layout">
       <div class="editor-area">
+        @if (canVoteOnAdr(selectedAdr)) {
+          <div style="display: flex; justify-content: flex-end; padding: 12px 16px 0;">
+            <button type="button" (click)="openVoteModal(selectedAdr!)">Vote</button>
+          </div>
+        }
+
         <app-adr-editor
           [adr]="selectedAdr"
           [editingAdr]="editingAdr"
@@ -150,6 +156,7 @@
           [canEdit]="canEdit()"
           [canDelete]="currentUser?.role === 'ADMIN'"
           [transitions]="getAllowedTransitions()"
+          [auditRefreshToken]="auditRefreshToken"
           (tabChanged)="onTabChange($event)"
           (statusChanged)="onStatusChange($event)"
           (editRequested)="onEditCurrent()"
@@ -180,5 +187,17 @@
 
   @if (showChangePassword) {
     <app-change-password-modal (closed)="onCloseChangePassword()" />
+  }
+
+  @if (showVoteModal && voteModalAdr) {
+    <app-vote-modal
+      [adr]="voteModalAdr"
+      [existingVotes]="voteModalVotes"
+      [myVote]="voteModalMyVote"
+      [isLoadingVotes]="isVoteModalLoading"
+      [isSubmitting]="isVoteSubmitting"
+      (close)="closeVoteModal()"
+      (voteSubmitted)="onVoteSubmitted($event)"
+    />
   }
 </div>

@@ -1,8 +1,9 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, formatDate } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ADR_STATUS_OPTIONS, ADR_TAB_ORDER, Adr, AdrStatus, AdrTabKey, CreateAdrRequest, UpdateAdrRequest } from '../../../../models/adr.model';
+import { ADR_STATUS_OPTIONS, ADR_TAB_ORDER, Adr, AdrStatus, AdrTabKey, AuditEventDto, AuditEventType, CreateAdrRequest, UpdateAdrRequest } from '../../../../models/adr.model';
+import { AdrService } from '../../../../services/adr.service';
 
 @Component({
   selector: 'app-adr-editor',
@@ -13,17 +14,19 @@ import { ADR_STATUS_OPTIONS, ADR_TAB_ORDER, Adr, AdrStatus, AdrTabKey, CreateAdr
 })
 export class AdrEditorComponent implements OnChanges {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly adrService = inject(AdrService);
 
   @Input() adr: Adr | null = null;
   @Input() editingAdr: Partial<Adr> | null = null;
   @Input() isEditing = false;
-  @Input() activeTab: 'context' | 'decision' | 'consequences' | 'alternatives' = 'context';
+  @Input() activeTab: 'context' | 'decision' | 'consequences' | 'alternatives' | 'audit' = 'context';
   @Input() showAIPanel = false;
   @Input() showCollabPanel = false;
   @Input() isSaving = false;
   @Input() canEdit = false;
   @Input() canDelete = false;
   @Input() transitions: AdrStatus[] = [];
+  @Input() auditRefreshToken = 0;
 
   @Output() tabChanged = new EventEmitter<AdrTabKey>();
   @Output() editRequested = new EventEmitter<void>();
@@ -36,8 +39,11 @@ export class AdrEditorComponent implements OnChanges {
   @Output() showAI = new EventEmitter<void>();
   @Output() showCollab = new EventEmitter<void>();
 
-  readonly tabs = ADR_TAB_ORDER;
+  readonly tabs = [...ADR_TAB_ORDER, { key: 'audit' as const, label: 'Audit Log' }];
   readonly statusOptions = ADR_STATUS_OPTIONS;
+  auditEvents: AuditEventDto[] = [];
+  auditLoading = false;
+  auditFilter: AuditEventType | 'ALL' = 'ALL';
   isPreviewMode = false;
   tagInput = '';
   readonly form = this.formBuilder.nonNullable.group({
@@ -53,6 +59,17 @@ export class AdrEditorComponent implements OnChanges {
     if ((changes['editingAdr'] || changes['isEditing']) && this.isEditing) {
       this.syncFormFromInput();
     }
+
+    if (changes['adr']) {
+      this.auditEvents = [];
+      if (this.activeTab === 'audit' && this.adr?.id) {
+        this.loadAuditLog();
+      }
+    }
+
+    if (changes['auditRefreshToken'] && !changes['auditRefreshToken'].firstChange && this.adr?.id) {
+      this.loadAuditLog();
+    }
   }
 
   get currentContent(): string {
@@ -60,7 +77,19 @@ export class AdrEditorComponent implements OnChanges {
       return '';
     }
 
+    if (this.activeTab === 'audit') {
+      return '';
+    }
+
     return this.adr[this.activeTab] ?? '';
+  }
+
+  get filteredAuditEvents(): AuditEventDto[] {
+    if (this.auditFilter === 'ALL') {
+      return this.auditEvents;
+    }
+
+    return this.auditEvents.filter((event) => event.type === this.auditFilter);
   }
 
   get currentTags(): string[] {
@@ -69,6 +98,11 @@ export class AdrEditorComponent implements OnChanges {
 
   get formattedCreatedAt(): string {
     return this.adr?.createdAt?.slice(0, 10) ?? '';
+  }
+
+  get statusClass(): string {
+    const status = this.adr?.status ?? 'DRAFT';
+    return `status-${status.toLowerCase()}`;
   }
 
   togglePreview(): void {
@@ -80,13 +114,94 @@ export class AdrEditorComponent implements OnChanges {
     this.editRequested.emit();
   }
 
+  onTabClick(tab: AdrTabKey | 'audit'): void {
+    this.tabChanged.emit(tab as AdrTabKey);
+    this.onTabChange(tab);
+  }
+
+  loadAuditLog(): void {
+    if (!this.adr?.id) {
+      return;
+    }
+
+    this.auditLoading = true;
+    this.adrService.getAuditLog(this.adr.id).subscribe({
+      next: (events) => {
+        this.auditEvents = events.map((event) => ({
+          ...event,
+          actor: event.actor?.trim() ? event.actor : 'System'
+        }));
+        this.auditLoading = false;
+      },
+      error: () => {
+        this.auditLoading = false;
+      }
+    });
+  }
+
+  onTabChange(tab: string): void {
+    this.activeTab = tab as 'context' | 'decision' | 'consequences' | 'alternatives' | 'audit';
+    if (tab === 'audit' && this.auditEvents.length === 0) {
+      this.loadAuditLog();
+    }
+  }
+
+  getDotColor(type: AuditEventType): string {
+    const colors: Record<string, string> = {
+      STATUS_CHANGED: '#1d9e75',
+      ADR_CREATED: '#6366f1',
+      ADR_UPDATED: '#ba7517',
+      VOTE_CAST: '#3b82f6',
+      COMMENT_ADDED: '#9ca3af'
+    };
+    return colors[type] || '#9ca3af';
+  }
+
+  getBadgeClass(type: AuditEventType): string {
+    const map: Record<string, string> = {
+      STATUS_CHANGED: 'badge-status',
+      ADR_CREATED: 'badge-created',
+      ADR_UPDATED: 'badge-updated',
+      VOTE_CAST: 'badge-vote',
+      COMMENT_ADDED: 'badge-comment'
+    };
+    return map[type] || 'badge-comment';
+  }
+
+  getBadgeLabel(type: AuditEventType): string {
+    return type.replace('_', ' ');
+  }
+
+  formatEventTimestamp(timestamp: string): string {
+    const parsedDate = new Date(timestamp);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return timestamp;
+    }
+
+    return formatDate(parsedDate, 'yyyy-MM-dd · h:mm a', 'en-US');
+  }
+
+  exportCsv(): void {
+    const rows = this.auditEvents.map(
+      (event) => `"${event.timestamp}","${event.type}","${event.actor}","${event.action}","${event.detail || ''}"`
+    );
+    const csv = ['Timestamp,Type,Actor,Action,Detail', ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `audit-adr-${this.adr?.adrNumber}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   onAddTag(): void {
     const trimmed = this.tagInput.trim();
     if (!trimmed || this.currentTags.includes(trimmed)) {
       return;
     }
 
-    this.form.controls.tags.setValue([...this.currentTags, trimmed]);
+    this.form.controls.tags.setValue([...this.currentTags, trimmed].filter(Boolean));
     this.tagInput = '';
   }
 

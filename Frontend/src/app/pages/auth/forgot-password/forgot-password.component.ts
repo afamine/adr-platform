@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../services/auth.service';
+import { NotificationService } from '../../../services/notification.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -19,6 +20,7 @@ export class ForgotPasswordComponent {
   errorMessage = '';
 
   private readonly auth = inject(AuthService);
+  private readonly notif = inject(NotificationService);
 
   constructor(private fb: FormBuilder) {
     this.forgotForm = this.fb.group({
@@ -43,11 +45,13 @@ export class ForgotPasswordComponent {
         this.isLoading = false;
         this.successMessage =
           'If this email is registered, you will receive a reset link shortly. Check your inbox (and spam folder).';
+        this.notif.success('Email envoyé', 'Si cet email est enregistré, vous recevrez un lien de réinitialisation.');
         this.forgotForm.reset();
       },
       error: (err) => {
         this.isLoading = false;
         this.errorMessage = err?.error?.message || 'Unable to send reset link. Please try again later.';
+        this.notif.error('Envoi échoué', 'Impossible d\'envoyer le lien de réinitialisation.');
       }
     });
   }

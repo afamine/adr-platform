@@ -135,7 +135,7 @@
           class="adr-editor__tab"
           type="button"
           [class.adr-editor__tab--active]="activeTab === tab.key"
-          (click)="tabChanged.emit(tab.key)"
+          (click)="onTabClick(tab.key)"
         >
           {{ tab.label }}
         </button>
@@ -143,7 +143,107 @@
     </div>
 
     <div class="adr-editor__content">
-      @if (isPreviewMode) {
+      @if (activeTab === 'audit') {
+        <div class="audit-tab">
+          <div class="audit-meta-summary">
+            <div class="meta-col">
+              <div class="meta-row">
+                <span class="meta-label">Status:</span>
+                <span class="meta-value status-text" [ngClass]="statusClass">{{ currentAdr.status | titlecase }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Author:</span>
+                <span class="meta-value">{{ currentAdr.authorName }}</span>
+              </div>
+            </div>
+
+            <div class="meta-col">
+              <div class="meta-row">
+                <span class="meta-label">Date:</span>
+                <span class="meta-value">{{ currentAdr.createdAt | date:'yyyy-MM-dd' }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Tags:</span>
+                <span class="meta-value">{{ currentAdr.tags.join(', ') || 'No tags' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="audit-section">
+            <div class="audit-header">
+              <div class="audit-header-left">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="14" height="14" aria-hidden="true">
+                  <path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5" />
+                </svg>
+                <span class="audit-title">Audit Log</span>
+                <span class="events-count">{{ filteredAuditEvents.length }} events</span>
+              </div>
+
+              <div class="audit-header-right">
+                <select class="filter-select" [(ngModel)]="auditFilter" [ngModelOptions]="{ standalone: true }">
+                  <option value="ALL">All Events</option>
+                  <option value="STATUS_CHANGED">Status Changed</option>
+                  <option value="VOTE_CAST">Vote Cast</option>
+                  <option value="ADR_UPDATED">ADR Updated</option>
+                  <option value="ADR_CREATED">ADR Created</option>
+                  <option value="COMMENT_ADDED">Comment Added</option>
+                </select>
+                <button class="export-btn" type="button" (click)="exportCsv()">↓ Export CSV</button>
+              </div>
+            </div>
+
+            @if (!auditLoading) {
+              <div class="audit-timeline">
+                <div class="timeline-line"></div>
+
+                @if (filteredAuditEvents.length) {
+                  @for (event of filteredAuditEvents; track event.id) {
+                    <div class="event-item">
+                      <div class="event-dot" [style.background]="getDotColor(event.type)"></div>
+
+                      <div class="event-content">
+                        <div class="event-row1">
+                          <div class="event-row1-left">
+                            <span class="event-badge" [class]="'event-badge ' + getBadgeClass(event.type)">
+                              {{ getBadgeLabel(event.type) }}
+                            </span>
+                            <span class="event-actor">{{ event.actor || 'System' }}</span>
+                            <span class="event-action">{{ event.action }}</span>
+                          </div>
+                          <span class="event-timestamp">{{ formatEventTimestamp(event.timestamp) }}</span>
+                        </div>
+
+                        @if (event.detail) {
+                          <div class="event-detail">{{ event.detail }}</div>
+                        }
+
+                        @if (event.payload) {
+                          <div class="event-payload">
+                            <pre>{{ event.payload | json }}</pre>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                } @else {
+                  <div class="empty-audit">No events found.</div>
+                }
+              </div>
+            } @else {
+              <div class="audit-loading">Loading audit log...</div>
+            }
+
+            <div class="audit-footer">
+              <span>Showing {{ filteredAuditEvents.length }} of {{ auditEvents.length }} events</span>
+              <div class="pagination-btns">
+                <button type="button" disabled>← Previous</button>
+                <button type="button" disabled>Next →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      } @else if (isPreviewMode) {
         <div class="preview-content">
           <div class="preview-title">{{ adr.title }}</div>
 

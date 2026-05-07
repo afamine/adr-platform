@@ -1,41 +1,54 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
 
-export type NotificationType = 'success' | 'warning' | 'error' | 'info';
+export type NotifType = 'success' | 'error' | 'warning' | 'info';
 
-export interface NotificationItem {
-  id: number;
-  type: NotificationType;
-  message: string;
+export interface Notif {
+  id: string;
+  type: NotifType;
+  title: string;
+  message?: string;
+  duration: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
-  readonly notifications = signal<NotificationItem[]>([]);
-  private nextId = 1;
+  private _notifs = new BehaviorSubject<Notif[]>([]);
+  notifs$ = this._notifs.asObservable();
 
-  success(message: string): void {
-    this.push('success', message);
+  success(title: string, message?: string) {
+    this.add('success', title, message, 4000);
+  }
+  error(title: string, message?: string) {
+    this.add('error', title, message, 6000);
+  }
+  warning(title: string, message?: string) {
+    this.add('warning', title, message, 5000);
+  }
+  info(title: string, message?: string) {
+    this.add('info', title, message, 4000);
   }
 
-  warning(message: string): void {
-    this.push('warning', message);
+  dismiss(id: string) {
+    this._notifs.next(this._notifs.value.filter((n) => n.id !== id));
   }
 
-  error(message: string): void {
-    this.push('error', message);
+  private add(type: NotifType, title: string, message?: string, duration = 4000) {
+    const id = Math.random().toString(36).slice(2);
+    this._notifs.next([...this._notifs.value, { id, type, title, message, duration }]);
+    if (duration > 0) setTimeout(() => this.dismiss(id), duration);
   }
 
-  info(message: string): void {
-    this.push('info', message);
+  // Backward-compatible helpers used by existing ADR dashboard template
+  notifications(): Array<{ id: string; type: NotifType; message: string }> {
+    return this._notifs.value.map((n) => ({
+      id: n.id,
+      type: n.type,
+      message: n.message?.trim() ? `${n.title} — ${n.message}` : n.title
+    }));
   }
 
-  remove(id: number): void {
-    this.notifications.update((items) => items.filter((item) => item.id !== id));
-  }
-
-  private push(type: NotificationType, message: string): void {
-    const id = this.nextId++;
-    this.notifications.update((items) => [...items, { id, type, message }]);
-    window.setTimeout(() => this.remove(id), 4000);
+  remove(id: string): void {
+    this.dismiss(id);
   }
 }

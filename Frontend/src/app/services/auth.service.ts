@@ -5,8 +5,8 @@ import { catchError, finalize, Observable, of, take } from 'rxjs';
 import {
   AuthResponse,
   AuthUser,
-  LoginRequest,
   MessageResponse,
+  LoginRequest,
   RefreshTokenRequest,
   RegisterRequest,
   RegisterResponse,
@@ -41,6 +41,10 @@ export class AuthService {
   resetPassword(token: string, newPassword: string): Observable<void> {
     const payload = { token, newPassword };
     return this.http.post<void>(`${this.API_URL}/api/auth/reset-password`, payload);
+  }
+
+  changePassword(payload: { currentPassword: string; newPassword: string }): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.API_URL}/api/auth/change-password`, payload);
   }
 
   verifyEmail(token: string): Observable<MessageResponse> {

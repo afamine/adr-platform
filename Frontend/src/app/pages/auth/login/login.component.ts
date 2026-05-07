@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../services/auth.service';
 import { ApiErrorBody, LoginRequest, AuthResponse } from '../../../models/auth.models';
+import { NotificationService } from '../../../services/notification.service';
 
 @Component({
   selector: 'app-login',
@@ -17,6 +18,7 @@ export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly notif = inject(NotificationService);
 
   passwordVisible = signal(false);
   isLoading = signal(false);
@@ -51,6 +53,7 @@ export class LoginComponent {
     this.isLoading.set(true);
     this.auth.login(request).subscribe({
       next: (response: AuthResponse) => {
+        this.isLoading.set(false);
         this.auth.saveTokens(response);
 
         // Redirect based on role
@@ -67,11 +70,13 @@ export class LoginComponent {
         if (err.status === 403 && body?.errorType === 'EMAIL_NOT_VERIFIED') {
           this.emailNotVerified.set(true);
           this.errorMessage.set(null);
+          this.notif.warning('Email non vérifié', 'Vérifiez votre boîte mail avant de vous connecter.');
           return;
         }
 
         if (err.status === 401) {
           this.errorMessage.set('Invalid email or password. Please try again.');
+          this.notif.error('Connexion échouée', 'Email ou mot de passe incorrect.');
           return;
         }
 
@@ -81,6 +86,7 @@ export class LoginComponent {
         }
 
         this.errorMessage.set('Unable to connect to server. Please try again.');
+        this.notif.error('Erreur réseau', 'Impossible de contacter le serveur.');
       },
       complete: () => {
         this.isLoading.set(false);

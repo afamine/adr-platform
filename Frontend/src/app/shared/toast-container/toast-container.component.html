@@ -1,0 +1,21 @@
+<div class="toast-container">
+  <div
+    class="toast"
+    *ngFor="let n of (notifs$ | async)"
+    [ngClass]="'toast-' + n.type"
+  >
+    <div class="toast-icon">
+      <span *ngIf="n.type === 'success'">✓</span>
+      <span *ngIf="n.type === 'error'">✕</span>
+      <span *ngIf="n.type === 'warning'">⚠</span>
+      <span *ngIf="n.type === 'info'">ℹ</span>
+    </div>
+
+    <div class="toast-body">
+      <div class="toast-title">{{ n.title }}</div>
+      <div class="toast-msg" *ngIf="n.message">{{ n.message }}</div>
+    </div>
+
+    <button class="toast-close" type="button" (click)="notifService.dismiss(n.id)">×</button>
+  </div>
+</div>

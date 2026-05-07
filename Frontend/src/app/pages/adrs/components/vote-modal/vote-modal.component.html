@@ -1,0 +1,191 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="header-title-row">
+        <div class="title-left">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" aria-hidden="true">
+            <path d="M5.5 6.5h13v11h-13z" stroke="currentColor" stroke-width="1.6" />
+            <path d="M8.5 12.2l2.2 2.2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>Vote on ADR</span>
+        </div>
+        <button class="close-btn" type="button" (click)="onClose()" aria-label="Close">×</button>
+      </div>
+      <div class="adr-ref-pill">ADR-{{ adr.adrNumber }} — {{ adr.title }}</div>
+    </div>
+
+    <div class="status-row">
+      <span class="badge-under-review">UNDER REVIEW</span>
+      <span class="submitted-time">
+        <span aria-hidden="true">◷</span>
+        Submitted 2 days ago
+      </span>
+      <div class="vote-avatars">
+        @for (v of existingVotes.slice(0, 3); track v.id) {
+          <div class="avatar">{{ v.voterName | slice:0:2 | uppercase }}</div>
+        }
+        <span class="vote-count">{{ existingVotes.length }} votes so far</span>
+      </div>
+    </div>
+
+    @if (isLoadingVotes) {
+      <div class="loading-votes">Loading votes...</div>
+    }
+
+    <div class="current-votes-section">
+      <div class="section-label-sm">Current votes</div>
+
+      @if (existingVotes.length > 0) {
+        @for (v of existingVotes; track v.id) {
+          <div class="vote-row">
+            <div class="vote-row-left">
+              <div class="avatar dark">{{ v.voterName | slice:0:2 | uppercase }}</div>
+              <div>
+                <div class="voter-name-row">
+                  <span class="voter-name">{{ v.voterName }}</span>
+                  <span
+                    class="role-badge"
+                    [class.role-reviewer]="v.voterRole === 'REVIEWER'"
+                    [class.role-approver]="v.voterRole === 'APPROVER'"
+                    [class.role-admin]="v.voterRole === 'ADMIN'"
+                  >
+                    {{ v.voterRole }}
+                  </span>
+                </div>
+                <div class="vote-comment-preview">{{ v.comment }}</div>
+              </div>
+            </div>
+            <div class="vote-result-badge" [class.approve]="v.voteType === 'APPROVE'" [class.reject]="v.voteType === 'REJECT'">
+              {{ v.voteType === 'APPROVE' ? '✓ Approve' : '✕ Reject' }}
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="vote-row">
+          <div class="vote-row-left">
+            <div class="avatar dark">--</div>
+            <div>
+              <div class="voter-name-row">
+                <span class="voter-name">No votes yet</span>
+              </div>
+              <div class="vote-comment-preview">Be the first to vote on this ADR.</div>
+            </div>
+          </div>
+          <div class="awaiting">Awaiting vote</div>
+        </div>
+      }
+    </div>
+
+    @if (modalState === 'can-vote') {
+      <div class="cast-vote-section">
+        <div class="cast-vote-title">Cast your vote</div>
+
+        <div class="vote-options-grid">
+          <button
+            type="button"
+            class="vote-option"
+            [class.selected-approve]="selectedVote === 'APPROVE'"
+            (click)="selectVote('APPROVE')"
+          >
+            <div class="option-header">
+              <span class="option-icon approve-icon">✓</span>
+              <span class="option-title">Approve</span>
+            </div>
+            <div class="option-desc">Support this architectural decision</div>
+          </button>
+
+          <button
+            type="button"
+            class="vote-option"
+            [class.selected-reject]="selectedVote === 'REJECT'"
+            (click)="selectVote('REJECT')"
+          >
+            <div class="option-header">
+              <span class="option-icon reject-icon">✕</span>
+              <span class="option-title">Reject</span>
+            </div>
+            <div class="option-desc">Object to this architectural decision</div>
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (modalState === 'already-voted') {
+      <div class="already-voted-section">
+        <div class="cast-vote-title">Your vote</div>
+        <div class="already-voted-box">
+          <span class="check-icon">✓</span>
+          <p>
+            <strong>You already voted: {{ myVote?.voteType }} — "{{ myVote?.comment }}"</strong><br>
+            Change vote is not permitted once submitted.
+          </p>
+        </div>
+      </div>
+    }
+
+    @if (modalState === 'approver-decision') {
+      <div class="cast-vote-section">
+        <div class="cast-vote-title">Cast your final decision</div>
+
+        <div class="vote-options-grid">
+          <button
+            type="button"
+            class="vote-option approver-accept"
+            [class.selected-accept]="selectedVote === 'APPROVE'"
+            (click)="selectVote('APPROVE')"
+          >
+            <div class="option-header">
+              <span class="option-icon accept-icon">✓</span>
+              <span class="option-title" [class.option-title-white]="selectedVote === 'APPROVE'">Accept ADR</span>
+            </div>
+            <div class="option-desc" [class.option-desc-white]="selectedVote === 'APPROVE'">Finalize and approve this decision</div>
+          </button>
+
+          <button
+            type="button"
+            class="vote-option"
+            [class.selected-reject]="selectedVote === 'REJECT'"
+            (click)="selectVote('REJECT')"
+          >
+            <div class="option-header">
+              <span class="option-icon reject-icon">✕</span>
+              <span class="option-title">Reject ADR</span>
+            </div>
+            <div class="option-desc">Decline this architectural decision</div>
+          </button>
+        </div>
+
+        <div class="approver-warning">
+          <span>⚠</span>
+          <span>As APPROVER, your decision is final and will update the ADR status.</span>
+        </div>
+      </div>
+    }
+
+    @if (modalState !== 'already-voted') {
+      <div class="comment-section">
+        <div class="comment-label">
+          <label for="vote-comment">Comment</label>
+          <span class="required">(required)</span>
+        </div>
+        <textarea
+          id="vote-comment"
+          [(ngModel)]="comment"
+          [attr.maxlength]="maxComment"
+          placeholder="Explain your vote decision... (required for all votes)"
+        ></textarea>
+        <div class="char-counter">{{ charCount }} / {{ maxComment }}</div>
+        @if (showCommentError) {
+          <div class="comment-error">Comment is required and must be 500 characters or fewer.</div>
+        }
+      </div>
+    }
+
+    <div class="modal-footer">
+      <button class="btn-cancel" type="button" (click)="onClose()">Cancel</button>
+      <button class="btn-submit" type="button" [disabled]="!canSubmit" (click)="onSubmit()">
+        {{ isSubmitting ? 'Submitting...' : 'Submit Vote' }}
+      </button>
+    </div>
+  </div>
+</div>

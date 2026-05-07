@@ -10,6 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { AuthService } from '../../services/auth.service';
 import { RegisterRequest, RegisterResponse } from '../../models/auth.models';
+import { NotificationService } from '../../services/notification.service';
 
 const slugPattern = /^[a-z0-9-]+$/;
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d).+$/;
@@ -46,6 +47,7 @@ export class RegisterComponent {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly notif = inject(NotificationService);
 
   protected readonly hidePassword = signal(true);
   protected readonly hideConfirmPassword = signal(true);
@@ -99,6 +101,7 @@ export class RegisterComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (_response: RegisterResponse) => {
+          this.isLoading.set(false);
           // Navigate to "check your inbox" page, passing the email
           this.router.navigate(['/verify-email-sent'], {
             state: { email: request.email }
@@ -108,6 +111,7 @@ export class RegisterComponent {
           this.isLoading.set(false);
           if (err.status === 409) {
             this.errorMessage.set('An account with this email already exists.');
+            this.notif.warning('Inscription impossible', 'Un compte avec cet email existe déjà.');
             return;
           }
 
@@ -115,6 +119,7 @@ export class RegisterComponent {
             const errors = err.error?.errors;
             if (errors && Array.isArray(errors) && errors.length > 0) {
               this.errorMessage.set(errors.map((e: any) => e?.message || e).join('. '));
+              this.notif.error('Erreur de validation', 'Veuillez vérifier vos informations.');
               return;
             }
 
@@ -122,10 +127,12 @@ export class RegisterComponent {
             this.errorMessage.set(
               message === 'Email already registered' ? 'An account with this email already exists.' : message || 'Please check your information.'
             );
+            this.notif.error('Erreur de validation', 'Veuillez vérifier vos informations.');
             return;
           }
 
           this.errorMessage.set('Unable to connect to server. Please try again.');
+          this.notif.error('Erreur réseau', 'Impossible de contacter le serveur.');
         },
         complete: () => {
           this.isLoading.set(false);

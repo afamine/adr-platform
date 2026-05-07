@@ -19,6 +19,104 @@ export interface AdrDto {
   workspaceId: string;
 }
 
+export interface VoteDto {
+  id: string;
+  adrId: string;
+  voterId: string;
+  voterName: string;
+  voterRole: 'REVIEWER' | 'APPROVER' | 'ADMIN';
+  voteType: VoteType;
+  comment: string;
+  createdAt: string;
+}
+
+export type VoteType = 'APPROVE' | 'REJECT';
+
+export interface CastVoteRequest {
+  voteType: VoteType;
+  comment: string;
+}
+
+export type AuditEventType =
+  'STATUS_CHANGED' | 'ADR_CREATED' | 'ADR_UPDATED' |
+  'VOTE_CAST' | 'COMMENT_ADDED' | (string & {});
+
+export interface AuditEventDto {
+  id: string;
+  type: AuditEventType;
+  actor: string | null;
+  action: string;
+  timestamp: string;
+  detail?: string | null;
+  payload?: Record<string, unknown> | null;
+}
+
+export const MOCK_AUDIT_EVENTS: AuditEventDto[] = [
+  {
+    id: 'audit-1',
+    type: 'STATUS_CHANGED',
+    actor: 'Michael Brown',
+    action: 'accepted this ADR',
+    timestamp: '2026-03-28 · 11:00 AM',
+    detail: 'Status: UNDER_REVIEW → ACCEPTED',
+    payload: { from: 'UNDER_REVIEW', to: 'ACCEPTED' }
+  },
+  {
+    id: 'audit-2',
+    type: 'VOTE_CAST',
+    actor: 'Emily Davis',
+    action: 'voted Approve',
+    timestamp: '2026-03-27 · 3:20 PM',
+    detail: 'Comment: Strong alignment with microservices patterns.',
+    payload: { vote: 'APPROVE' }
+  },
+  {
+    id: 'audit-3',
+    type: 'VOTE_CAST',
+    actor: 'Sarah Chen',
+    action: 'voted Approve',
+    timestamp: '2026-03-27 · 2:45 PM',
+    detail: 'Comment: Agree with the scalability goals.',
+    payload: { vote: 'APPROVE' }
+  },
+  {
+    id: 'audit-4',
+    type: 'STATUS_CHANGED',
+    actor: 'David Kumar',
+    action: 'moved to Under Review',
+    timestamp: '2026-03-27 · 9:00 AM',
+    detail: 'Status: PROPOSED → UNDER_REVIEW',
+    payload: { from: 'PROPOSED', to: 'UNDER_REVIEW' }
+  },
+  {
+    id: 'audit-5',
+    type: 'STATUS_CHANGED',
+    actor: 'Michael Brown',
+    action: 'proposed this ADR',
+    timestamp: '2026-03-25 · 4:30 PM',
+    detail: 'Status: DRAFT → PROPOSED',
+    payload: { from: 'DRAFT', to: 'PROPOSED' }
+  },
+  {
+    id: 'audit-6',
+    type: 'ADR_UPDATED',
+    actor: 'Michael Brown',
+    action: 'updated the ADR',
+    timestamp: '2026-03-24 · 2:10 PM',
+    detail: 'Fields: context, decision, alternatives',
+    payload: { fields: ['context', 'decision', 'alternatives'] }
+  },
+  {
+    id: 'audit-7',
+    type: 'ADR_CREATED',
+    actor: 'Michael Brown',
+    action: 'created this ADR',
+    timestamp: '2026-03-22 · 10:15 AM',
+    detail: 'Initial draft created',
+    payload: { adrNumber: 1, workspaceId: 'ws_...' }
+  }
+];
+
 export interface CreateAdrRequest {
   title: string;
   context?: string;
