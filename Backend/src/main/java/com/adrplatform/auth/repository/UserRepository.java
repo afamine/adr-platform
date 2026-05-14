@@ -13,4 +13,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByIdAndWorkspace_Id(UUID id, UUID workspaceId);
 
     List<User> findAllByWorkspace_Id(UUID workspaceId);
+
+    long countByWorkspace_Id(UUID workspaceId);
 }

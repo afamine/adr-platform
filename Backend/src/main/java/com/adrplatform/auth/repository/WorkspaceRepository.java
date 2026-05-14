@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface WorkspaceRepository extends JpaRepository<Workspace, UUID> {
     Optional<Workspace> findBySlug(String slug);
+
+    Optional<Workspace> findBySlugAndIdNot(String slug, UUID id);
 }

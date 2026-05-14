@@ -22,6 +22,8 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.security.core.context.SecurityContextHolder;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -77,21 +79,52 @@ class JwtAuthenticationFilterTest {
                 .passwordHash("hashed")
                 .fullName("User")
                 .role(Role.AUTHOR)
+                .isActive(true)
                 .build();
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
         String token = createAccessToken(user);
 
-        HttpServletRequest request = new MockHttpServletRequest();
-        ((MockHttpServletRequest) request).addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
-        ((MockHttpServletRequest) request).setServletPath("/api/users/me");
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        request.setServletPath("/api/users/me");
         HttpServletResponse response = new MockHttpServletResponse();
         FilterChain chain = mock(FilterChain.class);
 
         filter.doFilter(request, response, chain);
 
         assertThat(tenantContext.getWorkspaceId()).isEqualTo(workspace.getId());
+    }
+
+    @Test
+    void shouldNotAuthenticateWhenUserIsDeactivated() throws Exception {
+        SecurityContextHolder.clearContext();
+
+        Workspace workspace = Workspace.builder().id(UUID.randomUUID()).name("w").slug("default").build();
+        User deactivatedUser = User.builder()
+                .id(UUID.randomUUID())
+                .workspace(workspace)
+                .email("deactivated@adr.com")
+                .passwordHash("hashed")
+                .fullName("Deactivated User")
+                .role(Role.AUTHOR)
+                .isActive(false)
+                .build();
+
+        when(userRepository.findById(deactivatedUser.getId())).thenReturn(Optional.of(deactivatedUser));
+
+        String token = createAccessToken(deactivatedUser);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        request.setServletPath("/api/adrs");
+        HttpServletResponse response = new MockHttpServletResponse();
+        FilterChain chain = mock(FilterChain.class);
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
     private String createAccessToken(User user) {

@@ -73,6 +73,31 @@ public class VerificationTokenService {
     }
 
     /**
+     * Validates a token without consuming it (read-only check).
+     * Used for pre-flight checks such as validating an invite link before showing the setup form.
+     */
+    @Transactional(readOnly = true)
+    public VerificationToken peekToken(String tokenString, TokenType expectedType) {
+        if (tokenString == null || tokenString.isBlank()) {
+            throw new InvalidTokenException("This link is invalid or has already been used.");
+        }
+
+        VerificationToken token = verificationTokenRepository.findByToken(tokenString)
+                .orElseThrow(() -> new InvalidTokenException("This link is invalid or has already been used."));
+
+        if (token.getTokenType() != expectedType) {
+            throw new InvalidTokenException("This link is invalid or has already been used.");
+        }
+        if (token.isUsed()) {
+            throw new InvalidTokenException("This link is invalid or has already been used.");
+        }
+        if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new TokenExpiredException("This invite link has expired.");
+        }
+        return token;
+    }
+
+    /**
      * Daily cleanup of expired tokens at 03:00.
      */
     @Scheduled(cron = "0 0 3 * * *")

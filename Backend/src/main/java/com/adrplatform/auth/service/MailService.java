@@ -86,6 +86,23 @@ public class MailService {
         );
     }
 
+    @org.springframework.scheduling.annotation.Async
+    public void sendInvitationEmail(String toEmail, String workspaceName, String role, String inviteUrl) {
+        String workspace = escapeHtml(workspaceName);
+        String roleLower = escapeHtml(role.toLowerCase());
+        String html = "<!DOCTYPE html><html><body style=\"font-family:system-ui,Arial,sans-serif;background:#f9fafb;padding:40px 20px;margin:0\">"
+                + "<div style=\"max-width:520px;margin:0 auto;background:#ffffff;border-radius:12px;padding:40px;border:1px solid #e5e7eb\">"
+                + "<h1 style=\"font-size:20px;font-weight:600;color:#111827;margin:0 0 12px\">You're invited to ADR Manager</h1>"
+                + "<p style=\"font-size:14px;color:#374151;margin:0 0 8px\">You have been invited to join <strong>" + workspace + "</strong> as a <strong>" + roleLower + "</strong>.</p>"
+                + "<p style=\"font-size:14px;color:#374151;margin:0 0 24px\">Click the button below to set up your account. This invitation expires in 7&nbsp;days.</p>"
+                + "<a href=\"" + inviteUrl + "\" style=\"display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;"
+                + "padding:12px 24px;border-radius:8px;font-size:14px;font-weight:500\">Accept Invitation</a>"
+                + "<p style=\"font-size:12px;color:#9ca3af;margin:24px 0 0\">If you weren't expecting this invitation, you can safely ignore this email.</p>"
+                + "</div></body></html>";
+        sendHtml(passwordResetProperties.getEmailFrom(), toEmail, "You've been invited to ADR Manager", html);
+        log.info("Invitation email sent to {}", toEmail);
+    }
+
     private String loadTemplate(String path) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         try (InputStream is = cl.getResourceAsStream(path)) {

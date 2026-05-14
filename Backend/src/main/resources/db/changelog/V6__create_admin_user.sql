@@ -1,15 +1,10 @@
 -- Initial platform administrator account.
 --
--- Default admin credentials (CHANGE THE PASSWORD AFTER FIRST LOGIN):
---   email    : admin@adrmanager.com
---   password : Admin@1234
---   role     : ADMIN
---   status   : email_verified=true, is_active=true
+-- Default admin:  admin@adrmanager.com  /  CHANGE PASSWORD IMMEDIATELY AFTER FIRST LOGIN
+-- Role: ADMIN  |  email_verified=true  |  is_active=true
 --
--- Hash below is BCrypt strength=12 of "Admin@1234" generated with
--- new BCryptPasswordEncoder(12).encode("Admin@1234")
--- BCrypt salts are random, so the verification side regenerates the salt from
--- the stored hash; any other strength-12 hash of the same password would also work.
+-- Password hash: BCrypt strength=12. Replace with a new hash before deploying to any
+-- shared or production environment.
 
 INSERT INTO users (
     id,

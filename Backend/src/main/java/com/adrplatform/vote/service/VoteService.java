@@ -19,6 +19,7 @@ import com.adrplatform.vote.dto.VoteDto;
 import com.adrplatform.vote.exception.AlreadyVotedException;
 import com.adrplatform.vote.exception.InvalidVoteException;
 import com.adrplatform.vote.repository.VoteRepository;
+import com.adrplatform.notification.service.NotificationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ public class VoteService {
     private final UserRepository userRepository;
     private final TenantContext tenantContext;
     private final AuditService auditService;
+    private final NotificationService notificationService;
     private final ObjectMapper objectMapper;
 
     public VoteDto castVote(UUID adrId, CastVoteRequest request, UUID voterId) {
@@ -92,6 +94,8 @@ public class VoteService {
                 null,
                 toJson(Map.of("vote", request.voteType().name(), "comment", normalizedComment))
         );
+        notificationService.notifyVoteCast(adr.getId(), adr.getAdrNumber(), adr.getTitle(),
+                workspaceId, adr.getAuthor().getId(), voter.getId());
 
         AdrStatus previousStatus = adr.getStatus();
         String transitionReason = null;
@@ -115,6 +119,8 @@ public class VoteService {
                     toJson(Map.of("status", previousStatus.name())),
                     toJson(Map.of("status", adr.getStatus().name(), "reason", transitionReason))
             );
+            notificationService.notifyStatusChanged(adr.getId(), adr.getAdrNumber(), adr.getTitle(),
+                    workspaceId, adr.getAuthor().getId(), voter.getId(), adr.getStatus().name());
         }
 
         return new VoteDto(

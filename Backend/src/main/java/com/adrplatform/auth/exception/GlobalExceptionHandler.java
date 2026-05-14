@@ -8,6 +8,7 @@ import com.adrplatform.vote.exception.AlreadyVotedException;
 import com.adrplatform.vote.exception.InvalidVoteException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.time.Instant;
 
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -39,6 +41,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AdrAccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAdrAccessDenied(AdrAccessDeniedException ex, HttpServletRequest request) {
         return buildErrorWithType(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI(), "ACCESS_DENIED");
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -93,7 +100,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex, HttpServletRequest request) {
-        return buildError(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request.getRequestURI());
+        log.error("Unexpected error on {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage(), ex);
+        return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred. Please try again.", request.getRequestURI());
     }
 
     private ResponseEntity<ErrorResponse> buildError(HttpStatus status, String message, String path) {

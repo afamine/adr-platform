@@ -51,6 +51,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         UUID userId = UUID.fromString(claims.getSubject());
         userRepository.findById(userId).ifPresent(user -> {
+            if (!user.isActive()) {
+                return;
+            }
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

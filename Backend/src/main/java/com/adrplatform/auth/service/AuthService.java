@@ -6,6 +6,7 @@ import com.adrplatform.auth.domain.TokenType;
 import com.adrplatform.auth.domain.User;
 import com.adrplatform.auth.domain.VerificationToken;
 import com.adrplatform.auth.domain.Workspace;
+import com.adrplatform.auth.dto.AcceptInviteRequest;
 import com.adrplatform.auth.dto.AuthResponse;
 import com.adrplatform.auth.dto.LoginRequest;
 import com.adrplatform.auth.dto.MessageResponse;
@@ -14,6 +15,7 @@ import com.adrplatform.auth.dto.RegisterRequest;
 import com.adrplatform.auth.dto.RegisterResponse;
 import com.adrplatform.auth.dto.ResendVerificationRequest;
 import com.adrplatform.auth.dto.UserDto;
+import com.adrplatform.auth.dto.ValidateInviteResponse;
 import com.adrplatform.auth.exception.AccountDeactivatedException;
 import com.adrplatform.auth.exception.BadRequestException;
 import com.adrplatform.auth.exception.EmailNotVerifiedException;
@@ -21,6 +23,7 @@ import com.adrplatform.auth.exception.ResourceNotFoundException;
 import com.adrplatform.auth.exception.UnauthorizedException;
 import com.adrplatform.auth.repository.UserRepository;
 import com.adrplatform.auth.repository.WorkspaceRepository;
+import com.adrplatform.notification.service.NotificationService;
 import com.adrplatform.auth.security.JwtService;
 import com.adrplatform.auth.security.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +51,7 @@ public class AuthService {
     private final VerificationTokenService verificationTokenService;
     private final MailService mailService;
     private final AppProperties appProperties;
+    private final NotificationService notificationService;
 
     /**
      * Registers a user, creates an email-verification token and sends the verification email asynchronously.
@@ -273,6 +277,71 @@ public class AuthService {
         auditService.record(user, user.getWorkspace(), "PASSWORD_CHANGED", "USER", user.getId(), null, null);
 
         log.info("Password changed for user {}", user.getEmail());
+    }
+
+    /**
+     * Read-only pre-flight check for an invite token. Returns the invited email,
+     * workspace name and assigned role so the frontend can pre-populate the setup form.
+     */
+    @Transactional(readOnly = true)
+    public ValidateInviteResponse validateInviteToken(String rawToken) {
+        VerificationToken vt = verificationTokenService.peekToken(rawToken, TokenType.WORKSPACE_INVITE);
+        User user = vt.getUser();
+        return new ValidateInviteResponse(
+                user.getEmail(),
+                user.getWorkspace().getName(),
+                user.getRole().name()
+        );
+    }
+
+    /**
+     * Accepts a workspace invite: validates the token, sets the user's name and password,
+     * activates the account, and returns a full AuthResponse so the user is immediately logged in.
+     */
+    @Transactional
+    public AuthResponse acceptInvite(AcceptInviteRequest request) {
+        VerificationToken vt = verificationTokenService.validateAndConsume(request.token(), TokenType.WORKSPACE_INVITE);
+        User user = vt.getUser();
+
+        if (!request.password().equals(request.confirmPassword())) {
+            throw new BadRequestException("Passwords do not match.");
+        }
+        passwordPolicyValidator.validate(request.password());
+
+        user.setFullName(request.fullName().trim());
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setEmailVerified(true);
+        user.setActive(true);
+        userRepository.save(user);
+
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+        refreshTokenService.create(user, refreshToken);
+
+        auditService.record(user, user.getWorkspace(), "USER_INVITE_ACCEPTED", "USER", user.getId(), null,
+                "{\"email\":\"" + user.getEmail() + "\"}");
+
+        notificationService.notifyNewTeamMember(user.getId(), user.getWorkspace().getId());
+        log.info("Invite accepted and account activated for {}", user.getEmail());
+        return AuthResponse.builder()
+                .token(accessToken)
+                .refreshToken(refreshToken)
+                .user(UserDto.fromEntity(user))
+                .build();
+    }
+
+    /**
+     * Revokes all refresh tokens for the current user (sign out all devices).
+     * The current access token remains valid until it expires naturally.
+     */
+    @Transactional
+    public MessageResponse logoutAllDevices() {
+        User user = (User) org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication().getPrincipal();
+        refreshTokenService.revokeAllForUser(user);
+        auditService.record(user, user.getWorkspace(), "LOGOUT_ALL_DEVICES", "USER", user.getId(), null, null);
+        log.info("All devices signed out for user {}", user.getEmail());
+        return MessageResponse.builder().message("Signed out from all devices.").build();
     }
 
     private String maskEmail(String email) {

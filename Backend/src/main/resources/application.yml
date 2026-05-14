@@ -3,8 +3,8 @@ spring:
     name: AdrProject
   datasource:
     url: jdbc:postgresql://localhost:5432/Adr_Project
-    username: postgres
-    password: postgres
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -31,10 +31,6 @@ spring:
           auth: true
           starttls:
             enable: true
-
-server:
-  error:
-    include-message: always
 
 jwt:
   secret: ${JWT_SECRET}
@@ -66,4 +62,4 @@ app:
 logging:
   level:
     org.springframework.security: INFO
-    com.adrplatform.auth: DEBUG
+    com.adrplatform.auth: INFO

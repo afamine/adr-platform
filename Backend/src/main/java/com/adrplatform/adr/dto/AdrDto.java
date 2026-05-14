@@ -23,7 +23,9 @@ public record AdrDto(
         String authorName,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        UUID workspaceId
+        UUID workspaceId,
+        String lastAction,
+        LocalDateTime lastActionDate
 ) {
     public static AdrDto fromEntity(Adr a) {
         List<String> tagsList = a.getTagsCsv() == null || a.getTagsCsv().isBlank()
@@ -46,7 +48,36 @@ public record AdrDto(
                 a.getAuthor().getFullName(),
                 LocalDateTime.ofInstant(a.getCreatedAt(), ZoneOffset.UTC),
                 LocalDateTime.ofInstant(a.getUpdatedAt(), ZoneOffset.UTC),
-                a.getWorkspace().getId()
+                a.getWorkspace().getId(),
+                null,
+                null
+        );
+    }
+
+    public static AdrDto fromEntityWithActivity(Adr a, String lastAction, LocalDateTime lastActionDate) {
+        List<String> tagsList = a.getTagsCsv() == null || a.getTagsCsv().isBlank()
+                ? List.of()
+                : Arrays.stream(a.getTagsCsv().split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+        return new AdrDto(
+                a.getId(),
+                a.getAdrNumber(),
+                a.getTitle(),
+                a.getStatus(),
+                a.getContext(),
+                a.getDecision(),
+                a.getConsequences(),
+                a.getAlternatives(),
+                tagsList,
+                a.getAuthor().getId(),
+                a.getAuthor().getFullName(),
+                LocalDateTime.ofInstant(a.getCreatedAt(), ZoneOffset.UTC),
+                LocalDateTime.ofInstant(a.getUpdatedAt(), ZoneOffset.UTC),
+                a.getWorkspace().getId(),
+                lastAction,
+                lastActionDate
         );
     }
 }

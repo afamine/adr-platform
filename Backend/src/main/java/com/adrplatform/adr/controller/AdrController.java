@@ -30,6 +30,14 @@ public class AdrController {
     private final AdrService adrService;
     private final AdrAuditService adrAuditService;
 
+    @Operation(summary = "Get the most recently updated ADRs with last-activity info")
+    @ApiResponse(responseCode = "200", description = "Recent ADRs returned")
+    @GetMapping("/recent")
+    public ResponseEntity<List<AdrDto>> recent(
+            @Parameter(description = "Maximum number of results") @RequestParam(defaultValue = "4") int limit) {
+        return ResponseEntity.ok(adrService.getRecentAdrs(limit));
+    }
+
     @Operation(summary = "List all ADRs in the current workspace")
     @ApiResponse(responseCode = "200", description = "List returned")
     @GetMapping

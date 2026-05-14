@@ -17,4 +17,18 @@ public interface VoteRepository extends JpaRepository<Vote, UUID> {
     Optional<Vote> findByAdrIdAndWorkspaceIdAndVoterId(UUID adrId, UUID workspaceId, UUID voterId);
 
     long countByAdrIdAndWorkspaceIdAndVoteType(UUID adrId, UUID workspaceId, VoteType voteType);
+
+    @org.springframework.data.jpa.repository.Query(value = """
+            SELECT COUNT(DISTINCT a.id) FROM adr a
+            WHERE a.workspace_id = :wsId
+              AND a.status = 'UNDER_REVIEW'
+              AND NOT EXISTS (
+                SELECT 1 FROM vote v
+                JOIN users u ON v.voter_id = u.id
+                WHERE v.adr_id = a.id
+                  AND v.workspace_id = :wsId
+                  AND u.role = 'APPROVER'
+              )
+            """, nativeQuery = true)
+    Long countUnderReviewWithNoApproverVote(@org.springframework.data.repository.query.Param("wsId") UUID wsId);
 }

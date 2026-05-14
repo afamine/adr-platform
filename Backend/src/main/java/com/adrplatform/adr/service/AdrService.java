@@ -9,11 +9,15 @@ import com.adrplatform.adr.exception.AdrAccessDeniedException;
 import com.adrplatform.adr.exception.AdrNotFoundException;
 import com.adrplatform.adr.exception.InvalidTransitionException;
 import com.adrplatform.adr.repository.AdrRepository;
+import com.adrplatform.auth.domain.AuditEvent;
 import com.adrplatform.auth.domain.Role;
 import com.adrplatform.auth.domain.User;
+import com.adrplatform.auth.repository.AuditEventRepository;
 import com.adrplatform.auth.security.TenantContext;
 import com.adrplatform.auth.service.AuditService;
 import com.adrplatform.auth.exception.BadRequestException;
+import com.adrplatform.notification.service.NotificationService;
+import org.springframework.data.domain.PageRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -31,8 +35,10 @@ import java.util.UUID;
 public class AdrService {
 
     private final AdrRepository adrRepository;
+    private final AuditEventRepository auditEventRepository;
     private final TenantContext tenantContext;
     private final AuditService auditService;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     public List<AdrDto> getAllAdrs(AdrStatus status, String search) {
@@ -53,6 +59,47 @@ public class AdrService {
         Adr adr = adrRepository.findByIdAndWorkspace_Id(id, workspaceId)
                 .orElseThrow(() -> new AdrNotFoundException("ADR not found."));
         return AdrDto.fromEntity(adr);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdrDto> getRecentAdrs(int limit) {
+        UUID workspaceId = tenantContext.getWorkspaceId();
+        return adrRepository.findRecentByWorkspace(workspaceId, PageRequest.of(0, limit))
+                .stream()
+                .map(adr -> {
+                    List<AuditEvent> events = auditEventRepository.findAdrAuditEvents(workspaceId, adr.getId());
+                    if (events.isEmpty()) {
+                        return AdrDto.fromEntityWithActivity(adr, "Created",
+                                java.time.LocalDateTime.ofInstant(adr.getCreatedAt(), java.time.ZoneOffset.UTC));
+                    }
+                    AuditEvent latest = events.get(0);
+                    String action = resolveLastAction(latest.getAction(), latest.getNewValueJson());
+                    java.time.LocalDateTime actionDate =
+                            java.time.LocalDateTime.ofInstant(latest.getCreatedAt(), java.time.ZoneOffset.UTC);
+                    return AdrDto.fromEntityWithActivity(adr, action, actionDate);
+                })
+                .toList();
+    }
+
+    private String resolveLastAction(String action, String newValueJson) {
+        if (action == null) return "Created";
+        return switch (action) {
+            case "STATUS_CHANGED" -> {
+                if (newValueJson != null) {
+                    int idx = newValueJson.indexOf("\"status\":\"");
+                    if (idx >= 0) {
+                        int start = idx + 10;
+                        int end = newValueJson.indexOf('"', start);
+                        if (end > start) yield newValueJson.substring(start, end);
+                    }
+                }
+                yield "Status changed";
+            }
+            case "VOTE_CAST"   -> "Vote cast";
+            case "ADR_UPDATED" -> "Updated";
+            case "ADR_CREATED" -> "Created";
+            default -> action.replace("_", " ").toLowerCase();
+        };
     }
 
     @Transactional
@@ -145,6 +192,8 @@ public class AdrService {
         String oldJson = "{\"status\":\"" + old.name() + "\"}";
         String newJson = "{\"status\":\"" + newStatus.name() + "\"}";
         auditService.record(actor, actor.getWorkspace(), "ADR_STATUS_CHANGED", "ADR", saved.getId(), oldJson, newJson);
+        notificationService.notifyStatusChanged(saved.getId(), saved.getAdrNumber(), saved.getTitle(),
+                workspaceId, saved.getAuthor().getId(), actor.getId(), newStatus.name());
         return AdrDto.fromEntity(saved);
     }
 

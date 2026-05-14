@@ -1,5 +1,6 @@
 package com.adrplatform.auth.controller;
 
+import com.adrplatform.auth.dto.AcceptInviteRequest;
 import com.adrplatform.auth.dto.AuthResponse;
 import com.adrplatform.auth.dto.ChangePasswordRequest;
 import com.adrplatform.auth.dto.ForgotPasswordRequest;
@@ -10,6 +11,7 @@ import com.adrplatform.auth.dto.RegisterRequest;
 import com.adrplatform.auth.dto.RegisterResponse;
 import com.adrplatform.auth.dto.ResendVerificationRequest;
 import com.adrplatform.auth.dto.ResetPasswordRequest;
+import com.adrplatform.auth.dto.ValidateInviteResponse;
 import com.adrplatform.auth.domain.User;
 import com.adrplatform.auth.service.AuthService;
 import com.adrplatform.auth.service.PasswordResetService;
@@ -109,6 +111,30 @@ public class AuthController {
     @PostMapping("/resend-verification")
     public ResponseEntity<MessageResponse> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
         return ResponseEntity.ok(authService.resendVerification(request));
+    }
+
+    @Operation(summary = "Validate a workspace invite token without consuming it")
+    @ApiResponse(responseCode = "200", description = "Token is valid")
+    @ApiResponse(responseCode = "400", description = "Invalid or expired token (errorType=INVALID|EXPIRED)")
+    @GetMapping("/validate-invite")
+    public ResponseEntity<ValidateInviteResponse> validateInvite(@RequestParam("token") String token) {
+        return ResponseEntity.ok(authService.validateInviteToken(token));
+    }
+
+    @Operation(summary = "Accept workspace invite and activate account")
+    @ApiResponse(responseCode = "200", description = "Account activated and tokens returned")
+    @ApiResponse(responseCode = "400", description = "Invalid token, expired token, or validation error")
+    @PostMapping("/accept-invite")
+    public ResponseEntity<AuthResponse> acceptInvite(@Valid @RequestBody AcceptInviteRequest request) {
+        return ResponseEntity.ok(authService.acceptInvite(request));
+    }
+
+    @Operation(summary = "Sign out from all devices by revoking all refresh tokens")
+    @ApiResponse(responseCode = "200", description = "All sessions revoked")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @PostMapping("/logout-all")
+    public ResponseEntity<MessageResponse> logoutAll() {
+        return ResponseEntity.ok(authService.logoutAllDevices());
     }
 
     @PutMapping("/change-password")

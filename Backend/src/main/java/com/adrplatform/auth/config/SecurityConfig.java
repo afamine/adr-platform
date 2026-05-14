@@ -43,7 +43,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh",
                                 "/api/auth/forgot-password", "/api/auth/reset-password",
-                                "/api/auth/verify-email", "/api/auth/resend-verification").permitAll()
+                                "/api/auth/verify-email", "/api/auth/resend-verification",
+                                "/api/auth/validate-invite", "/api/auth/accept-invite").permitAll()
                         .requestMatchers("/api/auth/logout").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/auth/change-password").authenticated()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
@@ -58,10 +59,20 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/adrs/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/adrs/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/users/me").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/users/me/preferences").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/users/me/preferences").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/users/*/role").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/users/*/status").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/users/invite").hasRole("ADMIN")
                         .requestMatchers("/api/users/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/logout-all").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/workspace").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/workspace").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/workspace/reset").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/analytics/**").hasAnyRole("ADMIN", "APPROVER")
+                        .requestMatchers("/api/notifications/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

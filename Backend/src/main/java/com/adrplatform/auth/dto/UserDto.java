@@ -2,6 +2,7 @@ package com.adrplatform.auth.dto;
 
 import com.adrplatform.auth.domain.Role;
 import com.adrplatform.auth.domain.User;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -13,10 +14,13 @@ import java.util.UUID;
 public class UserDto {
     private UUID id;
     private UUID workspaceId;
+    private String workspaceName;
+    private String workspaceSlug;
     private String email;
     private String fullName;
     private Role role;
     private boolean emailVerified;
+    @Getter(onMethod_ = {@JsonProperty("isActive")})
     private boolean isActive;
     private Instant createdAt;
 
@@ -24,6 +28,8 @@ public class UserDto {
         return UserDto.builder()
                 .id(user.getId())
                 .workspaceId(user.getWorkspace().getId())
+                .workspaceName(user.getWorkspace().getName())
+                .workspaceSlug(user.getWorkspace().getSlug())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .role(user.getRole())

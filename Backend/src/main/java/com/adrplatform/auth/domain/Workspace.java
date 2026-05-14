@@ -39,6 +39,10 @@ public class Workspace {
     @Column(name = "vote_quorum", nullable = false)
     private Integer voteQuorum = 2;
 
+    @Builder.Default
+    @Column(name = "quorum_mode", nullable = false)
+    private String quorumMode = "AUTO";
+
     @PrePersist
     void prePersist() {
         if (id == null) {

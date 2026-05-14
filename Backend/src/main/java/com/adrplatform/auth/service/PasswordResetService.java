@@ -40,6 +40,7 @@ public class PasswordResetService {
     private final PasswordPolicyValidator passwordPolicyValidator;
     private final PasswordResetProperties passwordResetProperties;
     private final MailService mailService;
+    private final RefreshTokenService refreshTokenService;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -74,6 +75,7 @@ public class PasswordResetService {
         token.setUsedAt(Instant.now());
         passwordResetTokenRepository.save(token);
         userRepository.save(user);
+        refreshTokenService.revokeAllForUser(user);
         passwordResetTokenRepository.deleteAllByUser_Id(user.getId());
         log.info("Password reset completed for user {}", user.getEmail());
     }
