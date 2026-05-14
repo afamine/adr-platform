@@ -1,0 +1,166 @@
+<div class="auth-layout">
+  <div class="left-panel">
+    <a class="brand" routerLink="/login" aria-label="Back to home">
+      <img src="assets/logos/svg/logo-horizontal-dark-accent.svg" alt="Axiom" />
+    </a>
+
+    <div class="left-content">
+      <h1 class="headline">Join your team's workspace.</h1>
+      <p class="description">
+        You're invited to collaborate on architectural decisions with your team on ADR Manager.
+      </p>
+
+      <ul class="bullets">
+        <li>
+          <span class="dot"></span>
+          <span>Smart AI suggestions as you write your decisions</span>
+        </li>
+        <li>
+          <span class="dot"></span>
+          <span>Structured validation workflows for your team</span>
+        </li>
+        <li>
+          <span class="dot"></span>
+          <span>Semantic search across all architectural decisions</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="left-footer">
+      <div class="divider"></div>
+      <div class="footer-text">ADR Manager &middot; Final Year Project 2026</div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="form-wrapper">
+      <!-- LOADING STATE -->
+      <ng-container *ngIf="state() === 'LOADING'">
+        <div class="form-heading">
+          <h2>Validating your invite...</h2>
+          <p>Please wait while we verify your invitation link.</p>
+        </div>
+        <div class="spinner" style="margin: 32px auto; width: 32px; height: 32px; border-width: 3px; border-top-color: #0f172a;"></div>
+      </ng-container>
+
+      <!-- FORM STATE -->
+      <ng-container *ngIf="state() === 'FORM'">
+        <div class="form-heading">
+          <h2>Accept your invitation</h2>
+          <p>
+            You've been invited to <strong>{{ inviteDetails()?.workspaceName }}</strong>
+            as a <strong>{{ roleLabel(inviteDetails()!.role) }}</strong>.
+            Set up your account below.
+          </p>
+        </div>
+
+        <form [formGroup]="inviteForm" (ngSubmit)="onSubmit()" novalidate>
+          <div class="field-group">
+            <label for="fullName">Full name</label>
+            <div class="input-wrapper" [class.invalid]="hasError('fullName', 'required') || hasError('fullName', 'minlength')">
+              <mat-icon class="input-icon" fontIcon="person_outline"></mat-icon>
+              <input id="fullName" type="text" placeholder="Jane Doe" formControlName="fullName" />
+            </div>
+            <div class="error" *ngIf="hasError('fullName', 'required')">Full name is required</div>
+            <div class="error" *ngIf="!hasError('fullName', 'required') && hasError('fullName', 'minlength')">Name must be at least 2 characters</div>
+          </div>
+
+          <div class="field-group">
+            <label for="password">Password</label>
+            <div
+              class="input-wrapper"
+              [class.invalid]="
+                hasError('password', 'required') ||
+                hasError('password', 'minlength') ||
+                hasError('password', 'pattern')
+              "
+            >
+              <mat-icon class="input-icon" fontIcon="lock_outline"></mat-icon>
+              <input id="password" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" formControlName="password" />
+            </div>
+            <div class="error" *ngIf="hasError('password', 'required')">Password is required</div>
+            <div class="error" *ngIf="!hasError('password', 'required') && hasError('password', 'minlength')">
+              Password must be at least 8 characters
+            </div>
+            <div class="error" *ngIf="hasError('password', 'pattern')">
+              Use at least one letter and one number
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="confirmPassword">Confirm password</label>
+            <div
+              class="input-wrapper"
+              [class.invalid]="
+                hasError('confirmPassword', 'required') ||
+                hasError('confirmPassword', 'passwordMismatch')
+              "
+            >
+              <mat-icon class="input-icon" fontIcon="lock_outline"></mat-icon>
+              <input
+                id="confirmPassword"
+                type="password"
+                placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+                formControlName="confirmPassword"
+              />
+            </div>
+            <div class="error" *ngIf="hasError('confirmPassword', 'required')">Please confirm your password</div>
+            <div
+              class="error"
+              *ngIf="!hasError('confirmPassword', 'required') && hasError('confirmPassword', 'passwordMismatch')"
+            >
+              Passwords do not match
+            </div>
+          </div>
+
+          <button class="submit" type="submit" [disabled]="isSubmitting()">
+            <span class="spinner" *ngIf="isSubmitting()"></span>
+            <span>{{ isSubmitting() ? 'Creating account...' : 'Accept invitation' }}</span>
+          </button>
+        </form>
+
+        <div class="error-banner" *ngIf="errorMessage()">
+          {{ errorMessage() }}
+        </div>
+      </ng-container>
+
+      <!-- SUCCESS STATE -->
+      <ng-container *ngIf="state() === 'SUCCESS'">
+        <div class="form-heading">
+          <h2>Welcome aboard!</h2>
+          <p>
+            Your account has been created and you're all set. You'll be redirected to the dashboard in a moment.
+          </p>
+        </div>
+        <div class="success">
+          Account created successfully. Redirecting...
+        </div>
+        <a routerLink="/adrs" class="back-link">Go to dashboard</a>
+      </ng-container>
+
+      <!-- ERROR: EXPIRED -->
+      <ng-container *ngIf="state() === 'ERROR_EXPIRED'">
+        <div class="form-heading">
+          <h2>Invite link expired</h2>
+          <p>
+            This invitation link has expired. For security, invite links are valid for a limited time.
+            Please ask your workspace administrator to send a new invitation.
+          </p>
+        </div>
+        <a routerLink="/login" class="back-link">Back to sign in</a>
+      </ng-container>
+
+      <!-- ERROR: INVALID -->
+      <ng-container *ngIf="state() === 'ERROR_INVALID'">
+        <div class="form-heading">
+          <h2>Invite link invalid</h2>
+          <p>
+            This invitation link is invalid or has already been used.
+            Please ask your workspace administrator to send a new invitation.
+          </p>
+        </div>
+        <a routerLink="/login" class="back-link">Back to sign in</a>
+      </ng-container>
+    </div>
+  </div>
+</div>

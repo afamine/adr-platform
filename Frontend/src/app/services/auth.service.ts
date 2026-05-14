@@ -4,13 +4,17 @@ import { Router } from '@angular/router';
 import { catchError, finalize, Observable, of, take } from 'rxjs';
 import {
   AuthResponse,
+  ChangePasswordRequest,
   AuthUser,
   MessageResponse,
   LoginRequest,
+  NotificationPreferences,
   RefreshTokenRequest,
   RegisterRequest,
   RegisterResponse,
-  Role
+  Role,
+  ValidateInviteResponse,
+  AcceptInviteRequest
 } from '../models/auth.models';
 import { environment } from '../../environments/environment';
 
@@ -43,8 +47,8 @@ export class AuthService {
     return this.http.post<void>(`${this.API_URL}/api/auth/reset-password`, payload);
   }
 
-  changePassword(payload: { currentPassword: string; newPassword: string }): Observable<MessageResponse> {
-    return this.http.post<MessageResponse>(`${this.API_URL}/api/auth/change-password`, payload);
+  changePassword(payload: ChangePasswordRequest): Observable<MessageResponse> {
+    return this.http.put<MessageResponse>(`${this.API_URL}/api/auth/change-password`, payload);
   }
 
   verifyEmail(token: string): Observable<MessageResponse> {
@@ -128,6 +132,51 @@ export class AuthService {
       `${this.API_URL}/api/users/${userId}/role`,
       { role }
     );
+  }
+
+  validateInvite(token: string): Observable<ValidateInviteResponse> {
+    return this.http.get<ValidateInviteResponse>(
+      `${this.API_URL}/api/auth/validate-invite`, { params: { token } }
+    );
+  }
+
+  acceptInvite(request: AcceptInviteRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(
+      `${this.API_URL}/api/auth/accept-invite`, request
+    );
+  }
+
+  updateUserStatus(
+    userId: string,
+    isActive: boolean
+  ): Observable<{ message: string; isActive: boolean }> {
+    return this.http.put<{ message: string; isActive: boolean }>(
+      `${this.API_URL}/api/users/${userId}/status`,
+      { isActive }
+    );
+  }
+
+  inviteUser(email: string, role: Role): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(
+      `${this.API_URL}/api/users/invite`,
+      { email, role }
+    );
+  }
+
+  getMyProfile(): Observable<AuthUser> {
+    return this.http.get<AuthUser>(`${this.API_URL}/api/users/me`);
+  }
+
+  getMyPreferences(): Observable<NotificationPreferences> {
+    return this.http.get<NotificationPreferences>(`${this.API_URL}/api/users/me/preferences`);
+  }
+
+  updateMyPreferences(prefs: NotificationPreferences): Observable<NotificationPreferences> {
+    return this.http.put<NotificationPreferences>(`${this.API_URL}/api/users/me/preferences`, prefs);
+  }
+
+  logoutAllDevices(): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.API_URL}/api/auth/logout-all`, {});
   }
 
   logout(): void {

@@ -38,6 +38,12 @@ export class VerifyEmailComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     const token = this.route.snapshot.queryParamMap.get('token');
+    const invited = this.route.snapshot.queryParamMap.get('invited') === 'true';
+
+    if (invited) {
+      this.router.navigate(['/accept-invite'], { queryParams: { token } });
+      return;
+    }
 
     if (!token) {
       this.state.set('ERROR_INVALID');

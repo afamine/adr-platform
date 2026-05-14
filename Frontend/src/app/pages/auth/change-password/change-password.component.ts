@@ -78,7 +78,7 @@ export class ChangePasswordComponent {
     if (this.form.invalid || this.isLoading()) {
       this.form.markAllAsTouched();
       if (this.form.hasError('passwordMismatch')) {
-        this.notif.error('Erreur de validation', 'Les mots de passe ne correspondent pas.');
+        this.notif.error('Validation error', 'Passwords do not match.');
       }
       return;
     }
@@ -89,13 +89,14 @@ export class ChangePasswordComponent {
     this.auth
       .changePassword({
         currentPassword: value.currentPassword ?? '',
-        newPassword: value.newPassword ?? ''
+        newPassword: value.newPassword ?? '',
+        confirmPassword: value.confirmPassword ?? ''
       })
       .subscribe({
         next: () => {
           this.isLoading.set(false);
           this.success.set(true);
-          this.notif.success('Mot de passe modifié', 'Vous serez déconnecté dans 3 secondes.');
+          this.notif.success('Password updated', 'You will be signed out in 3 seconds.');
           this.form.disable({ emitEvent: false });
 
           setTimeout(() => {
@@ -107,8 +108,11 @@ export class ChangePasswordComponent {
           const msg = err?.error?.message;
           this.errorMessage.set(msg || 'Unable to change password. Please try again.');
           if (err?.status === 400 || err?.status === 401) {
-            this.notif.error('Mot de passe incorrect', 'Le mot de passe actuel saisi est incorrect.');
+            this.notif.error('Password update failed', msg || 'The current password you entered is incorrect.');
+            return;
           }
+
+          this.notif.error('Password update failed', 'Unable to change password. Please try again.');
         }
       });
   }

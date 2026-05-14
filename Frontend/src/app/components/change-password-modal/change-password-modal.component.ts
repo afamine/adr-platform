@@ -1,10 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { Component, EventEmitter, Output, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { environment } from '../../../environments/environment';
 
 function passwordMatchValidator(group: AbstractControl): ValidationErrors | null {
   const newPwd = group.get('newPassword')?.value;
@@ -33,7 +31,6 @@ export class ChangePasswordModalComponent {
   @Output() closed = new EventEmitter<void>();
 
   private readonly fb = inject(FormBuilder);
-  private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
@@ -99,10 +96,13 @@ export class ChangePasswordModalComponent {
     this.errorMessage = '';
 
     const { currentPassword, newPassword, confirmPassword } = this.form.value;
-    const url = `${environment.apiUrl}/api/auth/change-password`;
 
-    this.http
-      .put<{ message: string }>(url, { currentPassword, newPassword, confirmPassword })
+    this.authService
+      .changePassword({
+        currentPassword: currentPassword ?? '',
+        newPassword: newPassword ?? '',
+        confirmPassword: confirmPassword ?? ''
+      })
       .subscribe({
         next: (res) => {
           this.isLoading = false;

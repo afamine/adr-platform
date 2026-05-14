@@ -1,0 +1,222 @@
+<div class="wrapper">
+  <!-- Global Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="header-avatar">A</div>
+      <span class="header-title">Axiom ADR Manager</span>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" aria-label="Notifications">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </button>
+      <div class="user-avatar">{{ userInitials }}</div>
+    </div>
+  </header>
+
+  <!-- Page Content -->
+  <div class="content">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="back-row" (click)="goBack()">
+        <svg class="back-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+        <span class="page-title">Your Profile</span>
+      </div>
+      <p class="page-subtitle">Manage your personal information and preferences</p>
+    </div>
+
+    <!-- Card 1: Profile Information -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Profile Information</span>
+        <button class="btn-outline">Edit</button>
+      </div>
+
+      <!-- Avatar + name row -->
+      <div class="profile-row">
+        <div class="avatar-lg">{{ userInitials }}</div>
+        <div>
+          <div class="profile-name-row">
+            <span class="profile-name">{{ currentUser?.fullName }}</span>
+            <span class="role-badge" [style.background]="roleConfig.bg" [style.color]="roleConfig.color">
+              {{ roleConfig.label }}
+            </span>
+          </div>
+          <div class="profile-email">{{ currentUser?.email }}</div>
+          <button class="change-photo">Change photo</button>
+        </div>
+      </div>
+
+      <!-- Info rows -->
+      <div class="info-row">
+        <div class="info-label">Full name</div>
+        <div class="info-value">{{ currentUser?.fullName }}</div>
+      </div>
+
+      <div class="info-row">
+        <div class="info-label">Email</div>
+        <div class="info-value">
+          {{ currentUser?.email }}
+          <span class="verified-badge" *ngIf="currentUser?.emailVerified">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M8 12.2l2.4 2.4L16.5 9"/>
+            </svg>
+            Verified
+          </span>
+          <span class="verified-badge" *ngIf="!currentUser?.emailVerified" style="background:#faeeda;color:#854f0b">
+            Unverified
+          </span>
+        </div>
+      </div>
+
+      <div class="info-row">
+        <div class="info-label">Role</div>
+        <div class="info-value">
+          <span class="role-badge" [style.background]="roleConfig.bg" [style.color]="roleConfig.color">
+            {{ roleConfig.label }}
+          </span>
+        </div>
+      </div>
+
+      <div class="info-row">
+        <div class="info-label">Workspace</div>
+        <div class="info-value">
+          {{ currentUser?.workspaceName || 'Default Workspace' }}
+          <span style="font-size:12px;color:#9ca3af">{{ currentUser?.workspaceSlug || 'default' }}</span>
+        </div>
+      </div>
+
+      <div class="info-row">
+        <div class="info-label">Member since</div>
+        <div class="info-value">{{ memberSince }}</div>
+      </div>
+    </div>
+
+    <!-- Card 2: Role & Permissions -->
+    <div class="card">
+      <div class="card-header" style="flex-direction:column;align-items:flex-start;gap:4px">
+        <span class="card-title">Role &amp; Permissions</span>
+        <span style="font-size:12px;color:#6b7280">Your current role determines what actions you can perform</span>
+      </div>
+
+      <div class="role-box">
+        <div class="role-box-header">
+          <div class="role-letter" [style.background]="roleConfig.bg" [style.color]="roleConfig.color">
+            {{ roleConfig.label[0] }}
+          </div>
+          <div>
+            <div class="role-name" [style.color]="roleConfig.color">{{ roleConfig.label }}</div>
+            <div class="role-desc-sm">{{ roleConfig.accessLabel }}</div>
+          </div>
+        </div>
+        <div class="permission-row" *ngFor="let perm of roleConfig.permissions">
+          <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M8 12.2l2.4 2.4L16.5 9"/>
+          </svg>
+          <span>{{ perm }}</span>
+        </div>
+      </div>
+
+      <div class="info-box-amber">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#854d0e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        <span>Contact your workspace admin to change your role assignment.</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Security -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Security</span>
+      </div>
+
+      <div class="security-row">
+        <div>
+          <div class="security-label">Password</div>
+          <div class="security-sub">Last changed 14 days ago</div>
+        </div>
+        <button class="btn-outline" (click)="goToChangePassword()">Change Password</button>
+      </div>
+
+      <div class="security-row">
+        <div>
+          <div class="security-label">Active sessions</div>
+          <div class="security-sub">1 active session</div>
+        </div>
+        <button class="link-btn" (click)="signOutAllDevices()">Sign out all devices</button>
+      </div>
+    </div>
+
+    <!-- Card 4: Notifications -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Notifications</span>
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">Email when ADR submitted for review</span>
+        <button
+          class="toggle"
+          [class.on]="emailNotifications"
+          [class.off]="!emailNotifications"
+          (click)="emailNotifications = !emailNotifications"
+          [attr.aria-pressed]="emailNotifications"
+          aria-label="Toggle email notifications for review"
+        ></button>
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">Email when vote cast on my ADR</span>
+        <button
+          class="toggle"
+          [class.on]="voteNotifications"
+          [class.off]="!voteNotifications"
+          (click)="voteNotifications = !voteNotifications"
+          [attr.aria-pressed]="voteNotifications"
+          aria-label="Toggle vote notification emails"
+        ></button>
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">Email when ADR status changes</span>
+        <button
+          class="toggle"
+          [class.on]="statusNotifications"
+          [class.off]="!statusNotifications"
+          (click)="statusNotifications = !statusNotifications"
+          [attr.aria-pressed]="statusNotifications"
+          aria-label="Toggle status change notification emails"
+        ></button>
+      </div>
+
+      <div class="toggle-row" style="border-bottom:none">
+        <span class="toggle-label">
+          Slack notifications
+          <button class="link-btn" style="margin-left:8px;font-size:12px">Configure webhook</button>
+        </span>
+        <button
+          class="toggle"
+          [class.on]="slackNotifications"
+          [class.off]="!slackNotifications"
+          (click)="slackNotifications = !slackNotifications"
+          [attr.aria-pressed]="slackNotifications"
+          aria-label="Toggle Slack notifications"
+        ></button>
+      </div>
+
+      <div class="save-row">
+        <button class="btn-primary" (click)="savePreferences()" [disabled]="isSaving">Save Preferences</button>
+      </div>
+    </div>
+  </div>
+</div>

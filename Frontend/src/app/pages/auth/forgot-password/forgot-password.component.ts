@@ -45,13 +45,13 @@ export class ForgotPasswordComponent {
         this.isLoading = false;
         this.successMessage =
           'If this email is registered, you will receive a reset link shortly. Check your inbox (and spam folder).';
-        this.notif.success('Email envoyé', 'Si cet email est enregistré, vous recevrez un lien de réinitialisation.');
+        this.notif.success('Email sent', 'If this email is registered, you will receive a reset link shortly.');
         this.forgotForm.reset();
       },
       error: (err) => {
         this.isLoading = false;
         this.errorMessage = err?.error?.message || 'Unable to send reset link. Please try again later.';
-        this.notif.error('Envoi échoué', 'Impossible d\'envoyer le lien de réinitialisation.');
+        this.notif.error('Request failed', 'Unable to send the reset link.');
       }
     });
   }

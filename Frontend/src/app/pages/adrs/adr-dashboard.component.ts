@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, HostListener, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
 import { AdrEditorComponent } from './components/adr-editor/adr-editor.component';
 import { AdrSidebarComponent } from './components/adr-sidebar/adr-sidebar.component';
@@ -12,6 +13,8 @@ import { allowedTransitions, Adr, AdrStatus, CastVoteRequest, CreateAdrRequest, 
 import { AuthService } from '../../services/auth.service';
 import { AdrService } from '../../services/adr.service';
 import { NotificationService } from '../../services/notification.service';
+import { NotificationCenterService } from '../../services/notification-center.service';
+import { BellNotification, NotificationApiDto } from '../../models/notification.models';
 
 @Component({
   selector: 'app-adr-dashboard',
@@ -23,8 +26,10 @@ import { NotificationService } from '../../services/notification.service';
 export class AdrDashboardComponent implements OnInit {
   private readonly adrService = inject(AdrService);
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
   readonly notificationService = inject(NotificationService);
+  private readonly notifCenterService = inject(NotificationCenterService);
 
   adrs: Adr[] = [];
   filteredAdrs: Adr[] = [];
@@ -40,7 +45,13 @@ export class AdrDashboardComponent implements OnInit {
   isLoading = false;
   showSettings = false;
   showProfile = false;
+  showNotifications = false;
   showChangePassword = false;
+
+  activeNotifTab: 'all' | 'unread' = 'all';
+
+  notifications: BellNotification[] = [];
+  isLoadingNotifs = false;
   showVoteModal = false;
   voteModalAdr: Adr | null = null;
   voteModalVotes: VoteDto[] = [];
@@ -53,6 +64,7 @@ export class AdrDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAdrs();
+    this.loadNotifications();
   }
 
   onSearch(query: string): void {
@@ -90,7 +102,7 @@ export class AdrDashboardComponent implements OnInit {
       .pipe(finalize(() => (this.isSaving = false)))
       .subscribe({
         next: (created) => {
-          this.notificationService.success('ADR créé', `ADR-${created.adrNumber} enregistré en brouillon.`);
+          this.notificationService.success('ADR created', `ADR-${created.adrNumber} was saved as a draft.`);
           this.selectedAdr = created;
           this.isEditing = false;
           this.editingAdr = null;
@@ -172,7 +184,7 @@ export class AdrDashboardComponent implements OnInit {
         next: (updated) => {
           this.isEditing = false;
           this.editingAdr = null;
-          this.notificationService.success('ADR sauvegardé', 'Vos modifications ont été enregistrées.');
+          this.notificationService.success('ADR saved', 'Your changes have been saved.');
           this.selectedAdr = updated;
           this.loadAdrs(updated.id);
         },
@@ -190,7 +202,7 @@ export class AdrDashboardComponent implements OnInit {
         this.selectedAdr = updated;
         this.adrs = this.adrs.map((adr) => (adr.id === updated.id ? updated : adr));
         this.filteredAdrs = this.filteredAdrs.map((adr) => (adr.id === updated.id ? updated : adr));
-        this.notificationService.success('Statut mis à jour', `L'ADR est maintenant ${updated.status}.`);
+        this.notificationService.success('Status updated', `The ADR is now ${updated.status}.`);
       },
       error: (err) => this.handleError(err, true)
     });
@@ -263,16 +275,101 @@ export class AdrDashboardComponent implements OnInit {
     return this.currentUser?.fullName ?? 'You';
   }
 
+  get unreadCount(): number {
+    return this.notifications.filter((n) => n.unread).length;
+  }
+
+  get displayedNotifications() {
+    return this.activeNotifTab === 'unread'
+      ? this.notifications.filter((n) => n.unread)
+      : this.notifications;
+  }
+
   toggleSettings(event?: Event): void {
     event?.stopPropagation();
     this.showSettings = !this.showSettings;
     this.showProfile = false;
+    this.showNotifications = false;
+  }
+
+  toggleNotifications(event?: Event): void {
+    event?.stopPropagation();
+    this.showNotifications = !this.showNotifications;
+    this.showSettings = false;
+    this.showProfile = false;
+    if (this.showNotifications) this.loadNotifications();
+  }
+
+  markAllRead(): void {
+    const previous = this.notifications.map(n => n.unread);
+    this.notifications.forEach(n => (n.unread = false));
+    this.notifCenterService.markAllRead().subscribe({
+      error: () => this.notifications.forEach((n, i) => (n.unread = previous[i]))
+    });
+  }
+
+  markNotifRead(id: string): void {
+    const n = this.notifications.find(n => n.id === id);
+    if (!n || !n.unread) return;
+    n.unread = false;
+    this.notifCenterService.markRead(id).subscribe({
+      error: () => { if (n) n.unread = true; }
+    });
+  }
+
+  loadNotifications(): void {
+    this.isLoadingNotifs = true;
+    this.notifCenterService.getNotifications(20, false).subscribe({
+      next: (items) => {
+        this.notifications = items.map(dto => this.mapNotif(dto));
+        this.isLoadingNotifs = false;
+      },
+      error: () => {
+        this.isLoadingNotifs = false;
+      }
+    });
+  }
+
+  private mapNotif(dto: NotificationApiDto): BellNotification {
+    const dotColors: Record<string, string> = {
+      ADR_SUBMITTED_FOR_REVIEW: '#ba7517',
+      VOTE_CAST_ON_MY_ADR:      '#6366f1',
+      ADR_STATUS_CHANGED:       '#1d9e75',
+      ADR_REJECTED:             '#ef4444',
+      NEW_TEAM_MEMBER:          '#9ca3af',
+      COMMENT_ADDED:            '#9ca3af'
+    };
+    const actions: Record<string, string> = {
+      ADR_SUBMITTED_FOR_REVIEW: 'Review ADR',
+      VOTE_CAST_ON_MY_ADR:      '',
+      ADR_STATUS_CHANGED:       'View ADR',
+      ADR_REJECTED:             'View ADR',
+      NEW_TEAM_MEMBER:          '',
+      COMMENT_ADDED:            'View ADR'
+    };
+    return {
+      id:       dto.id,
+      type:     dto.type,
+      dotColor: dotColors[dto.type] ?? '#9ca3af',
+      title:    dto.title,
+      body:     dto.body,
+      time:     dto.timeAgo,
+      action:   actions[dto.type] ?? '',
+      adrId:    dto.adrId,
+      unread:   !dto.isRead
+    };
   }
 
   toggleProfile(event?: Event): void {
     event?.stopPropagation();
     this.showProfile = !this.showProfile;
     this.showSettings = false;
+    this.showNotifications = false;
+  }
+
+  onMyProfile(): void {
+    this.showProfile = false;
+    void this.router.navigate(['/profile']);
   }
 
   onChangePassword(): void {
@@ -380,6 +477,7 @@ export class AdrDashboardComponent implements OnInit {
 
     this.showSettings = false;
     this.showProfile = false;
+    this.showNotifications = false;
   }
 
   private loadAdrs(selectId?: string): void {
@@ -418,7 +516,7 @@ export class AdrDashboardComponent implements OnInit {
       error: (err) => {
         console.error('Failed to load ADRs:', err);
         this.isLoading = false;
-        this.notificationService.error('Chargement échoué', 'Impossible de charger les ADRs.');
+        this.notificationService.error('Loading failed', 'Unable to load ADRs.');
         this.adrs = [];
         this.filteredAdrs = [];
         this.selectedAdr = null;

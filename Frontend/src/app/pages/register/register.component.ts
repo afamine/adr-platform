@@ -111,7 +111,7 @@ export class RegisterComponent {
           this.isLoading.set(false);
           if (err.status === 409) {
             this.errorMessage.set('An account with this email already exists.');
-            this.notif.warning('Inscription impossible', 'Un compte avec cet email existe déjà.');
+            this.notif.warning('Registration unavailable', 'An account with this email already exists.');
             return;
           }
 
@@ -119,7 +119,7 @@ export class RegisterComponent {
             const errors = err.error?.errors;
             if (errors && Array.isArray(errors) && errors.length > 0) {
               this.errorMessage.set(errors.map((e: any) => e?.message || e).join('. '));
-              this.notif.error('Erreur de validation', 'Veuillez vérifier vos informations.');
+              this.notif.error('Validation error', 'Please check your information.');
               return;
             }
 
@@ -127,12 +127,12 @@ export class RegisterComponent {
             this.errorMessage.set(
               message === 'Email already registered' ? 'An account with this email already exists.' : message || 'Please check your information.'
             );
-            this.notif.error('Erreur de validation', 'Veuillez vérifier vos informations.');
+            this.notif.error('Validation error', 'Please check your information.');
             return;
           }
 
           this.errorMessage.set('Unable to connect to server. Please try again.');
-          this.notif.error('Erreur réseau', 'Impossible de contacter le serveur.');
+          this.notif.error('Network error', 'Unable to reach the server.');
         },
         complete: () => {
           this.isLoading.set(false);

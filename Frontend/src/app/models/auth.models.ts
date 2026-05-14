@@ -20,10 +20,14 @@ export enum Role {
 export interface AuthUser {
   id: string;
   workspaceId: string;
+  workspaceName?: string;
+  workspaceSlug?: string;
   email: string;
   fullName: string;
   role: Role;
   createdAt: string;
+  isActive?: boolean;
+  emailVerified?: boolean;
 }
 
 export interface AuthResponse {
@@ -34,6 +38,12 @@ export interface AuthResponse {
 
 export interface RefreshTokenRequest {
   refreshToken: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
 export interface ErrorResponse {
@@ -55,6 +65,19 @@ export interface MessageResponse {
 
 export type AuthErrorType = 'EXPIRED' | 'INVALID' | 'EMAIL_NOT_VERIFIED' | string;
 
+export interface ValidateInviteResponse {
+  email: string;
+  workspaceName: string;
+  role: Role;
+}
+
+export interface AcceptInviteRequest {
+  token: string;
+  fullName: string;
+  password: string;
+  confirmPassword: string;
+}
+
 export interface ApiErrorBody {
   status: number;
   message: string;
@@ -62,4 +85,29 @@ export interface ApiErrorBody {
   timestamp?: string;
   error?: string;
   path?: string;
+}
+
+export interface WorkspaceInfo {
+  id: string;
+  name: string;
+  slug: string;
+  voteQuorum: number;
+  quorumMode: 'AUTO' | 'MANUAL';
+  memberCount: number;
+  createdAt: string;
+}
+
+export interface UpdateWorkspaceRequest {
+  name: string;
+  slug: string;
+  voteQuorum: number;
+  quorumMode: 'AUTO' | 'MANUAL';
+}
+
+export interface NotificationPreferences {
+  emailOnReview: boolean;
+  emailOnVote: boolean;
+  emailOnStatus: boolean;
+  slackEnabled: boolean;
+  slackWebhook?: string | null;
 }

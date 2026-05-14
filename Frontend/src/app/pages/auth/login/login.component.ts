@@ -70,13 +70,13 @@ export class LoginComponent {
         if (err.status === 403 && body?.errorType === 'EMAIL_NOT_VERIFIED') {
           this.emailNotVerified.set(true);
           this.errorMessage.set(null);
-          this.notif.warning('Email non vérifié', 'Vérifiez votre boîte mail avant de vous connecter.');
+          this.notif.warning('Email not verified', 'Check your inbox before signing in.');
           return;
         }
 
         if (err.status === 401) {
           this.errorMessage.set('Invalid email or password. Please try again.');
-          this.notif.error('Connexion échouée', 'Email ou mot de passe incorrect.');
+          this.notif.error('Sign-in failed', 'Incorrect email or password.');
           return;
         }
 
@@ -86,7 +86,7 @@ export class LoginComponent {
         }
 
         this.errorMessage.set('Unable to connect to server. Please try again.');
-        this.notif.error('Erreur réseau', 'Impossible de contacter le serveur.');
+        this.notif.error('Network error', 'Unable to reach the server.');
       },
       complete: () => {
         this.isLoading.set(false);
