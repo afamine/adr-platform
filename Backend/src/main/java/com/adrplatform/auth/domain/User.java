@@ -62,6 +62,10 @@ public class User implements UserDetails {
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
 
+    @Column(name = "avatar_color", length = 7)
+    @Builder.Default
+    private String avatarColor = "#0F172A";
+
     @PrePersist
     void prePersist() {
         if (id == null) {

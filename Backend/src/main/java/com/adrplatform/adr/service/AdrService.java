@@ -221,7 +221,7 @@ public class AdrService {
         switch (current) {
             case DRAFT -> {
                 if (target == AdrStatus.PROPOSED) {
-                    if (!(role == Role.AUTHOR)) throw new AdrAccessDeniedException("You don't have permission to modify this ADR.");
+                    if (!(role == Role.AUTHOR && isOwner)) throw new AdrAccessDeniedException("Only the author can propose this ADR.");
                 } else {
                     throw new InvalidTransitionException("Invalid status transition from " + current + " to " + target + ".");
                 }

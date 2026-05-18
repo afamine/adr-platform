@@ -23,6 +23,7 @@ public class UserDto {
     @Getter(onMethod_ = {@JsonProperty("isActive")})
     private boolean isActive;
     private Instant createdAt;
+    private String avatarColor;
 
     public static UserDto fromEntity(User user) {
         return UserDto.builder()
@@ -36,6 +37,7 @@ public class UserDto {
                 .emailVerified(user.isEmailVerified())
                 .isActive(user.isActive())
                 .createdAt(user.getCreatedAt())
+                .avatarColor(user.getAvatarColor())
                 .build();
     }
 }

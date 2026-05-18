@@ -10,6 +10,7 @@ import com.adrplatform.adr.service.AdrAuditService;
 import com.adrplatform.adr.service.AdrService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import org.springframework.security.access.prepost.PreAuthorize;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -61,6 +62,7 @@ public class AdrController {
     @ApiResponse(responseCode = "400", description = "Validation error")
     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content)
     @PostMapping
+    @PreAuthorize("hasAnyRole('AUTHOR', 'ADMIN')")
     public ResponseEntity<AdrDto> create(@Valid @RequestBody CreateAdrRequest request) {
         AdrDto created = adrService.createAdr(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);

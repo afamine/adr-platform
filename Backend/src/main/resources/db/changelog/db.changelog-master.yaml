@@ -36,3 +36,5 @@ databaseChangeLog:
       file: db/changelog/V14__create_notification_preferences.sql
   - include:
       file: db/changelog/V15__create_notification_table.sql
+  - include:
+      file: db/changelog/V16__add_avatar_color.sql

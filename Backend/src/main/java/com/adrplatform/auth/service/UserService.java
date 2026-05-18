@@ -62,6 +62,9 @@ public class UserService {
 
         String oldName = user.getFullName();
         user.setFullName(request.fullName().trim());
+        if (request.avatarColor() != null && !request.avatarColor().isBlank()) {
+            user.setAvatarColor(request.avatarColor());
+        }
         User saved = userRepository.save(user);
 
         auditService.record(actor, actor.getWorkspace(), "PROFILE_UPDATED", "USER", saved.getId(),
