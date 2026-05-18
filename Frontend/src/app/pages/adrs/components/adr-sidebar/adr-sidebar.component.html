@@ -2,7 +2,7 @@
   <div class="adr-sidebar__top">
     <span class="adr-sidebar__heading">Architecture Decisions</span>
 
-    <button class="adr-sidebar__new-button" type="button" (click)="createNew.emit()">
+    <button class="adr-sidebar__new-button" type="button" *ngIf="canCreate" (click)="createNew.emit()">
       <span>+</span>
       <span>New ADR</span>
     </button>

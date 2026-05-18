@@ -1,13 +1,4 @@
 <div class="adr-dashboard">
-  <div class="adr-dashboard__toasts">
-    @for (item of notificationService.notifications(); track item.id) {
-      <div class="adr-dashboard__toast" [class]="'adr-dashboard__toast adr-dashboard__toast--' + item.type">
-        <span>{{ item.message }}</span>
-        <button class="adr-dashboard__toast-close" type="button" (click)="notificationService.remove(item.id)">×</button>
-      </div>
-    }
-  </div>
-
   <header class="adr-dashboard__header">
     <div class="adr-dashboard__branding">
       <div class="adr-dashboard__logo" aria-hidden="true">
@@ -130,7 +121,7 @@
 
             <!-- Footer -->
             <div class="notif-footer">
-              <span class="view-all-link">View all notifications</span>
+              <button type="button" class="view-all-link" (click)="viewAllNotifications()">View all notifications</button>
             </div>
           </div>
         }
@@ -195,6 +186,7 @@
       [selectedId]="selectedAdr?.id ?? null"
       [searchQuery]="searchQuery"
       [statusFilter]="statusFilter"
+      [canCreate]="canCreateAdr"
       (adrSelected)="onSelectAdr($event)"
       (createNew)="onCreateNew()"
       (searchChanged)="onSearch($event)"

@@ -39,16 +39,4 @@ export class NotificationService {
     if (duration > 0) setTimeout(() => this.dismiss(id), duration);
   }
 
-  // Backward-compatible helpers used by existing ADR dashboard template
-  notifications(): Array<{ id: string; type: NotifType; message: string }> {
-    return this._notifs.value.map((n) => ({
-      id: n.id,
-      type: n.type,
-      message: n.message?.trim() ? `${n.title} — ${n.message}` : n.title
-    }));
-  }
-
-  remove(id: string): void {
-    this.dismiss(id);
-  }
 }

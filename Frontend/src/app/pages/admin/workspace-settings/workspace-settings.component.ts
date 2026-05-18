@@ -2,22 +2,19 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 
-import { AuthService } from '../../../services/auth.service';
+import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout.component';
 import { NotificationService } from '../../../services/notification.service';
 import { WorkspaceService } from '../../../services/workspace.service';
 
 @Component({
   selector: 'app-workspace-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AdminLayoutComponent],
   templateUrl: './workspace-settings.component.html',
   styleUrls: ['./workspace-settings.component.scss']
 })
 export class WorkspaceSettingsComponent implements OnInit {
-  private readonly router = inject(Router);
-  private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
   private readonly workspaceService = inject(WorkspaceService);
 
@@ -29,8 +26,6 @@ export class WorkspaceSettingsComponent implements OnInit {
   quorumMode: 'auto' | 'manual' = 'auto';
   isLoading = false;
   isSaving = false;
-
-  readonly currentUser = this.authService.getCurrentUser();
 
   ngOnInit(): void {
     this.loadWorkspace();
@@ -109,21 +104,6 @@ export class WorkspaceSettingsComponent implements OnInit {
         this.notificationService.error('Failed to reset', this.getErrorMessage(err));
       }
     });
-  }
-
-  getInitials(): string {
-    const name = this.currentUser?.fullName ?? '';
-    return name
-      .split(' ')
-      .filter(Boolean)
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2) || 'AD';
-  }
-
-  navigateTo(path: string): void {
-    void this.router.navigate([path]);
   }
 
   private getErrorMessage(error: unknown): string {

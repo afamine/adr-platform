@@ -167,6 +167,10 @@ export class AuthService {
     return this.http.get<AuthUser>(`${this.API_URL}/api/users/me`);
   }
 
+  updateMyProfile(body: { fullName: string; avatarColor?: string }): Observable<AuthUser> {
+    return this.http.put<AuthUser>(`${this.API_URL}/api/users/me`, body);
+  }
+
   getMyPreferences(): Observable<NotificationPreferences> {
     return this.http.get<NotificationPreferences>(`${this.API_URL}/api/users/me/preferences`);
   }

@@ -107,8 +107,8 @@
 
       <div class="tags-group">
         <span class="bar-label">Tags:</span>
-        @if ((currentAdr.tags || []).length) {
-          @for (tag of (currentAdr.tags || []); track tag) {
+        @if (currentAdr.tags.length) {
+          @for (tag of currentAdr.tags; track tag) {
             <span class="tag-chip">{{ tag }}</span>
           }
         } @else {

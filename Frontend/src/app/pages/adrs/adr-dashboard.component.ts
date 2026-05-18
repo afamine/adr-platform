@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, HostListener, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, NgZone, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
@@ -12,6 +12,7 @@ import { ChangePasswordModalComponent } from '../../components/change-password-m
 import { allowedTransitions, Adr, AdrStatus, CastVoteRequest, CreateAdrRequest, UpdateAdrRequest, VoteDto } from '../../models/adr.model';
 import { AuthService } from '../../services/auth.service';
 import { AdrService } from '../../services/adr.service';
+import { ConfirmService } from '../../services/confirm.service';
 import { NotificationService } from '../../services/notification.service';
 import { NotificationCenterService } from '../../services/notification-center.service';
 import { BellNotification, NotificationApiDto } from '../../models/notification.models';
@@ -27,9 +28,11 @@ export class AdrDashboardComponent implements OnInit {
   private readonly adrService = inject(AdrService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
-  readonly notificationService = inject(NotificationService);
+  private readonly notificationService = inject(NotificationService);
   private readonly notifCenterService = inject(NotificationCenterService);
+  private readonly confirmService = inject(ConfirmService);
 
   adrs: Adr[] = [];
   filteredAdrs: Adr[] = [];
@@ -62,6 +65,11 @@ export class AdrDashboardComponent implements OnInit {
   emailNotifications = true;
   currentUser = this.authService.getCurrentUser();
 
+  get canCreateAdr(): boolean {
+    const role = this.currentUser?.role;
+    return role === 'AUTHOR' || role === 'ADMIN';
+  }
+
   ngOnInit(): void {
     this.loadAdrs();
     this.loadNotifications();
@@ -69,12 +77,31 @@ export class AdrDashboardComponent implements OnInit {
 
   onSearch(query: string): void {
     this.searchQuery = query;
-    this.loadAdrs();
+    this.applyLocalFilters();
   }
 
   onFilterChange(status: AdrStatus | 'ALL'): void {
     this.statusFilter = status;
-    this.loadAdrs();
+    this.applyLocalFilters();
+  }
+
+  private applyLocalFilters(): void {
+    let result = [...this.adrs];
+    if (this.statusFilter !== 'ALL') {
+      result = result.filter((a) => a.status === this.statusFilter);
+    }
+    if (this.searchQuery.trim()) {
+      const q = this.searchQuery.toLowerCase();
+      result = result.filter(
+        (a) =>
+          a.title?.toLowerCase().includes(q) ||
+          a.tags.some((t) => t.toLowerCase().includes(q))
+      );
+    }
+    this.ngZone.run(() => {
+      this.filteredAdrs = result;
+      this.cdr.detectChanges();
+    });
   }
 
   onSelectAdr(adr: Adr): void {
@@ -118,19 +145,25 @@ export class AdrDashboardComponent implements OnInit {
     forkJoin({
       votes: this.adrService.getVotes(adrId),
       myVote: this.adrService.getMyVote(adrId)
-    })
-      .pipe(finalize(() => (this.isVoteModalLoading = false)))
-      .subscribe({
-        next: ({ votes, myVote }) => {
+    }).subscribe({
+      next: ({ votes, myVote }) => {
+        this.ngZone.run(() => {
           this.voteModalVotes = votes;
           this.voteModalMyVote = myVote;
-        },
-        error: () => {
+          this.isVoteModalLoading = false;
+          this.cdr.detectChanges();
+        });
+      },
+      error: () => {
+        this.ngZone.run(() => {
           this.voteModalVotes = [];
           this.voteModalMyVote = null;
+          this.isVoteModalLoading = false;
           this.notificationService.error('Failed to load votes for this ADR.');
-        }
-      });
+          this.cdr.detectChanges();
+        });
+      }
+    });
   }
 
   private refreshAdrState(adrId: string): void {
@@ -216,10 +249,17 @@ export class AdrDashboardComponent implements OnInit {
     this.onTransitionStatus(newStatus);
   }
 
-  onDelete(): void {
-    if (!this.selectedAdr || !window.confirm('Are you sure you want to delete this ADR?')) {
-      return;
-    }
+  async onDelete(): Promise<void> {
+    if (!this.selectedAdr) return;
+
+    const confirmed = await this.confirmService.confirm({
+      title: 'Delete ADR',
+      message: `Delete "${this.selectedAdr.title}"? This action cannot be undone.`,
+      confirmLabel: 'Delete permanently',
+      cancelLabel: 'Cancel',
+      danger: true
+    });
+    if (!confirmed) return;
 
     const deletedId = this.selectedAdr.id;
     this.adrService.deleteAdr(deletedId).subscribe({
@@ -298,6 +338,11 @@ export class AdrDashboardComponent implements OnInit {
     this.showSettings = false;
     this.showProfile = false;
     if (this.showNotifications) this.loadNotifications();
+  }
+
+  viewAllNotifications(): void {
+    this.showNotifications = false;
+    void this.router.navigate(['/notifications']);
   }
 
   markAllRead(): void {
@@ -482,46 +527,58 @@ export class AdrDashboardComponent implements OnInit {
 
   private loadAdrs(selectId?: string): void {
     this.isLoading = true;
-    const params = {
-      status: this.statusFilter === 'ALL' ? undefined : this.statusFilter,
-      search: this.searchQuery.trim() || undefined
-    };
 
-    this.adrService.getAdrs(params).subscribe({
+    this.adrService.getAdrs().subscribe({
       next: (adrs) => {
-        this.adrs = adrs;
-        this.filteredAdrs = [...adrs];
-        this.isLoading = false;
+        this.ngZone.run(() => {
+          this.adrs = adrs;
+          this.isLoading = false;
 
-        const preferredId = selectId ?? this.selectedAdr?.id;
-        const nextSelected = preferredId ? adrs.find((adr) => adr.id === preferredId) ?? null : null;
+          let filtered = [...adrs];
+          if (this.statusFilter !== 'ALL') {
+            filtered = filtered.filter((a) => a.status === this.statusFilter);
+          }
+          if (this.searchQuery.trim()) {
+            const q = this.searchQuery.toLowerCase();
+            filtered = filtered.filter(
+              (a) => a.title?.toLowerCase().includes(q) || a.tags.some((t) => t.toLowerCase().includes(q))
+            );
+          }
+          this.filteredAdrs = filtered;
 
-        if (nextSelected) {
-          this.onSelectAdr(nextSelected);
-          return;
-        }
+          const preferredId = selectId ?? this.selectedAdr?.id;
+          const nextSelected = preferredId ? adrs.find((adr) => adr.id === preferredId) ?? null : null;
 
-        if (adrs.length > 0 && (!this.selectedAdr || !adrs.some((adr) => adr.id === this.selectedAdr?.id))) {
-          this.onSelectAdr(adrs[0]);
-          return;
-        }
+          if (nextSelected) {
+            this.onSelectAdr(nextSelected);
+            this.cdr.detectChanges();
+            return;
+          }
 
-        if (adrs.length === 0) {
-          this.selectedAdr = null;
-          this.editingAdr = null;
-        }
+          if (adrs.length > 0 && (!this.selectedAdr || !adrs.some((adr) => adr.id === this.selectedAdr?.id))) {
+            this.onSelectAdr(adrs[0]);
+            this.cdr.detectChanges();
+            return;
+          }
 
-        this.cdr.detectChanges();
+          if (adrs.length === 0) {
+            this.selectedAdr = null;
+            this.editingAdr = null;
+          }
+
+          this.cdr.detectChanges();
+        });
       },
       error: (err) => {
-        console.error('Failed to load ADRs:', err);
-        this.isLoading = false;
-        this.notificationService.error('Loading failed', 'Unable to load ADRs.');
-        this.adrs = [];
-        this.filteredAdrs = [];
-        this.selectedAdr = null;
-
-        this.cdr.detectChanges();
+        this.ngZone.run(() => {
+          console.error('Failed to load ADRs:', err);
+          this.isLoading = false;
+          this.notificationService.error('Loading failed', 'Unable to load ADRs.');
+          this.adrs = [];
+          this.filteredAdrs = [];
+          this.selectedAdr = null;
+          this.cdr.detectChanges();
+        });
       }
     });
   }

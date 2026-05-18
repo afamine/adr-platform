@@ -28,6 +28,7 @@ export interface AuthUser {
   createdAt: string;
   isActive?: boolean;
   emailVerified?: boolean;
+  avatarColor?: string;
 }
 
 export interface AuthResponse {

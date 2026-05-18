@@ -1,13 +1,13 @@
 import { CommonModule } from '@angular/common';
+import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout.component';
 import { HttpErrorResponse } from '@angular/common/http';
-import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
 import { forkJoin } from 'rxjs';
 
 import { KpiResponse, RecentAdrDto, StatusCount, WeeklyActivity } from '../../../models/analytics.models';
 import { AnalyticsService } from '../../../services/analytics.service';
-import { AuthService } from '../../../services/auth.service';
 import { NotificationService } from '../../../services/notification.service';
 
 Chart.register(...registerables);
@@ -18,22 +18,22 @@ interface ActivityRow { id: string; title: string; status: string; author: strin
 @Component({
   selector: 'app-analytics-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AdminLayoutComponent],
   templateUrl: './analytics-dashboard.component.html',
   styleUrls: ['./analytics-dashboard.component.scss']
 })
 export class AnalyticsDashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
-  private readonly authService = inject(AuthService);
   private readonly analyticsService = inject(AnalyticsService);
   private readonly notificationService = inject(NotificationService);
+  private readonly ngZone = inject(NgZone);
+  private readonly cdr = inject(ChangeDetectorRef);
   private lineChart: Chart | null = null;
   private chartReady = false;
   private pendingWeekly: WeeklyActivity[] | null = null;
 
   @ViewChild('lineChart') lineChartRef!: ElementRef<HTMLCanvasElement>;
 
-  readonly currentUser = this.authService.getCurrentUser();
   isLoading = false;
 
   kpis = {
@@ -61,11 +61,6 @@ export class AnalyticsDashboardComponent implements OnInit, AfterViewInit, OnDes
     SUPERSEDED:   '#6b7280'
   };
 
-  get userInitials(): string {
-    return (this.currentUser?.fullName || '??')
-      .split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2);
-  }
-
   ngOnInit(): void {
     this.isLoading = true;
     forkJoin({
@@ -75,15 +70,21 @@ export class AnalyticsDashboardComponent implements OnInit, AfterViewInit, OnDes
       recent: this.analyticsService.getRecentAdrs(4)
     }).subscribe({
       next: ({ kpis, distribution, weekly, recent }) => {
-        this.isLoading = false;
-        this.applyKpis(kpis);
-        this.applyDistribution(distribution);
-        this.applyWeekly(weekly);
-        this.applyRecent(recent);
+        this.ngZone.run(() => {
+          this.isLoading = false;
+          this.applyKpis(kpis);
+          this.applyDistribution(distribution);
+          this.applyWeekly(weekly);
+          this.applyRecent(recent);
+          this.cdr.detectChanges();
+        });
       },
       error: (err) => {
-        this.isLoading = false;
-        this.notificationService.error('Failed to load analytics', this.getErrorMessage(err));
+        this.ngZone.run(() => {
+          this.isLoading = false;
+          this.notificationService.error('Failed to load analytics', this.getErrorMessage(err));
+          this.cdr.detectChanges();
+        });
       }
     });
   }

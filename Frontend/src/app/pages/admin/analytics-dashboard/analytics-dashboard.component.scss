@@ -85,8 +85,34 @@
   }
 
   &.active {
-    background: #eef2ff;
-    color: #6366f1;
+    background: #0f172a;
+    color: #ffffff;
+  }
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.back-to-adrs-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  box-sizing: border-box;
+
+  &:hover {
+    background: #f9fafb;
+    color: #111827;
   }
 }
 

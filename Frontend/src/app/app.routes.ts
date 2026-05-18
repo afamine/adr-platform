@@ -15,6 +15,7 @@ import { UserManagementComponent } from './pages/admin/user-management/user-mana
 import { WorkspaceSettingsComponent } from './pages/admin/workspace-settings/workspace-settings.component';
 import { AnalyticsDashboardComponent } from './pages/admin/analytics-dashboard/analytics-dashboard.component';
 import { UserProfileComponent } from './pages/profile/user-profile.component';
+import { NotificationsComponent } from './pages/notifications/notifications.component';
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
 import { analyticsGuard } from './guards/analytics.guard';
@@ -32,6 +33,7 @@ export const routes: Routes = [
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
   { path: 'adrs', component: AdrDashboardComponent, canActivate: [authGuard] },
   { path: 'profile', component: UserProfileComponent, canActivate: [authGuard] },
+  { path: 'notifications', component: NotificationsComponent, canActivate: [authGuard] },
   {
     path: 'admin',
     canActivate: [adminGuard],

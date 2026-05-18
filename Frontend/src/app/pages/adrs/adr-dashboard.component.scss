@@ -16,53 +16,6 @@ $brand: #2563eb;
   background: #ffffff;
 }
 
-.adr-dashboard__toasts {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.adr-dashboard__toast {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 280px;
-  max-width: 360px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-  background: #ffffff;
-  color: $text-primary;
-}
-
-.adr-dashboard__toast--success {
-  border-left: 4px solid #16a34a;
-}
-
-.adr-dashboard__toast--warning {
-  border-left: 4px solid #d97706;
-}
-
-.adr-dashboard__toast--error {
-  border-left: 4px solid #dc2626;
-}
-
-.adr-dashboard__toast--info {
-  border-left: 4px solid $brand;
-}
-
-.adr-dashboard__toast-close {
-  margin-left: auto;
-  border: 0;
-  background: transparent;
-  color: $text-muted;
-  font-size: 18px;
-  cursor: pointer;
-}
 
 .adr-dashboard__header {
   display: flex;
@@ -584,6 +537,9 @@ app-collaboration-panel {
   color: #6366f1;
   text-decoration: underline;
   cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
 
   &:hover {
     color: #4f46e5;

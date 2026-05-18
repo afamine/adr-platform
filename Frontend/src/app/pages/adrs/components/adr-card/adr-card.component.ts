@@ -33,11 +33,11 @@ export class AdrCardComponent {
   }
 
   get visibleTags(): string[] {
-    return this.adr.tags.slice(0, 3);
+    return (this.adr.tags ?? []).slice(0, 3);
   }
 
   get hiddenTagCount(): number {
-    return Math.max(this.adr.tags.length - this.visibleTags.length, 0);
+    return Math.max((this.adr.tags ?? []).length - this.visibleTags.length, 0);
   }
 
   onSelect(): void {

@@ -1,12 +1,13 @@
 import { CommonModule, Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 
 import { AuthUser, NotificationPreferences, Role } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
+import { ChangePasswordModalComponent } from '../../components/change-password-modal/change-password-modal.component';
 
 interface RoleConfig {
   bg: string;
@@ -19,7 +20,7 @@ interface RoleConfig {
 @Component({
   selector: 'app-user-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, ChangePasswordModalComponent],
   templateUrl: './user-profile.component.html',
   styleUrls: ['./user-profile.component.scss']
 })
@@ -28,8 +29,21 @@ export class UserProfileComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
+  private readonly fb = inject(FormBuilder);
 
   currentUser: AuthUser | null = this.authService.getCurrentUser();
+
+  isEditing = false;
+  editForm: FormGroup = this.fb.group({
+    fullName: ['', [Validators.required, Validators.maxLength(100)]]
+  });
+
+  showColorPicker = false;
+  readonly avatarColors = [
+    '#0F172A', '#6366F1', '#1D9E75', '#DC2626', '#D97706',
+    '#7C3AED', '#DB2777', '#0891B2', '#16A34A', '#EA580C'
+  ];
+  selectedColor = this.currentUser?.avatarColor || '#0F172A';
 
   emailNotifications = true;
   voteNotifications = true;
@@ -38,6 +52,7 @@ export class UserProfileComponent implements OnInit {
 
   isLoading = false;
   isSaving = false;
+  showChangePasswordModal = false;
 
   private readonly roleConfigs: Record<Role, RoleConfig> = {
     [Role.ADMIN]: {
@@ -114,10 +129,65 @@ export class UserProfileComponent implements OnInit {
     this.loadPreferences();
   }
 
+  startEditing(): void {
+    this.isEditing = true;
+    this.editForm.patchValue({ fullName: this.currentUser?.fullName || '' });
+  }
+
+  cancelEditing(): void {
+    this.isEditing = false;
+  }
+
+  saveProfile(): void {
+    if (this.editForm.invalid) {
+      this.editForm.markAllAsTouched();
+      return;
+    }
+    this.isSaving = true;
+    const { fullName } = this.editForm.value as { fullName: string };
+    this.authService.updateMyProfile({ fullName }).subscribe({
+      next: (updated) => {
+        this.isSaving = false;
+        this.isEditing = false;
+        this.currentUser = updated;
+        localStorage.setItem('adr_user', JSON.stringify(updated));
+        this.notificationService.success('Profile updated', 'Your name has been saved.');
+      },
+      error: (err) => {
+        this.isSaving = false;
+        this.notificationService.error('Update failed', this.getErrorMessage(err));
+      }
+    });
+  }
+
+  openColorPicker(): void {
+    this.showColorPicker = true;
+  }
+
+  selectAvatarColor(color: string): void {
+    this.selectedColor = color;
+    this.authService.updateMyProfile({
+      fullName: this.currentUser?.fullName || '',
+      avatarColor: color
+    }).subscribe({
+      next: (updated) => {
+        this.currentUser = updated;
+        this.showColorPicker = false;
+        localStorage.setItem('adr_user', JSON.stringify(updated));
+        this.notificationService.success('Avatar updated', 'Your avatar color has been changed.');
+      },
+      error: () => {
+        this.showColorPicker = false;
+        this.notificationService.error('Update failed', 'Could not save avatar color.');
+      }
+    });
+  }
+
   loadProfile(): void {
     this.authService.getMyProfile().subscribe({
       next: (user) => {
         this.currentUser = user;
+        this.selectedColor = user.avatarColor || '#0F172A';
         localStorage.setItem('adr_user', JSON.stringify(user));
       },
       error: (err) => {
@@ -177,7 +247,11 @@ export class UserProfileComponent implements OnInit {
   }
 
   goToChangePassword(): void {
-    void this.router.navigate(['/change-password']);
+    this.showChangePasswordModal = true;
+  }
+
+  onCloseChangePassword(): void {
+    this.showChangePasswordModal = false;
   }
 
   private getErrorMessage(error: unknown): string {

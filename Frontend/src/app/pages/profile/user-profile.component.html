@@ -34,12 +34,32 @@
     <div class="card">
       <div class="card-header">
         <span class="card-title">Profile Information</span>
-        <button class="btn-outline">Edit</button>
+        <button class="btn-outline" *ngIf="!isEditing" (click)="startEditing()">Edit</button>
       </div>
 
       <!-- Avatar + name row -->
       <div class="profile-row">
-        <div class="avatar-lg">{{ userInitials }}</div>
+        <div class="avatar-section">
+          <div class="avatar-lg" [style.background]="selectedColor">{{ userInitials }}</div>
+          <button class="change-photo" type="button" (click)="openColorPicker()">Change avatar color</button>
+          <div class="color-picker-dropdown" *ngIf="showColorPicker">
+            <div class="color-picker-header">
+              <span>Choose avatar color</span>
+              <button class="close-btn" type="button" (click)="showColorPicker = false">✕</button>
+            </div>
+            <div class="color-swatches">
+              <button
+                *ngFor="let color of avatarColors"
+                class="color-swatch"
+                type="button"
+                [style.background]="color"
+                [class.selected]="selectedColor === color"
+                (click)="selectAvatarColor(color)"
+                [attr.aria-label]="'Select color ' + color"
+              ></button>
+            </div>
+          </div>
+        </div>
         <div>
           <div class="profile-name-row">
             <span class="profile-name">{{ currentUser?.fullName }}</span>
@@ -48,54 +68,78 @@
             </span>
           </div>
           <div class="profile-email">{{ currentUser?.email }}</div>
-          <button class="change-photo">Change photo</button>
         </div>
       </div>
 
-      <!-- Info rows -->
-      <div class="info-row">
-        <div class="info-label">Full name</div>
-        <div class="info-value">{{ currentUser?.fullName }}</div>
-      </div>
+      <!-- View mode: info rows -->
+      <ng-container *ngIf="!isEditing">
+        <div class="info-row">
+          <div class="info-label">Full name</div>
+          <div class="info-value">{{ currentUser?.fullName }}</div>
+        </div>
 
-      <div class="info-row">
-        <div class="info-label">Email</div>
-        <div class="info-value">
-          {{ currentUser?.email }}
-          <span class="verified-badge" *ngIf="currentUser?.emailVerified">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="9"/>
-              <path d="M8 12.2l2.4 2.4L16.5 9"/>
-            </svg>
-            Verified
+        <div class="info-row">
+          <div class="info-label">Email</div>
+          <div class="info-value">
+            {{ currentUser?.email }}
+            <span class="verified-badge" *ngIf="currentUser?.emailVerified">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M8 12.2l2.4 2.4L16.5 9"/>
+              </svg>
+              Verified
+            </span>
+            <span class="verified-badge" *ngIf="!currentUser?.emailVerified" style="background:#faeeda;color:#854f0b">
+              Unverified
+            </span>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <div class="info-label">Role</div>
+          <div class="info-value">
+            <span class="role-badge" [style.background]="roleConfig.bg" [style.color]="roleConfig.color">
+              {{ roleConfig.label }}
+            </span>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <div class="info-label">Workspace</div>
+          <div class="info-value">
+            {{ currentUser?.workspaceName || 'Default Workspace' }}
+            <span style="font-size:12px;color:#9ca3af">{{ currentUser?.workspaceSlug || 'default' }}</span>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <div class="info-label">Member since</div>
+          <div class="info-value">{{ memberSince }}</div>
+        </div>
+      </ng-container>
+
+      <!-- Edit mode: inline form -->
+      <form *ngIf="isEditing" [formGroup]="editForm" class="edit-form" (ngSubmit)="saveProfile()">
+        <div class="edit-field">
+          <label class="edit-label">Full name</label>
+          <input
+            class="edit-input"
+            formControlName="fullName"
+            type="text"
+            placeholder="Enter your full name"
+            autocomplete="name"
+          />
+          <span class="form-error" *ngIf="editForm.get('fullName')?.invalid && editForm.get('fullName')?.touched">
+            Name is required (max 100 characters)
           </span>
-          <span class="verified-badge" *ngIf="!currentUser?.emailVerified" style="background:#faeeda;color:#854f0b">
-            Unverified
-          </span>
         </div>
-      </div>
-
-      <div class="info-row">
-        <div class="info-label">Role</div>
-        <div class="info-value">
-          <span class="role-badge" [style.background]="roleConfig.bg" [style.color]="roleConfig.color">
-            {{ roleConfig.label }}
-          </span>
+        <div class="edit-actions">
+          <button type="button" class="btn-outline" (click)="cancelEditing()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="isSaving">
+            {{ isSaving ? 'Saving...' : 'Save Changes' }}
+          </button>
         </div>
-      </div>
-
-      <div class="info-row">
-        <div class="info-label">Workspace</div>
-        <div class="info-value">
-          {{ currentUser?.workspaceName || 'Default Workspace' }}
-          <span style="font-size:12px;color:#9ca3af">{{ currentUser?.workspaceSlug || 'default' }}</span>
-        </div>
-      </div>
-
-      <div class="info-row">
-        <div class="info-label">Member since</div>
-        <div class="info-value">{{ memberSince }}</div>
-      </div>
+      </form>
     </div>
 
     <!-- Card 2: Role & Permissions -->
@@ -220,3 +264,7 @@
     </div>
   </div>
 </div>
+
+@if (showChangePasswordModal) {
+  <app-change-password-modal (closed)="onCloseChangePassword()" />
+}

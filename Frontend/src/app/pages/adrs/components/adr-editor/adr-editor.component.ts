@@ -1,5 +1,5 @@
 import { CommonModule, formatDate } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Input, NgZone, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ADR_STATUS_OPTIONS, ADR_TAB_ORDER, Adr, AdrStatus, AdrTabKey, AuditEventDto, AuditEventType, CreateAdrRequest, UpdateAdrRequest } from '../../../../models/adr.model';
@@ -15,6 +15,8 @@ import { AdrService } from '../../../../services/adr.service';
 export class AdrEditorComponent implements OnChanges {
   private readonly formBuilder = inject(FormBuilder);
   private readonly adrService = inject(AdrService);
+  private readonly ngZone = inject(NgZone);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   @Input() adr: Adr | null = null;
   @Input() editingAdr: Partial<Adr> | null = null;
@@ -127,14 +129,20 @@ export class AdrEditorComponent implements OnChanges {
     this.auditLoading = true;
     this.adrService.getAuditLog(this.adr.id).subscribe({
       next: (events) => {
-        this.auditEvents = events.map((event) => ({
-          ...event,
-          actor: event.actor?.trim() ? event.actor : 'System'
-        }));
-        this.auditLoading = false;
+        this.ngZone.run(() => {
+          this.auditEvents = events.map((event) => ({
+            ...event,
+            actor: event.actor?.trim() ? event.actor : 'System'
+          }));
+          this.auditLoading = false;
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.auditLoading = false;
+        this.ngZone.run(() => {
+          this.auditLoading = false;
+          this.cdr.detectChanges();
+        });
       }
     });
   }

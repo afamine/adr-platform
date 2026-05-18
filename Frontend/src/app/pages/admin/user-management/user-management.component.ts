@@ -1,24 +1,27 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, HostListener, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, NgZone, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 
 import { AuthUser, Role } from '../../../models/auth.models';
 import { AuthService } from '../../../services/auth.service';
+import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout.component';
+import { ConfirmService } from '../../../services/confirm.service';
 import { NotificationService } from '../../../services/notification.service';
 
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AdminLayoutComponent],
   templateUrl: './user-management.component.html',
   styleUrls: ['./user-management.component.scss']
 })
 export class UserManagementComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
-  private readonly router = inject(Router);
+  private readonly confirmService = inject(ConfirmService);
+  private readonly ngZone = inject(NgZone);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   users: AuthUser[] = [];
   filteredUsers: AuthUser[] = [];
@@ -62,13 +65,19 @@ export class UserManagementComponent implements OnInit {
     this.isLoading = true;
     this.authService.getUsersInWorkspace().subscribe({
       next: (users) => {
-        this.users = users;
-        this.applyFilter();
-        this.isLoading = false;
+        this.ngZone.run(() => {
+          this.users = users;
+          this.applyFilter();
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        });
       },
       error: (error) => {
-        this.isLoading = false;
-        this.notificationService.error('Unable to load users', this.getErrorMessage(error));
+        this.ngZone.run(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+          this.notificationService.error('Unable to load users', this.getErrorMessage(error));
+        });
       }
     });
   }
@@ -98,7 +107,7 @@ export class UserManagementComponent implements OnInit {
     this.openDropdownId = this.openDropdownId === id ? null : id;
   }
 
-  changeRole(userId: string, newRole: Role): void {
+  async changeRole(userId: string, newRole: Role): Promise<void> {
     const existingUser = this.users.find((u) => u.id === userId);
     if (this.isCurrentUser(userId) || existingUser?.role === newRole) {
       this.openDropdownId = null;
@@ -106,6 +115,16 @@ export class UserManagementComponent implements OnInit {
     }
 
     this.openDropdownId = null;
+
+    const confirmed = await this.confirmService.confirm({
+      title: 'Change user role',
+      message: `Change ${existingUser?.fullName ?? 'this user'}\'s role to ${newRole}? This will affect their permissions immediately.`,
+      confirmLabel: 'Change Role',
+      cancelLabel: 'Cancel',
+      danger: false
+    });
+    if (!confirmed) return;
+
     this.authService.updateUserRole(userId, newRole).subscribe({
       next: () => {
         this.notificationService.success(
@@ -153,9 +172,21 @@ export class UserManagementComponent implements OnInit {
     });
   }
 
-  deactivateUser(user: AuthUser): void {
+  async deactivateUser(user: AuthUser): Promise<void> {
     this.openDropdownId = null;
     const newStatus = !user.isActive;
+
+    const confirmed = await this.confirmService.confirm({
+      title: newStatus ? 'Activate account' : 'Deactivate account',
+      message: newStatus
+        ? `Reactivate ${user.fullName}? They will be able to sign in again.`
+        : `Are you sure you want to deactivate ${user.fullName}? They will be unable to sign in.`,
+      confirmLabel: newStatus ? 'Activate' : 'Deactivate',
+      cancelLabel: 'Cancel',
+      danger: !newStatus
+    });
+    if (!confirmed) return;
+
     this.authService.updateUserStatus(user.id, newStatus).subscribe({
       next: () => {
         const label = newStatus ? 'activated' : 'deactivated';
@@ -216,10 +247,6 @@ export class UserManagementComponent implements OnInit {
       day: 'numeric',
       year: 'numeric'
     }).format(parsedDate);
-  }
-
-  navigateToAdrs(): void {
-    void this.router.navigateByUrl('/adrs');
   }
 
   trackByUserId(_: number, user: AuthUser): string {
