@@ -51,6 +51,15 @@ export interface AuditEventDto {
   payload?: Record<string, unknown> | null;
 }
 
+export interface AiInsight {
+  title: string;
+  confidence: number;
+  impact: 'high' | 'medium' | 'low';
+  description: string;
+  rationale: string;
+  source?: string;
+}
+
 export interface CreateAdrRequest {
   title: string;
   context?: string;
@@ -74,6 +83,33 @@ export interface StatusTransitionRequest {
 }
 
 export type Adr = AdrDto;
+
+export interface CommentDto {
+  id: string;
+  adrId: string;
+  authorId: string;
+  authorName: string;
+  authorInitials: string;
+  content: string;
+  resolved: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HistoryEventDto {
+  actor: string;
+  action: string;
+  timeAgo: string;
+  eventType: string;
+}
+
+export interface TeamMemberDto {
+  id: string;
+  fullName: string;
+  initials: string;
+  role: string;
+  avatarColor: string;
+}
 
 export const ADR_STATUS_OPTIONS: ReadonlyArray<{ value: AdrStatus; label: string }> = [
   { value: 'DRAFT', label: 'Draft' },

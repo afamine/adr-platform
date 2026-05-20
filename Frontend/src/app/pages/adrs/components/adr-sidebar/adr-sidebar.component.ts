@@ -22,6 +22,7 @@ export class AdrSidebarComponent implements OnInit {
   @Input() searchQuery = '';
   @Input() statusFilter: AdrStatus | 'ALL' = 'ALL';
   @Input() canCreate = true;
+  @Input() isLoading = false;
 
   @Output() adrSelected = new EventEmitter<Adr>();
   @Output() createNew = new EventEmitter<void>();

@@ -46,7 +46,15 @@
   </div>
 
   <div class="adr-sidebar__list">
-    @if (adrs.length) {
+    @if (isLoading) {
+      @for (_ of [1, 2, 3, 4, 5]; track _) {
+        <div class="skeleton-card">
+          <div class="skeleton-line skeleton-title"></div>
+          <div class="skeleton-line skeleton-body"></div>
+          <div class="skeleton-line skeleton-tags"></div>
+        </div>
+      }
+    } @else if (adrs.length) {
       @for (adr of adrs; track adr.id) {
         <app-adr-card [adr]="adr" [isSelected]="selectedId === adr.id" (selected)="adrSelected.emit($event)" />
       }

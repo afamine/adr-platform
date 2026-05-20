@@ -251,3 +251,77 @@
   font-weight: 500;
   cursor: pointer;
 }
+
+.collab-panel__send:disabled,
+.collab-panel__link:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.collab-panel__loading {
+  padding: 20px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.collab-panel__empty {
+  padding: 20px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.collab-panel__comment--resolved .collab-panel__comment-text {
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.collab-panel__history {
+  padding: 12px;
+}
+
+.collab-panel__history-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13px;
+  color: #374151;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: baseline;
+}
+
+.collab-panel__history-actor {
+  font-weight: 500;
+  color: #111827;
+}
+
+.collab-panel__history-action {
+  color: #6b7280;
+}
+
+.collab-panel__history-time {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-left: auto;
+}
+
+.collab-panel__team {
+  padding: 12px;
+}
+
+.collab-panel__team-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.collab-panel__team-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1 1 auto;
+}

@@ -1,18 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { Adr } from '../../../../models/adr.model';
+import { HttpClient } from '@angular/common/http';
+import { ChangeDetectorRef, Component, EventEmitter, Input, NgZone, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
+import { environment } from '../../../../../environments/environment';
+import { Adr, AiInsight } from '../../../../models/adr.model';
 
-type InsightImpact = 'high' | 'medium' | 'low';
-
-interface AiInsight {
-  icon: 'lightbulb' | 'warning' | 'check';
-  title: string;
-  confidence: number;
-  impact: InsightImpact;
-  description: string;
-  rationale: string;
-  source: string;
-}
+type InsightImpact = AiInsight['impact'];
 
 @Component({
   selector: 'app-ai-assistant-panel',
@@ -21,42 +13,53 @@ interface AiInsight {
   templateUrl: './ai-assistant-panel.component.html',
   styleUrl: './ai-assistant-panel.component.scss'
 })
-export class AiAssistantPanelComponent {
+export class AiAssistantPanelComponent implements OnChanges {
+  private readonly http = inject(HttpClient);
+  private readonly ngZone = inject(NgZone);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly apiUrl = environment.apiUrl;
+
   @Input() selectedAdr: Adr | null = null;
   @Output() closePanel = new EventEmitter<void>();
 
-  readonly aiInsights: AiInsight[] = [
-    {
-      icon: 'lightbulb',
-      title: 'Consider Event-Driven Architecture',
-      confidence: 87,
-      impact: 'high',
-      description:
-        'Based on your microservices context, an event-driven approach could improve scalability and reduce coupling.',
-      rationale:
-        'Analysis of similar decisions in 247 projects shows 82% success rate with event-driven patterns for distributed systems.',
-      source: 'Pattern matching: Microservices + Scalability'
-    },
-    {
-      icon: 'warning',
-      title: 'Potential Performance Bottleneck',
-      confidence: 72,
-      impact: 'medium',
-      description: 'Synchronous communication between services may create latency issues under high load.',
-      rationale: 'Projects with similar synchronous architectures report 3x more latency issues at 10k+ req/min.',
-      source: 'Historical performance data'
-    },
-    {
-      icon: 'check',
-      title: 'Strong Alignment with Industry Standards',
-      confidence: 94,
-      impact: 'low',
-      description:
-        'Your decision aligns well with current microservices best practices documented in major case studies.',
-      rationale: 'Netflix, Uber, and Airbnb use similar patterns with documented success.',
-      source: 'Industry benchmark database'
+  insights: AiInsight[] = [];
+  isLoadingInsights = false;
+  insightsError = false;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['selectedAdr']) {
+      this.insights = [];
+      this.insightsError = false;
+
+      if (this.selectedAdr?.id) {
+        this.loadAiInsights(this.selectedAdr.id);
+      }
     }
-  ];
+  }
+
+  loadAiInsights(adrId: string): void {
+    if (!adrId) return;
+    this.isLoadingInsights = true;
+    this.insightsError = false;
+
+    this.http.get<AiInsight[]>(`${this.apiUrl}/api/adrs/${adrId}/ai-insights`).subscribe({
+      next: (insights) => {
+        this.ngZone.run(() => {
+          this.insights = insights;
+          this.isLoadingInsights = false;
+          this.cdr.detectChanges();
+        });
+      },
+      error: () => {
+        this.ngZone.run(() => {
+          this.isLoadingInsights = false;
+          this.insightsError = true;
+          this.insights = [];
+          this.cdr.detectChanges();
+        });
+      }
+    });
+  }
 
   getImpactLabel(impact: InsightImpact): string {
     if (impact === 'high') {
@@ -82,12 +85,12 @@ export class AiAssistantPanelComponent {
     return 'ai-panel__confidence--low';
   }
 
-  getInsightIcon(variant: AiInsight['icon']): string {
-    if (variant === 'warning') {
+  getInsightIcon(impact: InsightImpact): string {
+    if (impact === 'medium') {
       return '⚠';
     }
 
-    if (variant === 'check') {
+    if (impact === 'low') {
       return '✓';
     }
 

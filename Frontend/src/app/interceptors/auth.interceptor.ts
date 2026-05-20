@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 
 import { AuthService } from '../services/auth.service';
+import { NotificationService } from '../services/notification.service';
 
 const isAuthEndpoint = (url: string): boolean =>
   url.includes('/api/auth/login') ||
@@ -12,6 +13,7 @@ const isAuthEndpoint = (url: string): boolean =>
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
+  const notificationService = inject(NotificationService);
   const token = authService.getToken();
 
   const authReq = token
@@ -27,7 +29,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       if (error.status === 401 && !isAuthEndpoint(req.url)) {
         authService.logout();
       } else if (error.status === 403) {
-        console.warn('Access forbidden for request:', req.url);
+        notificationService.error('Access denied', 'You do not have permission to perform this action.');
       }
 
       return throwError(() => error);

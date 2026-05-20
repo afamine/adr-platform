@@ -5,7 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
   selector: 'app-editor-header',
   imports: [MatButtonModule],
   templateUrl: './editor-header.component.html',
-  styleUrl: './editor-header.component.css'
+  styleUrl: './editor-header.component.scss'
 })
 export class EditorHeaderComponent {
   readonly title = input.required<string>();

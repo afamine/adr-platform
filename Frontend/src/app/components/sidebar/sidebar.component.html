@@ -50,8 +50,8 @@
       @for (adr of adrs(); track adr.id) {
         <app-adr-card
           [adr]="adr"
-          [selected]="selectedAdrId() === adr.id"
-          (selectAdr)="adrSelected.emit($event)"
+          [isSelected]="selectedAdrId() === adr.id"
+          (selected)="adrSelected.emit($event.id)"
         />
       }
     } @else {

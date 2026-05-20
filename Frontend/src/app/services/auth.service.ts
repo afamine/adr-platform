@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { catchError, finalize, Observable, of, take } from 'rxjs';
+import { catchError, finalize, Observable, of, take, tap } from 'rxjs';
 import {
   AuthResponse,
   ChangePasswordRequest,
@@ -28,6 +28,8 @@ export class AuthService {
   private readonly REFRESH_KEY = 'adr_refresh_token';
   private readonly USER_KEY = 'adr_user';
   private isLoggingOut = false;
+
+  // TODO: Migrate to HttpOnly cookies for production (requires backend /api/auth/refresh as cookie endpoint)
 
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.API_URL}/api/auth/login`, request);
@@ -60,23 +62,39 @@ export class AuthService {
     return this.http.post<MessageResponse>(`${this.API_URL}/api/auth/resend-verification`, { email });
   }
 
-  refreshToken(refreshToken: string): Observable<AuthResponse> {
+  refreshToken(refreshToken = this.getRefreshToken() ?? ''): Observable<AuthResponse> {
     const payload: RefreshTokenRequest = { refreshToken };
-    return this.http.post<AuthResponse>(`${this.API_URL}/api/auth/refresh`, payload);
+    return this.http.post<AuthResponse>(`${this.API_URL}/api/auth/refresh`, payload).pipe(
+      tap((response) => this.saveTokens(response))
+    );
   }
 
   saveTokens(response: AuthResponse): void {
-    localStorage.setItem(this.TOKEN_KEY, response.token);
-    localStorage.setItem(this.REFRESH_KEY, response.refreshToken);
+    localStorage.setItem(this.TOKEN_KEY, this.encodeToken(response.token));
+    localStorage.setItem(this.REFRESH_KEY, this.encodeToken(response.refreshToken));
     localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
+    const raw = localStorage.getItem(this.TOKEN_KEY);
+    return raw ? this.decodeToken(raw) : null;
   }
 
   getRefreshToken(): string | null {
-    return localStorage.getItem(this.REFRESH_KEY);
+    const raw = localStorage.getItem(this.REFRESH_KEY);
+    return raw ? this.decodeToken(raw) : null;
+  }
+
+  private encodeToken(token: string): string {
+    return btoa(encodeURIComponent(token));
+  }
+
+  private decodeToken(encoded: string): string {
+    try {
+      return decodeURIComponent(atob(encoded));
+    } catch {
+      return '';
+    }
   }
 
   getCurrentUser(): AuthUser | null {

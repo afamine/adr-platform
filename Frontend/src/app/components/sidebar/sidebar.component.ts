@@ -1,12 +1,12 @@
-﻿import { Component, input, output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { Adr, AdrStatusFilter } from '../../models/adr.model';
-import { AdrCardComponent } from '../adr-card/adr-card.component';
+import { AdrCardComponent } from '../../pages/adrs/components/adr-card/adr-card.component';
 
 @Component({
   selector: 'app-sidebar',
   imports: [AdrCardComponent],
   templateUrl: './sidebar.component.html',
-  styleUrl: './sidebar.component.css'
+  styleUrl: './sidebar.component.scss'
 })
 export class SidebarComponent {
   readonly adrs = input.required<Adr[]>();

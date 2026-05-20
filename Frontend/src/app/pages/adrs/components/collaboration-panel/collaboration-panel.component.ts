@@ -1,17 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, OnInit, Output, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Adr } from '../../../../models/adr.model';
+import { Adr, CommentDto, HistoryEventDto, TeamMemberDto } from '../../../../models/adr.model';
+import { AdrService } from '../../../../services/adr.service';
 
 type CollaborationTab = 'comments' | 'history' | 'team';
-
-interface MockComment {
-  initials: string;
-  name: string;
-  time: string;
-  resolved: boolean;
-  text: string;
-}
 
 @Component({
   selector: 'app-collaboration-panel',
@@ -20,73 +13,143 @@ interface MockComment {
   templateUrl: './collaboration-panel.component.html',
   styleUrl: './collaboration-panel.component.scss'
 })
-export class CollaborationPanelComponent {
+export class CollaborationPanelComponent implements OnInit, OnChanges {
   @Input() selectedAdr: Adr | null = null;
   @Input() currentUserInitials = 'ME';
   @Input() currentUserName = 'You';
   @Output() closePanel = new EventEmitter<void>();
 
+  private readonly adrService = inject(AdrService);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   activeTab: CollaborationTab = 'comments';
+  comments: CommentDto[] = [];
+  history: HistoryEventDto[] = [];
+  team: TeamMemberDto[] = [];
   newComment = '';
 
-  mockComments: MockComment[] = [
-    {
-      initials: 'SC',
-      name: 'Sarah Chen',
-      time: '2 hours ago',
-      resolved: false,
-      text: 'Have we considered the implications for our legacy systems? The migration path might be complex.'
-    },
-    {
-      initials: 'MB',
-      name: 'Michael Brown',
-      time: '4 hours ago',
-      resolved: true,
-      text: 'Great analysis! The CQRS pattern seems like a perfect fit for our read-heavy workload.'
-    },
-    {
-      initials: 'ED',
-      name: 'Emily Davis',
-      time: '1 day ago',
-      resolved: false,
-      text: 'Can we add more detail about the rollback strategy? This is critical for risk management.'
+  isLoadingComments = false;
+  isLoadingHistory = false;
+  isLoadingTeam = false;
+  isSendingComment = false;
+  isResolving: Record<string, boolean> = {};
+
+  ngOnInit(): void {
+    this.loadComments();
+  }
+
+  ngOnChanges(): void {
+    if (this.selectedAdr?.id) {
+      this.resetData();
+      this.loadComments();
     }
-  ];
-
-  readonly mockHistory: string[] = [
-    'Sarah Chen updated status to Proposed — 2h ago',
-    'Michael Brown created this ADR — 1d ago',
-    'Emily Davis commented on Alternatives — 1d ago'
-  ];
-
-  readonly mockTeam: Array<{ initials: string; name: string; role: string }> = [
-    { initials: 'SC', name: 'Sarah Chen', role: 'AUTHOR' },
-    { initials: 'MB', name: 'Michael Brown', role: 'REVIEWER' },
-    { initials: 'ED', name: 'Emily Davis', role: 'APPROVER' }
-  ];
+  }
 
   setTab(tab: CollaborationTab): void {
     this.activeTab = tab;
+    if (tab === 'history' && this.history.length === 0 && !this.isLoadingHistory) {
+      this.loadHistory();
+    }
+    if (tab === 'team' && this.team.length === 0 && !this.isLoadingTeam) {
+      this.loadTeam();
+    }
+  }
+
+  private resetData(): void {
+    this.comments = [];
+    this.history = [];
+    this.team = [];
+    if (this.activeTab !== 'comments') {
+      this.activeTab = 'comments';
+    }
+  }
+
+  private loadComments(): void {
+    const adrId = this.selectedAdr?.id;
+    if (!adrId) return;
+    this.isLoadingComments = true;
+    this.adrService.getComments(adrId).subscribe({
+      next: (items) => {
+        this.comments = items;
+        this.isLoadingComments = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoadingComments = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private loadHistory(): void {
+    const adrId = this.selectedAdr?.id;
+    if (!adrId) return;
+    this.isLoadingHistory = true;
+    this.adrService.getAdrHistory(adrId).subscribe({
+      next: (items) => {
+        this.history = items;
+        this.isLoadingHistory = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoadingHistory = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private loadTeam(): void {
+    const adrId = this.selectedAdr?.id;
+    if (!adrId) return;
+    this.isLoadingTeam = true;
+    this.adrService.getAdrTeam(adrId).subscribe({
+      next: (items) => {
+        this.team = items;
+        this.isLoadingTeam = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoadingTeam = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   sendComment(): void {
     const trimmed = this.newComment.trim();
-    if (!trimmed) {
-      return;
-    }
+    const adrId = this.selectedAdr?.id;
+    if (!trimmed || !adrId || this.isSendingComment) return;
 
-    this.mockComments = [
-      {
-        initials: this.currentUserInitials || 'ME',
-        name: this.currentUserName || 'You',
-        time: 'just now',
-        resolved: false,
-        text: trimmed
+    this.isSendingComment = true;
+    this.adrService.addComment(adrId, trimmed).subscribe({
+      next: (comment) => {
+        this.comments = [...this.comments, comment];
+        this.newComment = '';
+        this.isSendingComment = false;
+        this.cdr.detectChanges();
       },
-      ...this.mockComments
-    ];
+      error: () => {
+        this.isSendingComment = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
 
-    this.newComment = '';
+  resolveComment(comment: CommentDto): void {
+    const adrId = this.selectedAdr?.id;
+    if (!adrId || this.isResolving[comment.id]) return;
+    this.isResolving[comment.id] = true;
+    this.adrService.resolveComment(adrId, comment.id, !comment.resolved).subscribe({
+      next: (updated) => {
+        this.comments = this.comments.map(c => c.id === updated.id ? updated : c);
+        this.isResolving[comment.id] = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isResolving[comment.id] = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   getRoleBadgeClass(role: string): string {

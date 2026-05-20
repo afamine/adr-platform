@@ -23,52 +23,79 @@
 
   <div class="collab-panel__body">
     @if (activeTab === 'comments') {
-      <div class="collab-panel__list">
-        @for (comment of mockComments; track comment.text) {
-          <div class="collab-panel__comment">
-            <div class="collab-panel__comment-row">
-              <div class="collab-panel__avatar">{{ comment.initials }}</div>
-              <div class="collab-panel__comment-meta">
-                <div class="collab-panel__comment-name">{{ comment.name }}</div>
-                <div class="collab-panel__comment-time">{{ comment.time }}</div>
+      @if (isLoadingComments) {
+        <div class="collab-panel__loading">Loading comments...</div>
+      } @else {
+        <div class="collab-panel__list">
+          @for (comment of comments; track comment.id) {
+            <div class="collab-panel__comment" [class.collab-panel__comment--resolved]="comment.resolved">
+              <div class="collab-panel__comment-row">
+                <div class="collab-panel__avatar">{{ comment.authorInitials }}</div>
+                <div class="collab-panel__comment-meta">
+                  <div class="collab-panel__comment-name">{{ comment.authorName }}</div>
+                  <div class="collab-panel__comment-time">{{ comment.createdAt }}</div>
+                </div>
+                @if (comment.resolved) {
+                  <span class="collab-panel__resolved">Resolved</span>
+                }
               </div>
-              @if (comment.resolved) {
-                <span class="collab-panel__resolved">Resolved</span>
-              }
+              <div class="collab-panel__comment-text">{{ comment.content }}</div>
+              <div class="collab-panel__comment-actions">
+                <button class="collab-panel__link" type="button" (click)="resolveComment(comment)" [disabled]="isResolving[comment.id]">
+                  {{ comment.resolved ? 'Unresolve' : 'Resolve' }}
+                </button>
+              </div>
             </div>
-            <div class="collab-panel__comment-text">{{ comment.text }}</div>
-            <div class="collab-panel__comment-actions">
-              <button class="collab-panel__link" type="button">Reply</button>
-              <button class="collab-panel__link" type="button">Resolve</button>
-            </div>
-          </div>
-        }
-      </div>
+          } @empty {
+            <div class="collab-panel__empty">No comments yet. Be the first to comment!</div>
+          }
+        </div>
+      }
     }
 
     @if (activeTab === 'history') {
-      <div class="collab-panel__placeholder">
-        @for (entry of mockHistory; track entry) {
-          <div class="collab-panel__history-item">{{ entry }}</div>
-        }
-      </div>
+      @if (isLoadingHistory) {
+        <div class="collab-panel__loading">Loading history...</div>
+      } @else {
+        <div class="collab-panel__history">
+          @for (event of history; track event.eventType + event.timeAgo) {
+            <div class="collab-panel__history-item">
+              <span class="collab-panel__history-actor">{{ event.actor }}</span>
+              <span class="collab-panel__history-action">{{ event.action }}</span>
+              <span class="collab-panel__history-time">{{ event.timeAgo }}</span>
+            </div>
+          } @empty {
+            <div class="collab-panel__empty">No history yet.</div>
+          }
+        </div>
+      }
     }
 
     @if (activeTab === 'team') {
-      <div class="collab-panel__placeholder">
-        @for (member of mockTeam; track member.name) {
-          <div class="collab-panel__team-row">
-            <div class="collab-panel__avatar">{{ member.initials }}</div>
-            <div class="collab-panel__team-name">{{ member.name }}</div>
-            <span [class]="getRoleBadgeClass(member.role)">{{ member.role }}</span>
-          </div>
-        }
-      </div>
+      @if (isLoadingTeam) {
+        <div class="collab-panel__loading">Loading team...</div>
+      } @else {
+        <div class="collab-panel__team">
+          @for (member of team; track member.id) {
+            <div class="collab-panel__team-row">
+              <div class="collab-panel__avatar" [style.background]="member.avatarColor">{{ member.initials }}</div>
+              <div class="collab-panel__team-meta">
+                <div class="collab-panel__team-name">{{ member.fullName }}</div>
+                <span [class]="getRoleBadgeClass(member.role)">{{ member.role }}</span>
+              </div>
+            </div>
+          } @empty {
+            <div class="collab-panel__empty">No team members found.</div>
+          }
+        </div>
+      }
     }
   </div>
 
-  <div class="collab-panel__composer" *ngIf="activeTab === 'comments'">
-    <textarea class="collab-panel__textarea" [(ngModel)]="newComment" [ngModelOptions]="{ standalone: true }" placeholder="Add a comment..."></textarea>
-    <button class="collab-panel__send" type="button" (click)="sendComment()">Send</button>
-  </div>
+  @if (activeTab === 'comments') {
+    <div class="collab-panel__composer">
+      <textarea class="collab-panel__textarea" [(ngModel)]="newComment" [ngModelOptions]="{ standalone: true }" placeholder="Add a comment..." rows="3"></textarea>
+      <button class="collab-panel__send" type="button" (click)="sendComment()" [disabled]="isSendingComment || !newComment.trim()">{{ isSendingComment ? 'Sending...' : 'Send' }}</button>
+    </div>
+  }
 </section>

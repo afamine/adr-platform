@@ -528,7 +528,7 @@ export class AdrDashboardComponent implements OnInit {
   private loadAdrs(selectId?: string): void {
     this.isLoading = true;
 
-    this.adrService.getAdrs().subscribe({
+    this.adrService.getAdrs({ size: 20, page: 0 }).subscribe({
       next: (adrs) => {
         this.ngZone.run(() => {
           this.adrs = adrs;

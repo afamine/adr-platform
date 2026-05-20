@@ -239,6 +239,15 @@
   font-style: italic;
 }
 
+.ai-panel__empty {
+  padding: 16px;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .ai-panel__buttons {
   margin-top: 12px;
   display: flex;

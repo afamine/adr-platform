@@ -7,7 +7,7 @@ import { ConfirmDialogComponent } from './shared/confirm-dialog/confirm-dialog.c
   selector: 'app-root',
   imports: [RouterOutlet, ToastContainerComponent, ConfirmDialogComponent],
   template: '<app-toast-container /><app-confirm-dialog /><router-outlet />',
-  styleUrls: ['./app.css']
+  styleUrls: ['./app.scss']
 })
 export class App {
 }

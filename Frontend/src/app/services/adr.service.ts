@@ -2,22 +2,40 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { catchError, map, Observable, of, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AdrDto, AdrStatus, AuditEventDto, CastVoteRequest, CreateAdrRequest, StatusTransitionRequest, UpdateAdrRequest, VoteDto } from '../models/adr.model';
+import { AdrDto, AdrStatus, AuditEventDto, CastVoteRequest, CommentDto, CreateAdrRequest, HistoryEventDto, StatusTransitionRequest, TeamMemberDto, UpdateAdrRequest, VoteDto } from '../models/adr.model';
 
 @Injectable({ providedIn: 'root' })
 export class AdrService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
 
-  getAdrs(params?: { status?: AdrStatus; search?: string }): Observable<AdrDto[]> {
+  getAdrs(params?: {
+    status?: AdrStatus | 'ALL' | string;
+    search?: string;
+    page?: number;
+    size?: number;
+    sort?: string;
+  }): Observable<AdrDto[]> {
     let httpParams = new HttpParams();
 
-    if (params?.status) {
+    if (params?.status && params.status !== 'ALL') {
       httpParams = httpParams.set('status', params.status);
     }
 
-    if (params?.search) {
-      httpParams = httpParams.set('search', params.search);
+    if (params?.search?.trim()) {
+      httpParams = httpParams.set('search', params.search.trim());
+    }
+
+    if (params?.page !== undefined) {
+      httpParams = httpParams.set('page', params.page.toString());
+    }
+
+    if (params?.size !== undefined) {
+      httpParams = httpParams.set('size', params.size.toString());
+    }
+
+    if (params?.sort) {
+      httpParams = httpParams.set('sort', params.sort);
     }
 
     return this.http
@@ -101,6 +119,36 @@ export class AdrService {
   getAuditLog(adrId: string): Observable<AuditEventDto[]> {
     return this.http
       .get<AuditEventDto[]>(`${this.baseUrl}/api/adrs/${adrId}/audit`)
+      .pipe(catchError((err) => this.handleError(err)));
+  }
+
+  getComments(adrId: string): Observable<CommentDto[]> {
+    return this.http
+      .get<CommentDto[]>(`${this.baseUrl}/api/adrs/${adrId}/comments`)
+      .pipe(catchError((err) => this.handleError(err)));
+  }
+
+  addComment(adrId: string, content: string): Observable<CommentDto> {
+    return this.http
+      .post<CommentDto>(`${this.baseUrl}/api/adrs/${adrId}/comments`, { content })
+      .pipe(catchError((err) => this.handleError(err)));
+  }
+
+  resolveComment(adrId: string, commentId: string, resolved: boolean): Observable<CommentDto> {
+    return this.http
+      .patch<CommentDto>(`${this.baseUrl}/api/adrs/${adrId}/comments/${commentId}/resolve`, { resolved })
+      .pipe(catchError((err) => this.handleError(err)));
+  }
+
+  getAdrHistory(adrId: string): Observable<HistoryEventDto[]> {
+    return this.http
+      .get<HistoryEventDto[]>(`${this.baseUrl}/api/adrs/${adrId}/history`)
+      .pipe(catchError((err) => this.handleError(err)));
+  }
+
+  getAdrTeam(adrId: string): Observable<TeamMemberDto[]> {
+    return this.http
+      .get<TeamMemberDto[]>(`${this.baseUrl}/api/adrs/${adrId}/team`)
       .pipe(catchError((err) => this.handleError(err)));
   }
 
