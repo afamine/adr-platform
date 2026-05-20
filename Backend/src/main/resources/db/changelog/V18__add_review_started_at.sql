@@ -1,0 +1,1 @@
+ALTER TABLE adr ADD COLUMN IF NOT EXISTS review_started_at TIMESTAMP;

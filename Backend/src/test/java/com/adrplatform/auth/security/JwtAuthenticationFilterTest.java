@@ -7,7 +7,6 @@ import com.adrplatform.auth.repository.UserRepository;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +65,29 @@ class JwtAuthenticationFilterTest {
             }
         };
 
-        filter = new JwtAuthenticationFilter(jwtService, userRepository, provider, new TokenBlacklistService());
+        ObjectProvider<UserContext> userContextProvider = new ObjectProvider<>() {
+            @Override
+            public UserContext getObject(Object... args) {
+                return new UserContext();
+            }
+
+            @Override
+            public UserContext getIfAvailable() {
+                return new UserContext();
+            }
+
+            @Override
+            public UserContext getIfUnique() {
+                return new UserContext();
+            }
+
+            @Override
+            public UserContext getObject() {
+                return new UserContext();
+            }
+        };
+
+        filter = new JwtAuthenticationFilter(jwtService, userRepository, provider, userContextProvider, mock(TokenBlacklistService.class));
     }
 
     @Test

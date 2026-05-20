@@ -25,6 +25,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final ObjectProvider<TenantContext> tenantContextProvider;
+    private final ObjectProvider<UserContext> userContextProvider;
     private final TokenBlacklistService tokenBlacklistService;
 
     @Override
@@ -59,6 +60,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
             tenantContextProvider.getObject().setWorkspaceId(UUID.fromString(claims.get("workspaceId", String.class)));
+            userContextProvider.getObject().set(user);
         });
 
         filterChain.doFilter(request, response);

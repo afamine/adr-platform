@@ -7,6 +7,7 @@ import com.adrplatform.adr.exception.InvalidTransitionException;
 import com.adrplatform.vote.exception.AlreadyVotedException;
 import com.adrplatform.vote.exception.InvalidVoteException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Slf4j
 @ControllerAdvice
@@ -58,9 +61,30 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.NOT_FOUND, "ADR not found.", request.getRequestURI());
     }
 
-    @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class})
-    public ResponseEntity<ErrorResponse> handleValidation(Exception ex, HttpServletRequest request) {
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationErrors(
+            MethodArgumentNotValidException ex, HttpServletRequest request) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                fieldErrors.put(error.getField(), error.getDefaultMessage())
+        );
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", Instant.now().toString());
+        body.put("status", 400);
+        body.put("message", "Validation failed");
+        body.put("errors", fieldErrors);
+        body.put("path", request.getRequestURI());
+        return ResponseEntity.badRequest().body(body);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
         return buildError(HttpStatus.BAD_REQUEST, "Validation failed", request.getRequestURI());
+    }
+
+    @ExceptionHandler(OptimisticLockException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLock(OptimisticLockException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.CONFLICT, "This record was modified by another user. Please refresh and try again.", request.getRequestURI());
     }
 
     @ExceptionHandler(InvalidTransitionException.class)

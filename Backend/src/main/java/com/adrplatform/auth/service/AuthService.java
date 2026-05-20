@@ -26,6 +26,8 @@ import com.adrplatform.auth.repository.WorkspaceRepository;
 import com.adrplatform.notification.service.NotificationService;
 import com.adrplatform.auth.security.JwtService;
 import com.adrplatform.auth.security.TokenBlacklistService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,6 +35,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -52,6 +56,7 @@ public class AuthService {
     private final MailService mailService;
     private final AppProperties appProperties;
     private final NotificationService notificationService;
+    private final ObjectMapper objectMapper;
 
     /**
      * Registers a user, creates an email-verification token and sends the verification email asynchronously.
@@ -90,7 +95,7 @@ public class AuthService {
         mailService.sendVerificationEmail(saved.getEmail(), saved.getFullName(), verificationUrl, expiryHours);
 
         auditService.record(saved, workspace, "USER_REGISTERED", "USER", saved.getId(), null,
-                "{\"email\":\"" + saved.getEmail() + "\",\"role\":\"" + saved.getRole().name() + "\"}");
+                toJson(Map.of("email", saved.getEmail(), "role", saved.getRole().name())));
 
         log.info("New user registered (pending verification): {}", saved.getEmail());
         return RegisterResponse.builder()
@@ -124,7 +129,7 @@ public class AuthService {
         refreshTokenService.create(user, refreshToken);
 
         auditService.record(user, user.getWorkspace(), "USER_LOGGED_IN", "USER", user.getId(), null,
-                "{\"email\":\"" + user.getEmail() + "\"}");
+                toJson(Map.of("email", user.getEmail())));
 
         return AuthResponse.builder()
                 .token(accessToken)
@@ -152,7 +157,7 @@ public class AuthService {
         refreshTokenService.create(user, newRefreshToken);
 
         auditService.record(user, user.getWorkspace(), "TOKEN_REFRESHED", "REFRESH_TOKEN", stored.getId(),
-                "{\"token\":\"revoked\"}", "{\"token\":\"rotated\"}");
+                toJson(Map.of("token", "revoked")), toJson(Map.of("token", "rotated")));
 
         return AuthResponse.builder()
                 .token(newAccessToken)
@@ -197,7 +202,7 @@ public class AuthService {
         userRepository.save(user);
 
         auditService.record(user, user.getWorkspace(), "USER_EMAIL_VERIFIED", "USER", user.getId(), null,
-                "{\"email\":\"" + user.getEmail() + "\"}");
+                toJson(Map.of("email", user.getEmail())));
 
         log.info("Email verified for user {}", user.getEmail());
         return MessageResponse.builder()
@@ -319,7 +324,7 @@ public class AuthService {
         refreshTokenService.create(user, refreshToken);
 
         auditService.record(user, user.getWorkspace(), "USER_INVITE_ACCEPTED", "USER", user.getId(), null,
-                "{\"email\":\"" + user.getEmail() + "\"}");
+                toJson(Map.of("email", user.getEmail())));
 
         notificationService.notifyNewTeamMember(user.getId(), user.getWorkspace().getId());
         log.info("Invite accepted and account activated for {}", user.getEmail());
@@ -342,6 +347,14 @@ public class AuthService {
         auditService.record(user, user.getWorkspace(), "LOGOUT_ALL_DEVICES", "USER", user.getId(), null, null);
         log.info("All devices signed out for user {}", user.getEmail());
         return MessageResponse.builder().message("Signed out from all devices.").build();
+    }
+
+    private String toJson(Map<String, Object> payload) {
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Failed to serialize audit payload", ex);
+        }
     }
 
     private String maskEmail(String email) {

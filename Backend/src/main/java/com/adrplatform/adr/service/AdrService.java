@@ -13,11 +13,16 @@ import com.adrplatform.auth.domain.AuditEvent;
 import com.adrplatform.auth.domain.Role;
 import com.adrplatform.auth.domain.User;
 import com.adrplatform.auth.repository.AuditEventRepository;
+import com.adrplatform.auth.repository.WorkspaceRepository;
 import com.adrplatform.auth.security.TenantContext;
 import com.adrplatform.auth.service.AuditService;
 import com.adrplatform.auth.exception.BadRequestException;
 import com.adrplatform.notification.service.NotificationService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -27,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -36,9 +42,22 @@ public class AdrService {
 
     private final AdrRepository adrRepository;
     private final AuditEventRepository auditEventRepository;
+    private final WorkspaceRepository workspaceRepository;
     private final TenantContext tenantContext;
     private final AuditService auditService;
     private final NotificationService notificationService;
+    private final ObjectMapper objectMapper;
+
+    @Transactional(readOnly = true)
+    public Page<AdrDto> getAllAdrs(AdrStatus status, String search, Pageable pageable) {
+        UUID workspaceId = tenantContext.getWorkspaceId();
+        if (workspaceId == null) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Workspace context not available");
+        }
+        String normalizedSearch = (search == null || search.isBlank()) ? null : search.trim();
+        return adrRepository.searchPaged(workspaceId, status, normalizedSearch, pageable)
+                .map(AdrDto::fromEntity);
+    }
 
     @Transactional(readOnly = true)
     public List<AdrDto> getAllAdrs(AdrStatus status, String search) {
@@ -109,6 +128,8 @@ public class AdrService {
             throw new AdrAccessDeniedException("You don't have permission to create ADRs.");
         }
         UUID workspaceId = tenantContext.getWorkspaceId();
+        workspaceRepository.findByIdWithLock(workspaceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Workspace not found"));
         int nextNumber = adrRepository.findMaxAdrNumber(workspaceId) + 1;
 
         log.debug("Saving ADR with tags: {}", request.tags());
@@ -129,12 +150,9 @@ public class AdrService {
 
         log.debug("Loaded ADR tags raw: '{}', parsed: {}", saved.getTagsCsv(), AdrDto.fromEntity(saved).tags());
 
-        String createdJson = "{" +
-                "\"adrNumber\":" + saved.getAdrNumber() + "," +
-                "\"title\":\"" + (saved.getTitle() == null ? "" : saved.getTitle().replace("\"", "\\\"")) + "\"," +
-                "\"status\":\"" + saved.getStatus().name() + "\"" +
-                "}";
-        auditService.record(actor, actor.getWorkspace(), "ADR_CREATED", "ADR", saved.getId(), null, createdJson);
+        auditService.record(actor, actor.getWorkspace(), "ADR_CREATED", "ADR", saved.getId(), null,
+                toJson(Map.of("adrNumber", saved.getAdrNumber(), "title",
+                        saved.getTitle() == null ? "" : saved.getTitle(), "status", saved.getStatus().name())));
 
         log.info("ADR created id={} number={} by {}", saved.getId(), saved.getAdrNumber(), actor.getEmail());
         return AdrDto.fromEntity(saved);
@@ -165,10 +183,8 @@ public class AdrService {
         if (request.tags() != null && !request.tags().isEmpty()) adr.setTagsCsv(joinTags(request.tags()));
 
         Adr saved = adrRepository.save(adr);
-        String updatedJson = "{" +
-                "\"title\":\"" + (saved.getTitle() == null ? "" : saved.getTitle().replace("\"", "\\\"")) + "\"" +
-                "}";
-        auditService.record(actor, actor.getWorkspace(), "ADR_UPDATED", "ADR", saved.getId(), null, updatedJson);
+        auditService.record(actor, actor.getWorkspace(), "ADR_UPDATED", "ADR", saved.getId(), null,
+                toJson(Map.of("title", saved.getTitle() == null ? "" : saved.getTitle())));
         return AdrDto.fromEntity(saved);
     }
 
@@ -187,11 +203,14 @@ public class AdrService {
         enforceTransition(actor, adr, newStatus);
 
         adr.setStatus(newStatus);
+        if (newStatus == AdrStatus.UNDER_REVIEW && adr.getReviewStartedAt() == null) {
+            adr.setReviewStartedAt(java.time.LocalDateTime.now());
+        }
         Adr saved = adrRepository.save(adr);
 
-        String oldJson = "{\"status\":\"" + old.name() + "\"}";
-        String newJson = "{\"status\":\"" + newStatus.name() + "\"}";
-        auditService.record(actor, actor.getWorkspace(), "ADR_STATUS_CHANGED", "ADR", saved.getId(), oldJson, newJson);
+        auditService.record(actor, actor.getWorkspace(), "ADR_STATUS_CHANGED", "ADR", saved.getId(),
+                toJson(Map.of("status", old.name())),
+                toJson(Map.of("status", newStatus.name())));
         notificationService.notifyStatusChanged(saved.getId(), saved.getAdrNumber(), saved.getTitle(),
                 workspaceId, saved.getAuthor().getId(), actor.getId(), newStatus.name());
         return AdrDto.fromEntity(saved);
@@ -261,6 +280,14 @@ public class AdrService {
     private String joinTags(List<String> tags) {
         if (tags == null || tags.isEmpty()) return "";
         return String.join(",", tags.stream().map(String::trim).filter(s -> !s.isEmpty()).toList());
+    }
+
+    private String toJson(Map<String, Object> payload) {
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Failed to serialize audit payload", ex);
+        }
     }
 
     private User currentUser() {

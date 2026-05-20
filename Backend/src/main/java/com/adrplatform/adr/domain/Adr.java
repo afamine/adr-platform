@@ -6,7 +6,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
+
 
 @Getter
 @Setter
@@ -59,6 +61,13 @@ public class Adr {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @Column(name = "review_started_at")
+    private LocalDateTime reviewStartedAt;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
 
     @PrePersist
     void prePersist() {

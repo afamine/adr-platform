@@ -34,7 +34,9 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
-  access-token-ttl-ms: 86400000
+  # Access token: 15 minutes. Refresh token: 7 days (rotation on use).
+  # Frontend intercepts 401 and calls POST /api/auth/refresh automatically.
+  access-token-ttl-ms: 900000
   refresh-token-ttl-ms: 604800000
 
 springdoc:

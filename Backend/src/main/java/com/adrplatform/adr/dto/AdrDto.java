@@ -24,6 +24,7 @@ public record AdrDto(
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         UUID workspaceId,
+        LocalDateTime reviewStartedAt,
         String lastAction,
         LocalDateTime lastActionDate
 ) {
@@ -49,6 +50,7 @@ public record AdrDto(
                 LocalDateTime.ofInstant(a.getCreatedAt(), ZoneOffset.UTC),
                 LocalDateTime.ofInstant(a.getUpdatedAt(), ZoneOffset.UTC),
                 a.getWorkspace().getId(),
+                a.getReviewStartedAt(),
                 null,
                 null
         );
@@ -76,6 +78,7 @@ public record AdrDto(
                 LocalDateTime.ofInstant(a.getCreatedAt(), ZoneOffset.UTC),
                 LocalDateTime.ofInstant(a.getUpdatedAt(), ZoneOffset.UTC),
                 a.getWorkspace().getId(),
+                a.getReviewStartedAt(),
                 lastAction,
                 lastActionDate
         );

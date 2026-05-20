@@ -2,11 +2,11 @@ package com.adrplatform.adr.repository;
 
 import com.adrplatform.adr.domain.Adr;
 import com.adrplatform.adr.domain.AdrStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
 import java.util.List;
@@ -62,4 +62,21 @@ public interface AdrRepository extends JpaRepository<Adr, UUID> {
     List<Adr> search(@Param("workspaceId") UUID workspaceId,
                      @Param("status") AdrStatus status,
                      @Param("search") String search);
+
+    @Query("""
+            select a from Adr a
+            where a.workspace.id = :workspaceId
+              and (:status is null or a.status = :status)
+              and (
+                    :search is null
+                 or lower(a.title) like lower(concat('%', :search, '%'))
+                 or lower(coalesce(a.context, '')) like lower(concat('%', :search, '%'))
+                 or lower(coalesce(a.decision, '')) like lower(concat('%', :search, '%'))
+                 or lower(coalesce(a.alternatives, '')) like lower(concat('%', :search, '%'))
+              )
+            """)
+    Page<Adr> searchPaged(@Param("workspaceId") UUID workspaceId,
+                          @Param("status") AdrStatus status,
+                          @Param("search") String search,
+                          Pageable pageable);
 }

@@ -38,3 +38,11 @@ databaseChangeLog:
       file: db/changelog/V15__create_notification_table.sql
   - include:
       file: db/changelog/V16__add_avatar_color.sql
+  - include:
+      file: db/changelog/V17__create_blacklisted_token_table.sql
+  - include:
+      file: db/changelog/V18__add_review_started_at.sql
+  - include:
+      file: db/changelog/V19__add_adr_version.sql
+  - include:
+      file: db/changelog/V20__create_adr_comment_table.sql
