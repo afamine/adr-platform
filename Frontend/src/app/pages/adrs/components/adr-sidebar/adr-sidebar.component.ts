@@ -1,8 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { debounceTime, Subject } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ADR_FILTER_OPTIONS, Adr, AdrStatus, AdrStatusFilter } from '../../../../models/adr.model';
 import { AdrCardComponent } from '../adr-card/adr-card.component';
 
@@ -13,31 +11,27 @@ import { AdrCardComponent } from '../adr-card/adr-card.component';
   templateUrl: './adr-sidebar.component.html',
   styleUrl: './adr-sidebar.component.scss'
 })
-export class AdrSidebarComponent implements OnInit {
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly searchSubject = new Subject<string>();
-
+export class AdrSidebarComponent {
   @Input() adrs: Adr[] = [];
   @Input() selectedId: string | null = null;
   @Input() searchQuery = '';
   @Input() statusFilter: AdrStatus | 'ALL' = 'ALL';
   @Input() canCreate = true;
   @Input() isLoading = false;
+  @Input() currentPage = 0;
+  @Input() totalPages = 0;
+  @Input() totalElements = 0;
 
   @Output() adrSelected = new EventEmitter<Adr>();
   @Output() createNew = new EventEmitter<void>();
   @Output() searchChanged = new EventEmitter<string>();
   @Output() filterChanged = new EventEmitter<AdrStatusFilter>();
+  @Output() previousPage = new EventEmitter<void>();
+  @Output() nextPage = new EventEmitter<void>();
 
   readonly filterOptions = ADR_FILTER_OPTIONS;
 
-  ngOnInit(): void {
-    this.searchSubject
-      .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
-      .subscribe((query) => this.searchChanged.emit(query));
-  }
-
   onSearchInput(query: string): void {
-    this.searchSubject.next(query);
+    this.searchChanged.emit(query);
   }
 }

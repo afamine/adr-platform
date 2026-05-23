@@ -62,4 +62,25 @@
       <div class="adr-sidebar__empty">No ADRs found.</div>
     }
   </div>
+
+  @if (totalPages > 1) {
+    <div class="pagination">
+      <button
+        class="pagination__btn"
+        [disabled]="currentPage === 0"
+        (click)="previousPage.emit()">
+        ← Prev
+      </button>
+      <span class="pagination__info">
+        {{ currentPage + 1 }} / {{ totalPages }}
+        &nbsp;({{ totalElements }} ADRs)
+      </span>
+      <button
+        class="pagination__btn"
+        [disabled]="currentPage >= totalPages - 1"
+        (click)="nextPage.emit()">
+        Next →
+      </button>
+    </div>
+  }
 </aside>

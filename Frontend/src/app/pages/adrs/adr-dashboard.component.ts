@@ -33,6 +33,7 @@ export class AdrDashboardComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   private readonly notifCenterService = inject(NotificationCenterService);
   private readonly confirmService = inject(ConfirmService);
+  private searchDebounceTimer: any = null;
 
   adrs: Adr[] = [];
   filteredAdrs: Adr[] = [];
@@ -46,6 +47,10 @@ export class AdrDashboardComponent implements OnInit {
   isSaving = false;
   isEditing = false;
   isLoading = false;
+  currentPage = 0;
+  pageSize = 20;
+  totalElements = 0;
+  totalPages = 0;
   showSettings = false;
   showProfile = false;
   showNotifications = false;
@@ -77,31 +82,36 @@ export class AdrDashboardComponent implements OnInit {
 
   onSearch(query: string): void {
     this.searchQuery = query;
-    this.applyLocalFilters();
+    if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
+    this.searchDebounceTimer = setTimeout(() => {
+      this.currentPage = 0;
+      this.loadAdrs();
+    }, 300);
   }
 
   onFilterChange(status: AdrStatus | 'ALL'): void {
     this.statusFilter = status;
-    this.applyLocalFilters();
+    this.currentPage = 0;
+    this.loadAdrs();
+  }
+
+  onPreviousPage(): void {
+    if (this.currentPage > 0) {
+      this.currentPage--;
+      this.loadAdrs();
+    }
+  }
+
+  onNextPage(): void {
+    if (this.currentPage < this.totalPages - 1) {
+      this.currentPage++;
+      this.loadAdrs();
+    }
   }
 
   private applyLocalFilters(): void {
-    let result = [...this.adrs];
-    if (this.statusFilter !== 'ALL') {
-      result = result.filter((a) => a.status === this.statusFilter);
-    }
-    if (this.searchQuery.trim()) {
-      const q = this.searchQuery.toLowerCase();
-      result = result.filter(
-        (a) =>
-          a.title?.toLowerCase().includes(q) ||
-          a.tags.some((t) => t.toLowerCase().includes(q))
-      );
-    }
-    this.ngZone.run(() => {
-      this.filteredAdrs = result;
-      this.cdr.detectChanges();
-    });
+    // No-op: filtering is now server-side via loadAdrs()
+    // Kept as a stub so onSearch/onFilterChange still compile
   }
 
   onSelectAdr(adr: Adr): void {
@@ -528,44 +538,35 @@ export class AdrDashboardComponent implements OnInit {
   private loadAdrs(selectId?: string): void {
     this.isLoading = true;
 
-    this.adrService.getAdrs({ size: 20, page: 0 }).subscribe({
-      next: (adrs) => {
+    const params = {
+      status: this.statusFilter !== 'ALL' ? this.statusFilter : undefined,
+      search: this.searchQuery.trim() || undefined,
+      page: this.currentPage,
+      size: this.pageSize
+    };
+
+    this.adrService.getAdrsPaged(params).subscribe({
+      next: (page) => {
         this.ngZone.run(() => {
-          this.adrs = adrs;
+          this.adrs = page.content;
+          this.filteredAdrs = page.content;
+          this.totalElements = page.totalElements;
+          this.totalPages = page.totalPages;
           this.isLoading = false;
 
-          let filtered = [...adrs];
-          if (this.statusFilter !== 'ALL') {
-            filtered = filtered.filter((a) => a.status === this.statusFilter);
-          }
-          if (this.searchQuery.trim()) {
-            const q = this.searchQuery.toLowerCase();
-            filtered = filtered.filter(
-              (a) => a.title?.toLowerCase().includes(q) || a.tags.some((t) => t.toLowerCase().includes(q))
-            );
-          }
-          this.filteredAdrs = filtered;
-
           const preferredId = selectId ?? this.selectedAdr?.id;
-          const nextSelected = preferredId ? adrs.find((adr) => adr.id === preferredId) ?? null : null;
+          const nextSelected = preferredId
+            ? page.content.find((adr) => adr.id === preferredId) ?? null
+            : null;
 
           if (nextSelected) {
             this.onSelectAdr(nextSelected);
-            this.cdr.detectChanges();
-            return;
-          }
-
-          if (adrs.length > 0 && (!this.selectedAdr || !adrs.some((adr) => adr.id === this.selectedAdr?.id))) {
-            this.onSelectAdr(adrs[0]);
-            this.cdr.detectChanges();
-            return;
-          }
-
-          if (adrs.length === 0) {
+          } else if (page.content.length > 0 && !this.selectedAdr) {
+            this.onSelectAdr(page.content[0]);
+          } else if (page.content.length === 0) {
             this.selectedAdr = null;
             this.editingAdr = null;
           }
-
           this.cdr.detectChanges();
         });
       },

@@ -188,10 +188,15 @@
       [statusFilter]="statusFilter"
       [canCreate]="canCreateAdr"
       [isLoading]="isLoading"
+      [currentPage]="currentPage"
+      [totalPages]="totalPages"
+      [totalElements]="totalElements"
       (adrSelected)="onSelectAdr($event)"
       (createNew)="onCreateNew()"
       (searchChanged)="onSearch($event)"
       (filterChanged)="onFilterChange($event)"
+      (previousPage)="onPreviousPage()"
+      (nextPage)="onNextPage()"
     />
 
     <div class="dashboard-layout">
