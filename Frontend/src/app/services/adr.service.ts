@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { catchError, map, Observable, of, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AdrDto, AdrStatus, AuditEventDto, CastVoteRequest, CommentDto, CreateAdrRequest, HistoryEventDto, StatusTransitionRequest, TeamMemberDto, UpdateAdrRequest, VoteDto } from '../models/adr.model';
+import { AdrDto, AdrStatus, AuditEventDto, CastVoteRequest, CommentDto, CreateAdrRequest, HistoryEventDto, PageResponse, StatusTransitionRequest, TeamMemberDto, UpdateAdrRequest, VoteDto } from '../models/adr.model';
 
 @Injectable({ providedIn: 'root' })
 export class AdrService {
@@ -42,6 +42,34 @@ export class AdrService {
       .get<AdrDto[]>(`${this.baseUrl}/api/adrs`, { params: httpParams })
       .pipe(
         map((adrs) => adrs.map((adr) => this.normalizeTags(adr))),
+        catchError((err) => this.handleError(err))
+      );
+  }
+
+  getAdrsPaged(params?: {
+    status?: AdrStatus | 'ALL' | string;
+    search?: string;
+    page?: number;
+    size?: number;
+    sort?: string;
+    direction?: string;
+  }): Observable<PageResponse<AdrDto>> {
+    let httpParams = new HttpParams();
+    if (params?.status && params.status !== 'ALL') {
+      httpParams = httpParams.set('status', params.status);
+    }
+    if (params?.search?.trim()) {
+      httpParams = httpParams.set('search', params.search.trim());
+    }
+    httpParams = httpParams.set('page', (params?.page ?? 0).toString());
+    httpParams = httpParams.set('size', (params?.size ?? 20).toString());
+    httpParams = httpParams.set('sort', params?.sort ?? 'adrNumber');
+    httpParams = httpParams.set('direction', params?.direction ?? 'DESC');
+
+    return this.http
+      .get<PageResponse<AdrDto>>(`${this.baseUrl}/api/adrs/paged`, { params: httpParams })
+      .pipe(
+        map((page) => ({ ...page, content: page.content.map((adr) => this.normalizeTags(adr)) })),
         catchError((err) => this.handleError(err))
       );
   }

@@ -1,4 +1,5 @@
 ﻿export type AdrStatus = 'DRAFT' | 'PROPOSED' | 'UNDER_REVIEW' | 'ACCEPTED' | 'REJECTED' | 'SUPERSEDED';
+export type Role = 'AUTHOR' | 'REVIEWER' | 'APPROVER' | 'ADMIN';
 export type AdrStatusFilter = AdrStatus | 'ALL';
 export type AdrTabKey = 'context' | 'decision' | 'consequences' | 'alternatives';
 
@@ -158,7 +159,7 @@ export const ADR_TAB_PROMPTS: Record<AdrTabKey, { question: string; placeholder:
 
 export function allowedTransitions(
   adr: AdrDto,
-  me: { id: string; role: AdrStatus | string }
+  me: { id: string; role: Role | string }
 ): AdrStatus[] {
   const role = me.role as string;
   const isOwner = adr.authorId === me.id;
@@ -191,4 +192,12 @@ export function allowedTransitions(
     default:
       return [];
   }
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
 }
