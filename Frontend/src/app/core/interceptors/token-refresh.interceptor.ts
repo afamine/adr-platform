@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
 
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 
 export const tokenRefreshInterceptor: HttpInterceptorFn = (
   req: HttpRequest<unknown>,
@@ -27,6 +28,13 @@ export const tokenRefreshInterceptor: HttpInterceptorFn = (
             router.navigate(['/login']);
             return throwError(() => refreshError);
           })
+        );
+      }
+
+      if (error.status === 403) {
+        inject(NotificationService).error(
+          'Access denied',
+          'You do not have permission to perform this action.'
         );
       }
 
