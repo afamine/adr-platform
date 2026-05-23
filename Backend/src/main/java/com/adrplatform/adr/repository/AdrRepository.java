@@ -46,37 +46,53 @@ public interface AdrRepository extends JpaRepository<Adr, UUID> {
     @Query("select coalesce(max(a.adrNumber), 0) from Adr a where a.workspace.id = :workspaceId")
     int findMaxAdrNumber(@Param("workspaceId") UUID workspaceId);
 
-    @Query("""
-            select a from Adr a
-            where a.workspace.id = :workspaceId
-              and (:status is null or a.status = :status)
-              and (
-                    :search is null
-                 or lower(a.title) like lower(concat('%', :search, '%'))
-                 or lower(coalesce(a.context, '')) like lower(concat('%', :search, '%'))
-                 or lower(coalesce(a.decision, '')) like lower(concat('%', :search, '%'))
-                 or lower(coalesce(a.alternatives, '')) like lower(concat('%', :search, '%'))
+    @Query(value = "SELECT next_adr_number(:workspaceId)", nativeQuery = true)
+    int nextAdrNumber(@Param("workspaceId") UUID workspaceId);
+
+    @Query(value = """
+            SELECT * FROM adr a
+            WHERE a.workspace_id = :workspaceId
+              AND (CAST(:status AS text) IS NULL OR a.status = CAST(:status AS text))
+              AND (
+                    CAST(:search AS text) IS NULL
+                 OR lower(a.title) LIKE lower('%' || CAST(:search AS text) || '%')
+                 OR lower(COALESCE(a.context, '')) LIKE lower('%' || CAST(:search AS text) || '%')
+                 OR lower(COALESCE(a.decision, '')) LIKE lower('%' || CAST(:search AS text) || '%')
+                 OR lower(COALESCE(a.alternatives, '')) LIKE lower('%' || CAST(:search AS text) || '%')
               )
-            order by a.adrNumber desc
-            """)
+            ORDER BY a.adr_number DESC
+            """, nativeQuery = true)
     List<Adr> search(@Param("workspaceId") UUID workspaceId,
-                     @Param("status") AdrStatus status,
+                     @Param("status") String status,
                      @Param("search") String search);
 
-    @Query("""
-            select a from Adr a
-            where a.workspace.id = :workspaceId
-              and (:status is null or a.status = :status)
-              and (
-                    :search is null
-                 or lower(a.title) like lower(concat('%', :search, '%'))
-                 or lower(coalesce(a.context, '')) like lower(concat('%', :search, '%'))
-                 or lower(coalesce(a.decision, '')) like lower(concat('%', :search, '%'))
-                 or lower(coalesce(a.alternatives, '')) like lower(concat('%', :search, '%'))
+    @Query(value = """
+            SELECT * FROM adr a
+            WHERE a.workspace_id = :workspaceId
+              AND (CAST(:status AS text) IS NULL OR a.status = CAST(:status AS text))
+              AND (
+                    CAST(:search AS text) IS NULL
+                 OR lower(a.title) LIKE lower('%' || CAST(:search AS text) || '%')
+                 OR lower(COALESCE(a.context, '')) LIKE lower('%' || CAST(:search AS text) || '%')
+                 OR lower(COALESCE(a.decision, '')) LIKE lower('%' || CAST(:search AS text) || '%')
+                 OR lower(COALESCE(a.alternatives, '')) LIKE lower('%' || CAST(:search AS text) || '%')
               )
-            """)
+            """,
+            countQuery = """
+            SELECT COUNT(*) FROM adr a
+            WHERE a.workspace_id = :workspaceId
+              AND (CAST(:status AS text) IS NULL OR a.status = CAST(:status AS text))
+              AND (
+                    CAST(:search AS text) IS NULL
+                 OR lower(a.title) LIKE lower('%' || CAST(:search AS text) || '%')
+                 OR lower(COALESCE(a.context, '')) LIKE lower('%' || CAST(:search AS text) || '%')
+                 OR lower(COALESCE(a.decision, '')) LIKE lower('%' || CAST(:search AS text) || '%')
+                 OR lower(COALESCE(a.alternatives, '')) LIKE lower('%' || CAST(:search AS text) || '%')
+              )
+            """,
+            nativeQuery = true)
     Page<Adr> searchPaged(@Param("workspaceId") UUID workspaceId,
-                          @Param("status") AdrStatus status,
+                          @Param("status") String status,
                           @Param("search") String search,
                           Pageable pageable);
 }

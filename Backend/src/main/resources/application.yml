@@ -20,6 +20,17 @@ spring:
     database-change-log-lock-table: databasechangeloglock_adr
   jackson:
     default-property-inclusion: non_null
+  ai:
+    openai:
+      api-key: ${GROQ_API_KEY:}
+      base-url: https://api.groq.com/openai
+      chat:
+        options:
+          model: llama-3.3-70b-versatile
+          temperature: 0.3
+          max-tokens: 800
+    retry:
+      max-attempts: 1
   mail:
     host: ${MAIL_SMTP_HOST:localhost}
     port: ${MAIL_SMTP_PORT:2525}
@@ -65,3 +76,5 @@ logging:
   level:
     org.springframework.security: INFO
     com.adrplatform.auth: INFO
+    org.springframework.ai.retry: ERROR
+    org.springframework.ai.openai: WARN

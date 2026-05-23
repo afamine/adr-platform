@@ -2,12 +2,14 @@ package com.adrplatform.adr.controller;
 
 import com.adrplatform.adr.domain.AdrStatus;
 import com.adrplatform.adr.dto.AdrDto;
+import com.adrplatform.adr.dto.AiInsightDto;
 import com.adrplatform.adr.dto.AuditEventDto;
 import com.adrplatform.adr.dto.CreateAdrRequest;
 import com.adrplatform.adr.dto.StatusTransitionRequest;
 import com.adrplatform.adr.dto.UpdateAdrRequest;
 import com.adrplatform.adr.service.AdrAuditService;
 import com.adrplatform.adr.service.AdrService;
+import com.adrplatform.adr.service.AiInsightService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.data.domain.Page;
@@ -34,6 +36,7 @@ public class AdrController {
 
     private final AdrService adrService;
     private final AdrAuditService adrAuditService;
+    private final AiInsightService aiInsightService;
 
     @Operation(summary = "Get the most recently updated ADRs with last-activity info")
     @ApiResponse(responseCode = "200", description = "Recent ADRs returned")
@@ -63,8 +66,9 @@ public class AdrController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "adrNumber") String sort,
             @RequestParam(defaultValue = "DESC") String direction) {
+        String sortColumn = sort.equals("adrNumber") ? "adr_number" : sort;
         PageRequest pageable = PageRequest.of(page, size,
-                Sort.by(Sort.Direction.fromString(direction), sort));
+                Sort.by(Sort.Direction.fromString(direction), sortColumn));
         return ResponseEntity.ok(adrService.getAllAdrs(status, search, pageable));
     }
 
@@ -119,5 +123,12 @@ public class AdrController {
     @GetMapping("/{id}/audit")
     public ResponseEntity<List<AuditEventDto>> audit(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(adrAuditService.getAuditLog(id));
+    }
+
+    @Operation(summary = "Generate AI insights for an ADR")
+    @ApiResponse(responseCode = "200", description = "Insights generated (may be empty if AI unavailable)")
+    @GetMapping("/{id}/ai-insights")
+    public ResponseEntity<List<AiInsightDto>> aiInsights(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(aiInsightService.generateInsights(adrService.getAdrEntity(id)));
     }
 }

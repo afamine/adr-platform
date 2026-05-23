@@ -55,7 +55,8 @@ public class AdrService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Workspace context not available");
         }
         String normalizedSearch = (search == null || search.isBlank()) ? null : search.trim();
-        return adrRepository.searchPaged(workspaceId, status, normalizedSearch, pageable)
+        String statusStr = status != null ? status.name() : null;
+        return adrRepository.searchPaged(workspaceId, statusStr, normalizedSearch, pageable)
                 .map(AdrDto::fromEntity);
     }
 
@@ -68,7 +69,7 @@ public class AdrService {
         }
         List<Adr> list = (status == null && (search == null || search.isBlank()))
                 ? adrRepository.findAllByWorkspace_IdOrderByAdrNumberDesc(workspaceId)
-                : adrRepository.search(workspaceId, status, (search == null || search.isBlank()) ? null : search.trim());
+                : adrRepository.search(workspaceId, status != null ? status.name() : null, (search == null || search.isBlank()) ? null : search.trim());
         return list.stream().map(AdrDto::fromEntity).toList();
     }
 
@@ -78,6 +79,13 @@ public class AdrService {
         Adr adr = adrRepository.findByIdAndWorkspace_Id(id, workspaceId)
                 .orElseThrow(() -> new AdrNotFoundException("ADR not found."));
         return AdrDto.fromEntity(adr);
+    }
+
+    @Transactional(readOnly = true)
+    public Adr getAdrEntity(UUID id) {
+        UUID workspaceId = tenantContext.getWorkspaceId();
+        return adrRepository.findByIdAndWorkspace_Id(id, workspaceId)
+                .orElseThrow(() -> new AdrNotFoundException("ADR not found."));
     }
 
     @Transactional(readOnly = true)
@@ -105,11 +113,14 @@ public class AdrService {
         return switch (action) {
             case "STATUS_CHANGED" -> {
                 if (newValueJson != null) {
-                    int idx = newValueJson.indexOf("\"status\":\"");
-                    if (idx >= 0) {
-                        int start = idx + 10;
-                        int end = newValueJson.indexOf('"', start);
-                        if (end > start) yield newValueJson.substring(start, end);
+                    try {
+                        com.fasterxml.jackson.databind.JsonNode node =
+                            objectMapper.readTree(newValueJson);
+                        if (node.has("status")) {
+                            yield node.get("status").asText("Status changed");
+                        }
+                    } catch (com.fasterxml.jackson.core.JsonProcessingException ignored) {
+                        // fall through to default
                     }
                 }
                 yield "Status changed";
@@ -130,7 +141,7 @@ public class AdrService {
         UUID workspaceId = tenantContext.getWorkspaceId();
         workspaceRepository.findByIdWithLock(workspaceId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Workspace not found"));
-        int nextNumber = adrRepository.findMaxAdrNumber(workspaceId) + 1;
+        int nextNumber = adrRepository.nextAdrNumber(workspaceId);
 
         log.debug("Saving ADR with tags: {}", request.tags());
 

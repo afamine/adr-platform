@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/adrs/*/votes").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/adrs/*/votes/my-vote").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/adrs/*/audit").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/adrs/*/ai-insights").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/adrs", "/api/adrs/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/adrs").hasAnyRole("AUTHOR","ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/adrs/**").authenticated()
