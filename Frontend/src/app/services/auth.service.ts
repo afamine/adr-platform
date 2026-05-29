@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { catchError, finalize, Observable, of, take, tap } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, Observable, of, take, tap } from 'rxjs';
 import {
   AuthResponse,
   ChangePasswordRequest,
@@ -28,6 +28,8 @@ export class AuthService {
   private readonly REFRESH_KEY = 'adr_refresh_token';
   private readonly USER_KEY = 'adr_user';
   private isLoggingOut = false;
+  readonly isRefreshing$ = new BehaviorSubject<boolean>(false);
+  refreshToken$: Observable<AuthResponse> | null = null;
 
   // TODO: Migrate to HttpOnly cookies for production (requires backend /api/auth/refresh as cookie endpoint)
 
@@ -240,6 +242,8 @@ export class AuthService {
   }
 
   private finishLogout(): void {
+    this.isRefreshing$.next(false);
+    this.refreshToken$ = null;
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_KEY);
     localStorage.removeItem(this.USER_KEY);

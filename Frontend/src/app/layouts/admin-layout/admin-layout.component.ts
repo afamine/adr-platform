@@ -25,7 +25,7 @@ export class AdminLayoutComponent {
       .slice(0, 2);
   }
 
-  isActive(section: 'users' | 'settings' | 'analytics'): boolean {
+  isActive(section: 'users' | 'settings' | 'analytics' | 'audit-log'): boolean {
     return this.router.url.includes(`/admin/${section}`);
   }
 

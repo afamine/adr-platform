@@ -21,6 +21,29 @@
 
   <p class="adr-card__summary">{{ summary }}</p>
 
+  <div
+    class="adr-card__completeness"
+    [class.adr-card__completeness--good]="completenessTone === 'good'"
+    [class.adr-card__completeness--warn]="completenessTone === 'warn'"
+    [class.adr-card__completeness--empty]="completenessTone === 'empty'"
+  >
+    <span class="adr-card__completeness-dot" aria-hidden="true">
+      @if (completeness.percentage === 100) {
+        ✓
+      }
+    </span>
+    <span class="adr-card__completeness-text">{{ completeness.percentage }}% complete</span>
+    <div class="adr-card__progress" aria-hidden="true">
+      <div class="adr-card__progress-fill" [style.width.%]="completeness.percentage"></div>
+    </div>
+  </div>
+
+  @if (completeness.percentage < 100) {
+    <div class="adr-card__missing" [title]="'Missing: ' + completenessMissingText">
+      Missing: {{ completenessMissingText }}
+    </div>
+  }
+
   <div class="adr-card__meta">
     <span [class]="badgeClass">{{ statusLabels[adr.status] }}</span>
 

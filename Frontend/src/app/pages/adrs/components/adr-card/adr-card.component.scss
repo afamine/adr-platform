@@ -62,6 +62,79 @@
   -webkit-box-orient: vertical;
 }
 
+.adr-card__completeness {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.adr-card__completeness-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.adr-card__completeness-text {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.adr-card__progress {
+  height: 4px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.adr-card__progress-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.adr-card__completeness--good .adr-card__completeness-dot {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.adr-card__completeness--good .adr-card__progress-fill {
+  background: #16a34a;
+}
+
+.adr-card__completeness--warn .adr-card__completeness-dot {
+  background: #f59e0b;
+}
+
+.adr-card__completeness--warn .adr-card__progress-fill {
+  background: #f59e0b;
+}
+
+.adr-card__completeness--empty .adr-card__completeness-dot {
+  background: #9ca3af;
+}
+
+.adr-card__completeness--empty .adr-card__progress-fill {
+  background: #9ca3af;
+}
+
+.adr-card__missing {
+  margin: 0 0 8px;
+  color: #9ca3af;
+  font-size: 10px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .adr-card__meta {
   display: flex;
   flex-wrap: wrap;

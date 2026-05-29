@@ -8,6 +8,12 @@ export interface AdrDto {
   adrNumber: number;
   title: string;
   status: AdrStatus;
+  supersededById?: string | null;
+  supersededByAdrNumber?: number | null;
+  supersededByTitle?: string | null;
+  supersedesId?: string | null;
+  supersedesAdrNumber?: number | null;
+  supersedesTitle?: string | null;
   context?: string;
   decision?: string;
   consequences?: string;
@@ -80,6 +86,14 @@ export interface UpdateAdrRequest {
 }
 
 export interface StatusTransitionRequest {
+  status: AdrStatus;
+  supersededByAdrId?: string | null;
+}
+
+export interface AdrSummary {
+  id: string;
+  adrNumber: number;
+  title: string;
   status: AdrStatus;
 }
 
@@ -166,8 +180,14 @@ export function allowedTransitions(
   const isAdmin = role === 'ADMIN';
 
   if (isAdmin) {
-    return ['DRAFT', 'PROPOSED', 'UNDER_REVIEW', 'ACCEPTED', 'REJECTED', 'SUPERSEDED']
+    const adminTransitions = ['DRAFT', 'PROPOSED', 'UNDER_REVIEW', 'ACCEPTED', 'REJECTED', 'SUPERSEDED']
       .filter((status) => status !== adr.status) as AdrStatus[];
+
+    if (adr.status !== 'ACCEPTED') {
+      return adminTransitions.filter((status) => status !== 'SUPERSEDED');
+    }
+
+    return adminTransitions;
   }
 
   switch (adr.status) {
@@ -186,12 +206,46 @@ export function allowedTransitions(
     case 'UNDER_REVIEW':
       return role === 'APPROVER' ? ['ACCEPTED', 'REJECTED'] : [];
     case 'ACCEPTED':
-      return ['SUPERSEDED'];
+      return role === 'APPROVER' ? ['SUPERSEDED'] : [];
     case 'REJECTED':
       return role === 'AUTHOR' && isOwner ? ['DRAFT'] : [];
     default:
       return [];
   }
+}
+
+export interface CompletenessResult {
+  filledSections: number;
+  totalSections: number;
+  percentage: number;
+  missingSections: string[];
+  hasTags: boolean;
+}
+
+export function completenessScore(
+  adr: Pick<AdrDto, 'context' | 'decision' | 'consequences' | 'alternatives' | 'tags'>
+): CompletenessResult {
+  const sections: Array<{ key: keyof typeof adr; label: string }> = [
+    { key: 'context', label: 'Context' },
+    { key: 'decision', label: 'Decision' },
+    { key: 'consequences', label: 'Consequences' },
+    { key: 'alternatives', label: 'Alternatives' }
+  ];
+
+  const missing = sections
+    .filter((s) => !((adr[s.key] as string)?.trim()))
+    .map((s) => s.label);
+
+  const filled = sections.length - missing.length;
+  const hasTags = Array.isArray(adr.tags) && adr.tags.length > 0;
+
+  return {
+    filledSections: filled,
+    totalSections: sections.length,
+    percentage: Math.round((filled / sections.length) * 100),
+    missingSections: missing,
+    hasTags
+  };
 }
 
 export interface PageResponse<T> {

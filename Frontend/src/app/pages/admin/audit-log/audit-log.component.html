@@ -1,0 +1,163 @@
+<app-admin-layout>
+  <div class="audit-log">
+    <div class="audit-log__header">
+      <h1>Audit Log</h1>
+      <p>Full activity history for this workspace</p>
+    </div>
+
+    <div class="audit-log__filters">
+      <select class="filter-select" [(ngModel)]="selectedActorId" (ngModelChange)="onFilterChange()">
+        <option value="">All actors</option>
+        @for (actor of actors; track actor.id) {
+          <option [value]="actor.id">{{ actor.fullName }}</option>
+        }
+      </select>
+
+      <select class="filter-select" [(ngModel)]="selectedAction" (ngModelChange)="onFilterChange()">
+        @for (opt of actionOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+
+      <select class="filter-select" [(ngModel)]="selectedDateRange" (ngModelChange)="onFilterChange()">
+        @for (opt of dateRangeOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+
+      <span class="audit-log__event-count">{{ totalElements | number }} events</span>
+
+      <button class="btn-export" type="button" (click)="onExport()">↓ Export CSV</button>
+    </div>
+
+    <div class="audit-log__table-wrapper">
+      @if (isLoading) {
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Actor</th>
+              <th>Action</th>
+              <th>Entity</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (i of [1,2,3,4,5,6,7,8]; track i) {
+              <tr class="skeleton-row">
+                <td><div class="skeleton skeleton--ts"></div></td>
+                <td><div class="skeleton skeleton--actor"></div></td>
+                <td><div class="skeleton skeleton--badge"></div></td>
+                <td><div class="skeleton skeleton--entity"></div></td>
+                <td><div class="skeleton skeleton--detail"></div></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else if (events.length === 0) {
+        <div class="audit-log__empty">
+          <div class="empty-icon">📄</div>
+          <h3>No audit events found</h3>
+          <p>Try adjusting the filters above</p>
+        </div>
+      } @else {
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th class="col-ts">Timestamp</th>
+              <th class="col-actor">Actor</th>
+              <th class="col-action">Action</th>
+              <th class="col-entity">Entity</th>
+              <th class="col-detail">Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (event of events; track event.id; let odd = $odd) {
+              <tr
+                class="audit-row"
+                [class.audit-row--odd]="odd"
+                [class.audit-row--expanded]="expandedRowId === event.id"
+                (click)="toggleRow(event.id)"
+              >
+                <td class="col-ts">
+                  <span class="expand-icon">{{ expandedRowId === event.id ? '▼' : '▶' }}</span>
+                  <span class="timestamp">{{ formatTimestamp(event.timestamp) }}</span>
+                </td>
+
+                <td class="col-actor">
+                  <div class="actor-cell">
+                    <div class="actor-avatar">{{ event.actorInitials }}</div>
+                    <div class="actor-info">
+                      <span class="actor-name">{{ event.actorName }}</span>
+                      <span class="actor-email">{{ event.actorEmail }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <td class="col-action">
+                  <span class="action-badge" [ngStyle]="getActionBadgeStyle(event.action)">
+                    {{ event.actionLabel }}
+                  </span>
+                </td>
+
+                <td class="col-entity">
+                  <span class="entity-label">{{ event.entityLabel }}</span>
+                </td>
+
+                <td class="col-detail">
+                  <span class="detail-text" [title]="event.detail ?? ''">{{ event.detail }}</span>
+                </td>
+              </tr>
+
+              @if (expandedRowId === event.id) {
+                <tr class="audit-row__detail" [class.audit-row--odd]="odd">
+                  <td colspan="5">
+                    <div class="detail-panel">
+                      <div class="detail-panel__meta">
+                        <span><strong>Exact timestamp:</strong> {{ event.timestamp }} UTC</span>
+                        @if (event.ipAddress) {
+                          <span><strong>IP:</strong> <code>{{ event.ipAddress }}</code></span>
+                        }
+                      </div>
+
+                      @if (event.oldValueJson) {
+                        <div class="detail-panel__json">
+                          <div class="json-label">Old Value</div>
+                          <pre class="json-box json-box--old">{{ prettifyJson(event.oldValueJson) }}</pre>
+                        </div>
+                      }
+
+                      @if (event.newValueJson) {
+                        <div class="detail-panel__json">
+                          <div class="json-label">New Value</div>
+                          <pre class="json-box json-box--new">{{ prettifyJson(event.newValueJson) }}</pre>
+                        </div>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    @if (totalPages > 1) {
+      <div class="audit-log__pagination">
+        <button class="page-btn" [disabled]="currentPage === 0" (click)="onPageChange(currentPage - 1)">
+          ← Previous
+        </button>
+        <span class="page-info">Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+        <button class="page-btn" [disabled]="currentPage >= totalPages - 1" (click)="onPageChange(currentPage + 1)">
+          Next →
+        </button>
+        <select class="page-size-select" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+          @for (size of pageSizeOptions; track size) {
+            <option [value]="size">{{ size }} / page</option>
+          }
+        </select>
+      </div>
+    }
+  </div>
+</app-admin-layout>

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { Adr } from '../../../../models/adr.model';
+import { Adr, CompletenessResult, completenessScore } from '../../../../models/adr.model';
 
 @Component({
   selector: 'app-adr-card',
@@ -38,6 +38,24 @@ export class AdrCardComponent {
 
   get hiddenTagCount(): number {
     return Math.max((this.adr.tags ?? []).length - this.visibleTags.length, 0);
+  }
+
+  get completeness(): CompletenessResult {
+    return completenessScore(this.adr);
+  }
+
+  get completenessTone(): 'good' | 'warn' | 'empty' {
+    if (this.completeness.percentage === 100) {
+      return 'good';
+    }
+    if (this.completeness.percentage >= 50) {
+      return 'warn';
+    }
+    return 'empty';
+  }
+
+  get completenessMissingText(): string {
+    return this.completeness.missingSections.join(', ');
   }
 
   onSelect(): void {

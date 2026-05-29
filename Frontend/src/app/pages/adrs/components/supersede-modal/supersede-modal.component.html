@@ -1,0 +1,81 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-card supersede-modal" (click)="$event.stopPropagation()">
+    <div class="supersede-modal__header">
+      <div class="supersede-modal__header-icon">⚠</div>
+      <div class="supersede-modal__header-text">
+        <h2>Supersede this ADR</h2>
+        <p>ADR-{{ adr.adrNumber }}: {{ adr.title }} will be marked as superseded.</p>
+      </div>
+      <button class="supersede-modal__close" type="button" (click)="onClose()" aria-label="Close">×</button>
+    </div>
+
+    <div class="supersede-modal__body">
+      <label class="supersede-modal__label">Replaced by</label>
+
+      <div class="supersede-modal__search-box" (click)="isDropdownOpen = true">
+        <input
+          type="text"
+          [ngModel]="searchQuery"
+          (ngModelChange)="onSearch($event)"
+          (focus)="isDropdownOpen = true"
+          placeholder="Search ADRs by number or title..."
+          class="supersede-modal__search-input"
+        />
+      </div>
+
+      @if (isDropdownOpen) {
+        <div class="supersede-modal__dropdown">
+          @if (isLoading) {
+            @for (i of [1, 2, 3]; track i) {
+              <div class="supersede-modal__skeleton-row"></div>
+            }
+          } @else if (filteredAdrs.length === 0) {
+            <div class="supersede-modal__empty">No ADRs found</div>
+          } @else {
+            @for (adrOption of filteredAdrs; track adrOption.id) {
+              <button
+                class="supersede-modal__adr-option"
+                type="button"
+                (click)="selectAdr(adrOption)"
+              >
+                <span class="adr-number-badge">ADR-{{ adrOption.adrNumber }}</span>
+                <span class="adr-option-title">{{ adrOption.title }}</span>
+                <span class="adr-status-chip" [ngClass]="getStatusClass(adrOption.status)">
+                  {{ adrOption.status | titlecase }}
+                </span>
+              </button>
+            }
+          }
+        </div>
+      }
+
+      @if (selectedAdr && !isDropdownOpen) {
+        <div class="supersede-modal__selected">
+          <span class="adr-number-badge">ADR-{{ selectedAdr.adrNumber }}</span>
+          <span class="selected-title">{{ selectedAdr.title }}</span>
+          <button class="supersede-modal__clear-btn" type="button" (click)="clearSelection()">×</button>
+        </div>
+      }
+
+      <label class="supersede-modal__label">Reason for supersession (optional)</label>
+      <textarea
+        class="supersede-modal__reason"
+        [(ngModel)]="reason"
+        placeholder="Briefly describe why this ADR is being superseded..."
+        rows="2"
+      ></textarea>
+    </div>
+
+    <div class="supersede-modal__footer">
+      <button class="btn-ghost" type="button" (click)="onClose()">Cancel</button>
+      <button
+        class="btn-primary"
+        type="button"
+        [disabled]="!selectedAdr || isSubmitting"
+        (click)="onConfirm()"
+      >
+        {{ isSubmitting ? 'Submitting...' : 'Mark as Superseded' }}
+      </button>
+    </div>
+  </div>
+</div>

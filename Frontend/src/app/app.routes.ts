@@ -71,6 +71,12 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/admin/analytics-dashboard/analytics-dashboard.component').then((m) => m.AnalyticsDashboardComponent),
         canActivate: [analyticsGuard]
       },
+      {
+        path: 'audit-log',
+        loadComponent: () =>
+          import('./pages/admin/audit-log/audit-log.component')
+            .then((m) => m.AuditLogComponent)
+      },
       { path: '', redirectTo: 'users', pathMatch: 'full' }
     ]
   },

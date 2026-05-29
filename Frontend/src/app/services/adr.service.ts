@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { catchError, map, Observable, of, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AdrDto, AdrStatus, AuditEventDto, CastVoteRequest, CommentDto, CreateAdrRequest, HistoryEventDto, PageResponse, StatusTransitionRequest, TeamMemberDto, UpdateAdrRequest, VoteDto } from '../models/adr.model';
+import { AdrDto, AdrStatus, AdrSummary, AuditEventDto, CastVoteRequest, CommentDto, CreateAdrRequest, HistoryEventDto, PageResponse, StatusTransitionRequest, TeamMemberDto, UpdateAdrRequest, VoteDto } from '../models/adr.model';
 
 @Injectable({ providedIn: 'root' })
 export class AdrService {
@@ -101,8 +101,17 @@ export class AdrService {
       );
   }
 
-  transitionStatus(id: string, status: AdrStatus): Observable<AdrDto> {
-    const body: StatusTransitionRequest = { status };
+  getEligibleReplacements(): Observable<AdrSummary[]> {
+    return this.http
+      .get<AdrSummary[]>(`${this.baseUrl}/api/adrs/eligible-as-replacement`)
+      .pipe(catchError((err) => this.handleError(err)));
+  }
+
+  transitionStatus(id: string, status: AdrStatus, supersededByAdrId?: string): Observable<AdrDto> {
+    const body: StatusTransitionRequest = {
+      status,
+      supersededByAdrId: supersededByAdrId ?? null
+    };
 
     return this.http
       .patch<AdrDto>(`${this.baseUrl}/api/adrs/${id}/status`, body)
@@ -178,6 +187,23 @@ export class AdrService {
     return this.http
       .get<TeamMemberDto[]>(`${this.baseUrl}/api/adrs/${adrId}/team`)
       .pipe(catchError((err) => this.handleError(err)));
+  }
+
+  exportMarkdown(adrId: string, adrNumber: number): void {
+    this.http
+      .get(`${this.baseUrl}/api/adrs/${adrId}/export`, { responseType: 'text' })
+      .pipe(catchError((err) => this.handleError(err)))
+      .subscribe({
+        next: (markdown) => {
+          const blob = new Blob([markdown as string], { type: 'text/markdown' });
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = `ADR-${adrNumber}.md`;
+          anchor.click();
+          URL.revokeObjectURL(url);
+        }
+      });
   }
 
   private handleError(err: any) {

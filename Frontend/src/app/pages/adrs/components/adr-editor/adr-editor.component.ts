@@ -2,13 +2,37 @@ import { CommonModule, formatDate } from '@angular/common';
 import { ChangeDetectorRef, Component, EventEmitter, Input, NgZone, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ADR_STATUS_OPTIONS, ADR_TAB_ORDER, Adr, AdrStatus, AdrTabKey, AuditEventDto, AuditEventType, CreateAdrRequest, UpdateAdrRequest } from '../../../../models/adr.model';
+import {
+  ADR_STATUS_OPTIONS,
+  ADR_TAB_ORDER,
+  Adr,
+  AdrStatus,
+  AdrTabKey,
+  AuditEventDto,
+  AuditEventType,
+  CompletenessResult,
+  CreateAdrRequest,
+  UpdateAdrRequest,
+  completenessScore
+} from '../../../../models/adr.model';
 import { AdrService } from '../../../../services/adr.service';
+import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
+import { SupersedeModalComponent } from '../supersede-modal/supersede-modal.component';
+import { SupersededBannerComponent } from '../superseded-banner/superseded-banner.component';
+import { SupersedesBadgeComponent } from '../supersedes-badge/supersedes-badge.component';
 
 @Component({
   selector: 'app-adr-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MarkdownPipe,
+    SupersedeModalComponent,
+    SupersededBannerComponent,
+    SupersedesBadgeComponent
+  ],
   templateUrl: './adr-editor.component.html',
   styleUrl: './adr-editor.component.scss'
 })
@@ -40,6 +64,8 @@ export class AdrEditorComponent implements OnChanges {
   @Output() cancelEdit = new EventEmitter<void>();
   @Output() showAI = new EventEmitter<void>();
   @Output() showCollab = new EventEmitter<void>();
+  @Output() linkedAdrNavigate = new EventEmitter<string>();
+  @Output() adrUpdated = new EventEmitter<Adr>();
 
   readonly tabs = [...ADR_TAB_ORDER, { key: 'audit' as const, label: 'Audit Log' }];
   readonly statusOptions = ADR_STATUS_OPTIONS;
@@ -47,6 +73,8 @@ export class AdrEditorComponent implements OnChanges {
   auditLoading = false;
   auditFilter: AuditEventType | 'ALL' = 'ALL';
   isPreviewMode = false;
+  showSupersedeModal = false;
+  isSubmittingSupersede = false;
   tagInput = '';
   readonly form = this.formBuilder.nonNullable.group({
     title: ['', [Validators.required, Validators.maxLength(255)]],
@@ -63,6 +91,8 @@ export class AdrEditorComponent implements OnChanges {
     }
 
     if (changes['adr']) {
+      this.showSupersedeModal = false;
+      this.isSubmittingSupersede = false;
       this.auditEvents = [];
       if (this.activeTab === 'audit' && this.adr?.id) {
         this.loadAuditLog();
@@ -98,6 +128,32 @@ export class AdrEditorComponent implements OnChanges {
     return this.form.controls.tags.value;
   }
 
+  get completeness(): CompletenessResult | null {
+    return this.adr ? completenessScore(this.adr) : null;
+  }
+
+  get shouldShowCompletenessBadge(): boolean {
+    if (!this.adr) {
+      return false;
+    }
+
+    if (this.adr.status === 'ACCEPTED' || this.adr.status === 'REJECTED' || this.adr.status === 'SUPERSEDED') {
+      return false;
+    }
+
+    return this.isEditing || this.adr.status === 'DRAFT' || this.adr.status === 'PROPOSED';
+  }
+
+  get completenessBadgeText(): string {
+    const result = this.completeness;
+    if (!result) {
+      return '';
+    }
+
+    const tagState = result.hasTags ? 'Tags ready' : 'Tags missing';
+    return `${result.filledSections}/${result.totalSections} sections · ${tagState}`;
+  }
+
   get formattedCreatedAt(): string {
     return this.adr?.createdAt?.slice(0, 10) ?? '';
   }
@@ -109,6 +165,12 @@ export class AdrEditorComponent implements OnChanges {
 
   togglePreview(): void {
     this.isPreviewMode = !this.isPreviewMode;
+  }
+
+  onExportClick(): void {
+    if (this.adr) {
+      this.adrService.exportMarkdown(this.adr.id, this.adr.adrNumber);
+    }
   }
 
   onEditClick(): void {
@@ -252,6 +314,46 @@ export class AdrEditorComponent implements OnChanges {
     };
 
     return labels[status];
+  }
+
+  onTransitionClick(status: AdrStatus): void {
+    if (status === 'SUPERSEDED') {
+      this.onSupersedeRequested();
+      return;
+    }
+
+    this.transitionRequested.emit(status);
+  }
+
+  onSupersedeRequested(): void {
+    if (!this.adr || this.isSubmittingSupersede) {
+      return;
+    }
+
+    this.showSupersedeModal = true;
+  }
+
+  onSupersedeConfirmed(event: { supersededByAdrId: string; reason?: string }): void {
+    if (!this.adr || this.isSubmittingSupersede) {
+      return;
+    }
+
+    this.isSubmittingSupersede = true;
+    this.adrService.transitionStatus(this.adr.id, 'SUPERSEDED', event.supersededByAdrId).subscribe({
+      next: (updated) => {
+        this.adr = updated;
+        this.adrUpdated.emit(updated);
+        this.showSupersedeModal = false;
+        this.isSubmittingSupersede = false;
+      },
+      error: () => {
+        this.isSubmittingSupersede = false;
+      }
+    });
+  }
+
+  onNavigateToLinkedAdr(adrId: string): void {
+    this.linkedAdrNavigate.emit(adrId);
   }
 
   private syncFormFromInput(): void {

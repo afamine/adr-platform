@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, HostListener, NgZone, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, HostListener, NgZone, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
@@ -16,6 +16,7 @@ import { ConfirmService } from '../../services/confirm.service';
 import { NotificationService } from '../../services/notification.service';
 import { NotificationCenterService } from '../../services/notification-center.service';
 import { BellNotification, NotificationApiDto } from '../../models/notification.models';
+import { AdrStateService } from './services/adr-state.service';
 
 @Component({
   selector: 'app-adr-dashboard',
@@ -26,6 +27,7 @@ import { BellNotification, NotificationApiDto } from '../../models/notification.
 })
 export class AdrDashboardComponent implements OnInit {
   private readonly adrService = inject(AdrService);
+  private readonly adrState = inject(AdrStateService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly ngZone = inject(NgZone);
@@ -33,24 +35,26 @@ export class AdrDashboardComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   private readonly notifCenterService = inject(NotificationCenterService);
   private readonly confirmService = inject(ConfirmService);
+  private readonly destroyRef = inject(DestroyRef);
   private searchDebounceTimer: any = null;
 
-  adrs: Adr[] = [];
-  filteredAdrs: Adr[] = [];
-  selectedAdr: Adr | null = null;
+  readonly liveUnreadCount$ = this.notifCenterService.unreadCount$;
+
+  readonly adrs = computed(() => this.adrState.adrs$());
+  readonly selectedAdr = computed(() => this.adrState.selectedAdr$());
+  readonly isLoading = computed(() => this.adrState.isLoading$());
+  readonly currentPage = computed(() => this.adrState.currentPage$());
+  readonly totalElements = computed(() => this.adrState.totalElements$());
+  readonly totalPages = computed(() => this.adrState.totalPages$());
+  readonly searchQuery = computed(() => this.adrState.searchQuery$());
+  readonly statusFilter = computed(() => this.adrState.statusFilter$());
+
   editingAdr: Partial<Adr> | null = null;
   activeTab: 'context' | 'decision' | 'consequences' | 'alternatives' | 'audit' = 'context';
-  searchQuery = '';
-  statusFilter: AdrStatus | 'ALL' = 'ALL';
   showAIPanel = false;
   showCollabPanel = false;
   isSaving = false;
   isEditing = false;
-  isLoading = false;
-  currentPage = 0;
-  pageSize = 20;
-  totalElements = 0;
-  totalPages = 0;
   showSettings = false;
   showProfile = false;
   showNotifications = false;
@@ -78,44 +82,40 @@ export class AdrDashboardComponent implements OnInit {
   ngOnInit(): void {
     this.loadAdrs();
     this.loadNotifications();
+    this.notifCenterService.startPolling(this.destroyRef);
   }
 
   onSearch(query: string): void {
-    this.searchQuery = query;
+    this.adrState.searchQuery$.set(query);
     if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
     this.searchDebounceTimer = setTimeout(() => {
-      this.currentPage = 0;
+      this.adrState.currentPage$.set(0);
       this.loadAdrs();
     }, 300);
   }
 
   onFilterChange(status: AdrStatus | 'ALL'): void {
-    this.statusFilter = status;
-    this.currentPage = 0;
+    this.adrState.statusFilter$.set(status);
+    this.adrState.currentPage$.set(0);
     this.loadAdrs();
   }
 
   onPreviousPage(): void {
-    if (this.currentPage > 0) {
-      this.currentPage--;
+    if (this.currentPage() > 0) {
+      this.adrState.currentPage$.update((page) => page - 1);
       this.loadAdrs();
     }
   }
 
   onNextPage(): void {
-    if (this.currentPage < this.totalPages - 1) {
-      this.currentPage++;
+    if (this.currentPage() < this.totalPages() - 1) {
+      this.adrState.currentPage$.update((page) => page + 1);
       this.loadAdrs();
     }
   }
 
-  private applyLocalFilters(): void {
-    // No-op: filtering is now server-side via loadAdrs()
-    // Kept as a stub so onSearch/onFilterChange still compile
-  }
-
   onSelectAdr(adr: Adr): void {
-    this.selectedAdr = { ...adr };
+    this.adrState.selectAdr(adr);
     this.editingAdr = null;
     this.isEditing = false;
     this.activeTab = 'context';
@@ -124,7 +124,7 @@ export class AdrDashboardComponent implements OnInit {
   onCreateNew(): void {
     this.isEditing = true;
     this.editingAdr = { title: '', tags: [], status: 'DRAFT' };
-    this.selectedAdr = null;
+    this.adrState.clearSelection();
     this.activeTab = 'context';
   }
 
@@ -140,7 +140,7 @@ export class AdrDashboardComponent implements OnInit {
       .subscribe({
         next: (created) => {
           this.notificationService.success('ADR created', `ADR-${created.adrNumber} was saved as a draft.`);
-          this.selectedAdr = created;
+          this.adrState.selectAdr(created);
           this.isEditing = false;
           this.editingAdr = null;
           this.loadAdrs(created.id);
@@ -179,10 +179,11 @@ export class AdrDashboardComponent implements OnInit {
   private refreshAdrState(adrId: string): void {
     this.adrService.getAdr(adrId).subscribe({
       next: (updatedAdr) => {
-        this.selectedAdr = this.selectedAdr?.id === updatedAdr.id ? updatedAdr : this.selectedAdr;
+        if (this.selectedAdr()?.id === updatedAdr.id) {
+          this.adrState.selectAdr(updatedAdr);
+        }
         this.voteModalAdr = this.voteModalAdr?.id === updatedAdr.id ? updatedAdr : this.voteModalAdr;
-        this.adrs = this.adrs.map((adr) => (adr.id === updatedAdr.id ? updatedAdr : adr));
-        this.filteredAdrs = this.filteredAdrs.map((adr) => (adr.id === updatedAdr.id ? updatedAdr : adr));
+        this.adrState.updateAdrInList(updatedAdr);
       },
       error: () => {
         this.loadAdrs(adrId);
@@ -211,7 +212,8 @@ export class AdrDashboardComponent implements OnInit {
   }
 
   onSaveUpdate(body: UpdateAdrRequest): void {
-    if (!this.selectedAdr) {
+    const selected = this.selectedAdr();
+    if (!selected) {
       return;
     }
 
@@ -221,14 +223,14 @@ export class AdrDashboardComponent implements OnInit {
       tags: body.tags ?? []
     };
     this.adrService
-      .updateAdr(this.selectedAdr.id, payload)
+      .updateAdr(selected.id, payload)
       .pipe(finalize(() => (this.isSaving = false)))
       .subscribe({
         next: (updated) => {
           this.isEditing = false;
           this.editingAdr = null;
           this.notificationService.success('ADR saved', 'Your changes have been saved.');
-          this.selectedAdr = updated;
+          this.adrState.selectAdr(updated);
           this.loadAdrs(updated.id);
         },
         error: (err) => this.handleError(err)
@@ -236,15 +238,14 @@ export class AdrDashboardComponent implements OnInit {
   }
 
   onTransitionStatus(newStatus: AdrStatus): void {
-    if (!this.selectedAdr) {
+    const selected = this.selectedAdr();
+    if (!selected) {
       return;
     }
 
-    this.adrService.transitionStatus(this.selectedAdr.id, newStatus).subscribe({
+    this.adrService.transitionStatus(selected.id, newStatus).subscribe({
       next: (updated) => {
-        this.selectedAdr = updated;
-        this.adrs = this.adrs.map((adr) => (adr.id === updated.id ? updated : adr));
-        this.filteredAdrs = this.filteredAdrs.map((adr) => (adr.id === updated.id ? updated : adr));
+        this.adrState.updateAdrInList(updated);
         this.notificationService.success('Status updated', `The ADR is now ${updated.status}.`);
       },
       error: (err) => this.handleError(err, true)
@@ -252,31 +253,50 @@ export class AdrDashboardComponent implements OnInit {
   }
 
   onStatusChange(newStatus: AdrStatus): void {
-    if (!this.selectedAdr || newStatus === this.selectedAdr.status) {
+    const selected = this.selectedAdr();
+    if (!selected || newStatus === selected.status) {
       return;
     }
 
     this.onTransitionStatus(newStatus);
   }
 
+  onEditorAdrUpdated(updated: Adr): void {
+    this.adrState.updateAdrInList(updated);
+    this.notificationService.success('Status updated', `The ADR is now ${updated.status}.`);
+  }
+
+  onLinkedAdrNavigate(adrId: string): void {
+    const existing = this.adrs().find((adr) => adr.id === adrId);
+    if (existing) {
+      this.onSelectAdr(existing);
+      return;
+    }
+
+    this.adrService.getAdr(adrId).subscribe({
+      next: (adr) => this.onSelectAdr(adr),
+      error: (err) => this.handleError(err)
+    });
+  }
+
   async onDelete(): Promise<void> {
-    if (!this.selectedAdr) return;
+    const selected = this.selectedAdr();
+    if (!selected) return;
 
     const confirmed = await this.confirmService.confirm({
       title: 'Delete ADR',
-      message: `Delete "${this.selectedAdr.title}"? This action cannot be undone.`,
+      message: `Delete "${selected.title}"? This action cannot be undone.`,
       confirmLabel: 'Delete permanently',
       cancelLabel: 'Cancel',
       danger: true
     });
     if (!confirmed) return;
 
-    const deletedId = this.selectedAdr.id;
+    const deletedId = selected.id;
     this.adrService.deleteAdr(deletedId).subscribe({
       next: () => {
-        this.adrs = this.adrs.filter((adr) => adr.id !== deletedId);
-        this.filteredAdrs = this.filteredAdrs.filter((adr) => adr.id !== deletedId);
-        this.selectedAdr = this.filteredAdrs[0] ?? this.adrs[0] ?? null;
+        this.adrState.clearSelection();
+        this.loadAdrs();
         this.isEditing = false;
         this.editingAdr = null;
         this.notificationService.success('ADR deleted');
@@ -286,20 +306,24 @@ export class AdrDashboardComponent implements OnInit {
   }
 
   onEditCurrent(): void {
-    if (!this.selectedAdr) {
+    const selected = this.selectedAdr();
+    if (!selected) {
       return;
     }
 
     this.isEditing = true;
-    this.editingAdr = { ...this.selectedAdr };
+    this.editingAdr = { ...selected };
   }
 
   onCancelEdit(): void {
     this.isEditing = false;
     this.editingAdr = null;
 
-    if (!this.selectedAdr) {
-      this.selectedAdr = this.filteredAdrs[0] ?? this.adrs[0] ?? null;
+    if (!this.selectedAdr()) {
+      const firstAdr = this.adrs()[0] ?? null;
+      if (firstAdr) {
+        this.adrState.selectAdr(firstAdr);
+      }
     }
   }
 
@@ -359,6 +383,7 @@ export class AdrDashboardComponent implements OnInit {
     const previous = this.notifications.map(n => n.unread);
     this.notifications.forEach(n => (n.unread = false));
     this.notifCenterService.markAllRead().subscribe({
+      next: () => this.notifCenterService.fetchUnreadCount(),
       error: () => this.notifications.forEach((n, i) => (n.unread = previous[i]))
     });
   }
@@ -368,6 +393,7 @@ export class AdrDashboardComponent implements OnInit {
     if (!n || !n.unread) return;
     n.unread = false;
     this.notifCenterService.markRead(id).subscribe({
+      next: () => this.notifCenterService.fetchUnreadCount(),
       error: () => { if (n) n.unread = true; }
     });
   }
@@ -499,19 +525,21 @@ export class AdrDashboardComponent implements OnInit {
   }
 
   canEdit(): boolean {
-    if (!this.selectedAdr || !this.currentUser) return false;
+    const selected = this.selectedAdr();
+    if (!selected || !this.currentUser) return false;
     if (this.currentUser.role === 'ADMIN') return true;
     return this.currentUser.role === 'AUTHOR'
-      && this.currentUser.id === this.selectedAdr.authorId
-      && ['DRAFT','PROPOSED'].includes(this.selectedAdr.status);
+      && this.currentUser.id === selected.authorId
+      && ['DRAFT','PROPOSED'].includes(selected.status);
   }
 
   getAllowedTransitions(): AdrStatus[] {
-    if (!this.selectedAdr || !this.currentUser) {
+    const selected = this.selectedAdr();
+    if (!selected || !this.currentUser) {
       return [];
     }
 
-    return allowedTransitions(this.selectedAdr, this.currentUser);
+    return allowedTransitions(selected, this.currentUser);
   }
 
   canVoteOnAdr(adr: Adr | null): boolean {
@@ -536,52 +564,7 @@ export class AdrDashboardComponent implements OnInit {
   }
 
   private loadAdrs(selectId?: string): void {
-    this.isLoading = true;
-
-    const params = {
-      status: this.statusFilter !== 'ALL' ? this.statusFilter : undefined,
-      search: this.searchQuery.trim() || undefined,
-      page: this.currentPage,
-      size: this.pageSize
-    };
-
-    this.adrService.getAdrsPaged(params).subscribe({
-      next: (page) => {
-        this.ngZone.run(() => {
-          this.adrs = page.content;
-          this.filteredAdrs = page.content;
-          this.totalElements = page.totalElements;
-          this.totalPages = page.totalPages;
-          this.isLoading = false;
-
-          const preferredId = selectId ?? this.selectedAdr?.id;
-          const nextSelected = preferredId
-            ? page.content.find((adr) => adr.id === preferredId) ?? null
-            : null;
-
-          if (nextSelected) {
-            this.onSelectAdr(nextSelected);
-          } else if (page.content.length > 0 && !this.selectedAdr) {
-            this.onSelectAdr(page.content[0]);
-          } else if (page.content.length === 0) {
-            this.selectedAdr = null;
-            this.editingAdr = null;
-          }
-          this.cdr.detectChanges();
-        });
-      },
-      error: (err) => {
-        this.ngZone.run(() => {
-          console.error('Failed to load ADRs:', err);
-          this.isLoading = false;
-          this.notificationService.error('Loading failed', 'Unable to load ADRs.');
-          this.adrs = [];
-          this.filteredAdrs = [];
-          this.selectedAdr = null;
-          this.cdr.detectChanges();
-        });
-      }
-    });
+    this.adrState.loadAdrs(selectId);
   }
 
   private handleError(err: { status?: number; message?: string; errorType?: string }, reloadOnNotFound = false): void {

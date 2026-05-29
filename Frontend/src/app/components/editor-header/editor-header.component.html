@@ -20,6 +20,10 @@
 
     <div class="editor-header__actions-block">
       <div class="editor-header__actions">
+        @if (shouldShowCompleteness()) {
+          <span class="editor-header__completeness-chip">{{ completenessText() }}</span>
+        }
+
         <button mat-stroked-button type="button" class="action-button" [class.action-button--active]="previewActive()" (click)="previewClick.emit()">
           <span class="action-button__content">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -49,6 +53,17 @@
             <span>AI Assist</span>
           </span>
         </button>
+        @if (!isEditing() && adr()) {
+          <button mat-stroked-button type="button" class="action-button" (click)="onExport()">
+            <span class="action-button__content">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M12 3.75v10.5M7.75 10l4.25 4.5 4.25-4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4.75 16.25v1A2.25 2.25 0 0 0 7 19.5h10a2.25 2.25 0 0 0 2.25-2.25v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <span>Export .md</span>
+            </span>
+          </button>
+        }
         <button mat-flat-button type="button" class="save-button" (click)="saveClick.emit()">
           <span class="action-button__content">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
