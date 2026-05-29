@@ -17,6 +17,8 @@ import com.adrplatform.auth.repository.AuditEventRepository;
 import com.adrplatform.auth.repository.UserRepository;
 import com.adrplatform.auth.security.TenantContext;
 import com.adrplatform.auth.service.AuditService;
+import com.adrplatform.common.AuditActions;
+import com.adrplatform.notification.service.NotificationService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,7 @@ public class CommentService {
     private final AuditEventRepository auditEventRepository;
     private final TenantContext tenantContext;
     private final AuditService auditService;
+    private final NotificationService notificationService;
     private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
@@ -74,7 +77,7 @@ public class CommentService {
     public CommentDto addComment(UUID adrId, CreateCommentRequest request) {
         User actor = currentUser();
         UUID workspaceId = tenantContext.getWorkspaceId();
-        adrRepository.findByIdAndWorkspace_Id(adrId, workspaceId)
+        var adr = adrRepository.findByIdAndWorkspace_Id(adrId, workspaceId)
                 .orElseThrow(() -> new AdrNotFoundException("ADR not found."));
 
         AdrComment comment = AdrComment.builder()
@@ -85,7 +88,10 @@ public class CommentService {
                 .build();
         AdrComment saved = commentRepository.save(comment);
 
-        auditService.record(actor, actor.getWorkspace(), "COMMENT_ADDED", "ADR", adrId, null, null);
+        auditService.record(actor, actor.getWorkspace(), AuditActions.COMMENT_ADDED, "ADR", adrId, null, null);
+        notificationService.notifyCommentAdded(
+                adrId, adr.getAdrNumber(), adr.getTitle(),
+                workspaceId, adr.getAuthor().getId(), actor.getId());
         log.info("Comment added to ADR {} by {}", adrId, actor.getEmail());
 
         return toCommentDto(saved, actor);

@@ -18,6 +18,7 @@ import com.adrplatform.auth.dto.UserDto;
 import com.adrplatform.auth.dto.ValidateInviteResponse;
 import com.adrplatform.auth.exception.AccountDeactivatedException;
 import com.adrplatform.auth.exception.BadRequestException;
+import com.adrplatform.common.AuditActions;
 import com.adrplatform.auth.exception.EmailNotVerifiedException;
 import com.adrplatform.auth.exception.ResourceNotFoundException;
 import com.adrplatform.auth.exception.UnauthorizedException;
@@ -70,19 +71,26 @@ public class AuthService {
 
         passwordPolicyValidator.validate(request.getPassword());
 
-        String workspaceSlug = request.getWorkspaceSlug() == null || request.getWorkspaceSlug().isBlank()
-                ? "default"
-                : request.getWorkspaceSlug();
+        String workspaceName = request.getWorkspaceName().trim();
+        String slug = resolveSlug(request.getWorkspaceSlug(), workspaceName);
 
-        Workspace workspace = workspaceRepository.findBySlug(workspaceSlug)
-                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found: " + workspaceSlug));
+        if (workspaceRepository.findBySlug(slug).isPresent()) {
+            throw new com.adrplatform.auth.exception.ConflictException(
+                    "Workspace slug '" + slug + "' is already taken. Please choose a different name or slug.");
+        }
+
+        Workspace workspace = workspaceRepository.save(
+                Workspace.builder()
+                        .name(workspaceName)
+                        .slug(slug)
+                        .build());
 
         User user = User.builder()
                 .workspace(workspace)
                 .email(request.getEmail().trim().toLowerCase())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName().trim())
-                .role(Role.AUTHOR)
+                .role(Role.ADMIN)
                 .emailVerified(false)
                 .isActive(false)
                 .build();
@@ -94,14 +102,30 @@ public class AuthService {
         String verificationUrl = appProperties.getFrontendUrl() + "/verify-email?token=" + token;
         mailService.sendVerificationEmail(saved.getEmail(), saved.getFullName(), verificationUrl, expiryHours);
 
-        auditService.record(saved, workspace, "USER_REGISTERED", "USER", saved.getId(), null,
-                toJson(Map.of("email", saved.getEmail(), "role", saved.getRole().name())));
+        auditService.record(saved, workspace, AuditActions.USER_REGISTERED, "USER", saved.getId(), null,
+                toJson(Map.of("email", saved.getEmail(), "role", saved.getRole().name(),
+                        "workspaceSlug", slug)));
 
-        log.info("New user registered (pending verification): {}", saved.getEmail());
+        log.info("New user registered (pending verification): {} — workspace: {}", saved.getEmail(), slug);
         return RegisterResponse.builder()
                 .message("Account created. Please check your email to verify your account.")
                 .email(maskEmail(saved.getEmail()))
+                .workspaceName(workspace.getName())
+                .workspaceSlug(workspace.getSlug())
                 .build();
+    }
+
+    private String resolveSlug(String requestedSlug, String workspaceName) {
+        if (requestedSlug != null && !requestedSlug.isBlank()) {
+            return requestedSlug.trim().toLowerCase();
+        }
+        return workspaceName
+                .trim()
+                .toLowerCase()
+                .replaceAll("[^a-z0-9\\s-]", "")
+                .replaceAll("[\\s]+", "-")
+                .replaceAll("-{2,}", "-")
+                .replaceAll("^-|-$", "");
     }
 
     /**
@@ -128,7 +152,7 @@ public class AuthService {
         String refreshToken = jwtService.generateRefreshToken(user);
         refreshTokenService.create(user, refreshToken);
 
-        auditService.record(user, user.getWorkspace(), "USER_LOGGED_IN", "USER", user.getId(), null,
+        auditService.record(user, user.getWorkspace(), AuditActions.USER_LOGGED_IN, "USER", user.getId(), null,
                 toJson(Map.of("email", user.getEmail())));
 
         return AuthResponse.builder()
@@ -156,7 +180,7 @@ public class AuthService {
         String newRefreshToken = jwtService.generateRefreshToken(user);
         refreshTokenService.create(user, newRefreshToken);
 
-        auditService.record(user, user.getWorkspace(), "TOKEN_REFRESHED", "REFRESH_TOKEN", stored.getId(),
+        auditService.record(user, user.getWorkspace(), AuditActions.TOKEN_REFRESHED, "REFRESH_TOKEN", stored.getId(),
                 toJson(Map.of("token", "revoked")), toJson(Map.of("token", "rotated")));
 
         return AuthResponse.builder()
@@ -186,7 +210,7 @@ public class AuthService {
                 .orElseThrow(() -> new UnauthorizedException("User not found"));
         refreshTokenService.revokeAllForUser(user);
 
-        auditService.record(user, user.getWorkspace(), "USER_LOGGED_OUT", "USER", user.getId(), null, null);
+        auditService.record(user, user.getWorkspace(), AuditActions.USER_LOGGED_OUT, "USER", user.getId(), null, null);
     }
 
     /**
@@ -201,7 +225,7 @@ public class AuthService {
         user.setActive(true);
         userRepository.save(user);
 
-        auditService.record(user, user.getWorkspace(), "USER_EMAIL_VERIFIED", "USER", user.getId(), null,
+        auditService.record(user, user.getWorkspace(), AuditActions.USER_EMAIL_VERIFIED, "USER", user.getId(), null,
                 toJson(Map.of("email", user.getEmail())));
 
         log.info("Email verified for user {}", user.getEmail());
@@ -279,7 +303,7 @@ public class AuthService {
         refreshTokenService.revokeAllForUser(user);
 
         // 8. Generate audit event
-        auditService.record(user, user.getWorkspace(), "PASSWORD_CHANGED", "USER", user.getId(), null, null);
+        auditService.record(user, user.getWorkspace(), AuditActions.PASSWORD_CHANGED, "USER", user.getId(), null, null);
 
         log.info("Password changed for user {}", user.getEmail());
     }
@@ -323,7 +347,7 @@ public class AuthService {
         String refreshToken = jwtService.generateRefreshToken(user);
         refreshTokenService.create(user, refreshToken);
 
-        auditService.record(user, user.getWorkspace(), "USER_INVITE_ACCEPTED", "USER", user.getId(), null,
+        auditService.record(user, user.getWorkspace(), AuditActions.USER_INVITE_ACCEPTED, "USER", user.getId(), null,
                 toJson(Map.of("email", user.getEmail())));
 
         notificationService.notifyNewTeamMember(user.getId(), user.getWorkspace().getId());
@@ -344,7 +368,7 @@ public class AuthService {
         User user = (User) org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication().getPrincipal();
         refreshTokenService.revokeAllForUser(user);
-        auditService.record(user, user.getWorkspace(), "LOGOUT_ALL_DEVICES", "USER", user.getId(), null, null);
+        auditService.record(user, user.getWorkspace(), AuditActions.LOGOUT_ALL_DEVICES, "USER", user.getId(), null, null);
         log.info("All devices signed out for user {}", user.getEmail());
         return MessageResponse.builder().message("Signed out from all devices.").build();
     }

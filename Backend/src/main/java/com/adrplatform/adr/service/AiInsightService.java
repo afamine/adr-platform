@@ -2,11 +2,13 @@ package com.adrplatform.adr.service;
 
 import com.adrplatform.adr.domain.Adr;
 import com.adrplatform.adr.dto.AiInsightDto;
+import com.adrplatform.auth.config.CacheConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,6 +28,10 @@ public class AiInsightService {
         this.chatClient = chatClientBuilder.build();
     }
 
+    @Cacheable(
+            value = CacheConfig.AI_INSIGHTS_CACHE,
+            key = "#adr.id.toString() + '_' + #adr.updatedAt.toEpochMilli()"
+    )
     public List<AiInsightDto> generateInsights(Adr adr) {
         try {
             String prompt = """

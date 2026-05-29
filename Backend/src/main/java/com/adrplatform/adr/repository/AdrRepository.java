@@ -49,22 +49,11 @@ public interface AdrRepository extends JpaRepository<Adr, UUID> {
     @Query(value = "SELECT next_adr_number(:workspaceId)", nativeQuery = true)
     int nextAdrNumber(@Param("workspaceId") UUID workspaceId);
 
-    @Query(value = """
-            SELECT * FROM adr a
-            WHERE a.workspace_id = :workspaceId
-              AND (CAST(:status AS text) IS NULL OR a.status = CAST(:status AS text))
-              AND (
-                    CAST(:search AS text) IS NULL
-                 OR lower(a.title) LIKE lower('%' || CAST(:search AS text) || '%')
-                 OR lower(COALESCE(a.context, '')) LIKE lower('%' || CAST(:search AS text) || '%')
-                 OR lower(COALESCE(a.decision, '')) LIKE lower('%' || CAST(:search AS text) || '%')
-                 OR lower(COALESCE(a.alternatives, '')) LIKE lower('%' || CAST(:search AS text) || '%')
-              )
-            ORDER BY a.adr_number DESC
-            """, nativeQuery = true)
-    List<Adr> search(@Param("workspaceId") UUID workspaceId,
-                     @Param("status") String status,
-                     @Param("search") String search);
+    @Query("SELECT a FROM Adr a WHERE a.workspace.id = :workspaceId " +
+           "AND a.status NOT IN (com.adrplatform.adr.domain.AdrStatus.SUPERSEDED, " +
+           "com.adrplatform.adr.domain.AdrStatus.REJECTED) " +
+           "ORDER BY a.adrNumber DESC")
+    List<Adr> findEligibleReplacements(@Param("workspaceId") UUID workspaceId);
 
     @Query(value = """
             SELECT * FROM adr a
@@ -76,6 +65,38 @@ public interface AdrRepository extends JpaRepository<Adr, UUID> {
                  OR lower(COALESCE(a.context, '')) LIKE lower('%' || CAST(:search AS text) || '%')
                  OR lower(COALESCE(a.decision, '')) LIKE lower('%' || CAST(:search AS text) || '%')
                  OR lower(COALESCE(a.alternatives, '')) LIKE lower('%' || CAST(:search AS text) || '%')
+              )
+              AND (
+                    CAST(:tag AS text) IS NULL
+                 OR lower(COALESCE(a.tags, '')) LIKE '%,' || lower(CAST(:tag AS text)) || ',%'
+                 OR lower(COALESCE(a.tags, '')) LIKE lower(CAST(:tag AS text)) || ',%'
+                 OR lower(COALESCE(a.tags, '')) LIKE '%,' || lower(CAST(:tag AS text))
+                 OR lower(COALESCE(a.tags, '')) = lower(CAST(:tag AS text))
+              )
+            ORDER BY a.adr_number DESC
+            """, nativeQuery = true)
+    List<Adr> search(@Param("workspaceId") UUID workspaceId,
+                     @Param("status") String status,
+                     @Param("search") String search,
+                     @Param("tag") String tag);
+
+    @Query(value = """
+            SELECT * FROM adr a
+            WHERE a.workspace_id = :workspaceId
+              AND (CAST(:status AS text) IS NULL OR a.status = CAST(:status AS text))
+              AND (
+                    CAST(:search AS text) IS NULL
+                 OR lower(a.title) LIKE lower('%' || CAST(:search AS text) || '%')
+                 OR lower(COALESCE(a.context, '')) LIKE lower('%' || CAST(:search AS text) || '%')
+                 OR lower(COALESCE(a.decision, '')) LIKE lower('%' || CAST(:search AS text) || '%')
+                 OR lower(COALESCE(a.alternatives, '')) LIKE lower('%' || CAST(:search AS text) || '%')
+              )
+              AND (
+                    CAST(:tag AS text) IS NULL
+                 OR lower(COALESCE(a.tags, '')) LIKE '%,' || lower(CAST(:tag AS text)) || ',%'
+                 OR lower(COALESCE(a.tags, '')) LIKE lower(CAST(:tag AS text)) || ',%'
+                 OR lower(COALESCE(a.tags, '')) LIKE '%,' || lower(CAST(:tag AS text))
+                 OR lower(COALESCE(a.tags, '')) = lower(CAST(:tag AS text))
               )
             """,
             countQuery = """
@@ -89,10 +110,18 @@ public interface AdrRepository extends JpaRepository<Adr, UUID> {
                  OR lower(COALESCE(a.decision, '')) LIKE lower('%' || CAST(:search AS text) || '%')
                  OR lower(COALESCE(a.alternatives, '')) LIKE lower('%' || CAST(:search AS text) || '%')
               )
+              AND (
+                    CAST(:tag AS text) IS NULL
+                 OR lower(COALESCE(a.tags, '')) LIKE '%,' || lower(CAST(:tag AS text)) || ',%'
+                 OR lower(COALESCE(a.tags, '')) LIKE lower(CAST(:tag AS text)) || ',%'
+                 OR lower(COALESCE(a.tags, '')) LIKE '%,' || lower(CAST(:tag AS text))
+                 OR lower(COALESCE(a.tags, '')) = lower(CAST(:tag AS text))
+              )
             """,
             nativeQuery = true)
     Page<Adr> searchPaged(@Param("workspaceId") UUID workspaceId,
                           @Param("status") String status,
                           @Param("search") String search,
+                          @Param("tag") String tag,
                           Pageable pageable);
 }

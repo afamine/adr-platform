@@ -3,6 +3,7 @@ package com.adrplatform.adr.dto;
 import com.adrplatform.adr.domain.Adr;
 import com.adrplatform.adr.domain.AdrStatus;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
@@ -24,17 +25,28 @@ public record AdrDto(
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         UUID workspaceId,
-        LocalDateTime reviewStartedAt,
+        Instant reviewStartedAt,
         String lastAction,
-        LocalDateTime lastActionDate
+        LocalDateTime lastActionDate,
+        UUID supersededById,
+        Integer supersededByAdrNumber,
+        String supersededByTitle,
+        UUID supersedesId,
+        Integer supersedesAdrNumber,
+        String supersedesTitle
 ) {
+    private static List<String> parseTags(String csv) {
+        if (csv == null || csv.isBlank()) return List.of();
+        String stripped = csv.startsWith(",") ? csv.substring(1) : csv;
+        if (stripped.endsWith(",")) stripped = stripped.substring(0, stripped.length() - 1);
+        return Arrays.stream(stripped.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+    }
+
     public static AdrDto fromEntity(Adr a) {
-        List<String> tagsList = a.getTagsCsv() == null || a.getTagsCsv().isBlank()
-                ? List.of()
-                : Arrays.stream(a.getTagsCsv().split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .toList();
+        List<String> tagsList = parseTags(a.getTagsCsv());
         return new AdrDto(
                 a.getId(),
                 a.getAdrNumber(),
@@ -52,17 +64,18 @@ public record AdrDto(
                 a.getWorkspace().getId(),
                 a.getReviewStartedAt(),
                 null,
-                null
+                null,
+                a.getSupersededBy() != null ? a.getSupersededBy().getId() : null,
+                a.getSupersededBy() != null ? a.getSupersededBy().getAdrNumber() : null,
+                a.getSupersededBy() != null ? a.getSupersededBy().getTitle() : null,
+                a.getSupersedes() != null ? a.getSupersedes().getId() : null,
+                a.getSupersedes() != null ? a.getSupersedes().getAdrNumber() : null,
+                a.getSupersedes() != null ? a.getSupersedes().getTitle() : null
         );
     }
 
     public static AdrDto fromEntityWithActivity(Adr a, String lastAction, LocalDateTime lastActionDate) {
-        List<String> tagsList = a.getTagsCsv() == null || a.getTagsCsv().isBlank()
-                ? List.of()
-                : Arrays.stream(a.getTagsCsv().split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .toList();
+        List<String> tagsList = parseTags(a.getTagsCsv());
         return new AdrDto(
                 a.getId(),
                 a.getAdrNumber(),
@@ -80,7 +93,13 @@ public record AdrDto(
                 a.getWorkspace().getId(),
                 a.getReviewStartedAt(),
                 lastAction,
-                lastActionDate
+                lastActionDate,
+                a.getSupersededBy() != null ? a.getSupersededBy().getId() : null,
+                a.getSupersededBy() != null ? a.getSupersededBy().getAdrNumber() : null,
+                a.getSupersededBy() != null ? a.getSupersededBy().getTitle() : null,
+                a.getSupersedes() != null ? a.getSupersedes().getId() : null,
+                a.getSupersedes() != null ? a.getSupersedes().getAdrNumber() : null,
+                a.getSupersedes() != null ? a.getSupersedes().getTitle() : null
         );
     }
 }

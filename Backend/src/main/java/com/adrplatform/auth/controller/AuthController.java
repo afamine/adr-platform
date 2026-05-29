@@ -38,11 +38,10 @@ public class AuthController {
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
 
-    @Operation(summary = "Register a new user")
-    @ApiResponse(responseCode = "200", description = "User registered")
-    @ApiResponse(responseCode = "400", description = "Invalid request")
-    @ApiResponse(responseCode = "401", description = "Unauthorized")
-    @ApiResponse(responseCode = "404", description = "Workspace not found")
+    @Operation(summary = "Register a new user and create their workspace")
+    @ApiResponse(responseCode = "200", description = "User registered — awaiting email verification")
+    @ApiResponse(responseCode = "400", description = "Validation failed or password policy violation")
+    @ApiResponse(responseCode = "409", description = "Email already registered or workspace slug already taken")
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));

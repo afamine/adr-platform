@@ -6,6 +6,7 @@ import com.adrplatform.auth.dto.UpdateWorkspaceRequest;
 import com.adrplatform.auth.dto.WorkspaceDto;
 import com.adrplatform.auth.exception.BadRequestException;
 import com.adrplatform.auth.exception.ResourceNotFoundException;
+import com.adrplatform.common.AuditActions;
 import com.adrplatform.auth.repository.UserRepository;
 import com.adrplatform.auth.repository.WorkspaceRepository;
 import com.adrplatform.auth.security.TenantContext;
@@ -52,7 +53,7 @@ public class WorkspaceService {
         workspace.setQuorumMode(request.quorumMode());
         Workspace saved = workspaceRepository.save(workspace);
 
-        auditService.record(actor, saved, "WORKSPACE_UPDATED", "WORKSPACE", saved.getId(),
+        auditService.record(actor, saved, AuditActions.WORKSPACE_UPDATED, "WORKSPACE", saved.getId(),
                 oldPayload, buildPayload(saved));
 
         log.info("Workspace {} updated by {}", saved.getId(), actor.getEmail());
@@ -72,7 +73,7 @@ public class WorkspaceService {
         workspace.setQuorumMode("AUTO");
         Workspace saved = workspaceRepository.save(workspace);
 
-        auditService.record(actor, saved, "WORKSPACE_RESET", "WORKSPACE", saved.getId(),
+        auditService.record(actor, saved, AuditActions.WORKSPACE_RESET, "WORKSPACE", saved.getId(),
                 oldPayload, buildPayload(saved));
 
         log.info("Workspace {} reset to defaults by {}", saved.getId(), actor.getEmail());

@@ -6,6 +6,7 @@ import com.adrplatform.adr.repository.AdrRepository;
 import com.adrplatform.auth.domain.AuditEvent;
 import com.adrplatform.auth.repository.AuditEventRepository;
 import com.adrplatform.auth.security.TenantContext;
+import com.adrplatform.common.AuditActions;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -55,36 +56,36 @@ public class AdrAuditService {
 
     private String resolveType(String action) {
         return switch (action) {
-            case "ADR_STATUS_CHANGED", "STATUS_CHANGED" -> "STATUS_CHANGED";
-            case "ADR_CREATED" -> "ADR_CREATED";
-            case "ADR_UPDATED" -> "ADR_UPDATED";
-            case "VOTE_CAST" -> "VOTE_CAST";
-            case "COMMENT_ADDED" -> "COMMENT_ADDED";
+            case AuditActions.ADR_STATUS_CHANGED -> AuditActions.ADR_STATUS_CHANGED;
+            case AuditActions.ADR_CREATED        -> AuditActions.ADR_CREATED;
+            case AuditActions.ADR_UPDATED        -> AuditActions.ADR_UPDATED;
+            case AuditActions.VOTE_CAST          -> AuditActions.VOTE_CAST;
+            case AuditActions.COMMENT_ADDED      -> AuditActions.COMMENT_ADDED;
             default -> action;
         };
     }
 
     private String resolveAction(String type, Map<String, Object> payload) {
         return switch (type) {
-            case "STATUS_CHANGED" -> {
+            case AuditActions.ADR_STATUS_CHANGED -> {
                 Object to = payload.get("to");
                 yield to == null ? "changed ADR status" : "changed status to " + to;
             }
-            case "VOTE_CAST" -> {
+            case AuditActions.VOTE_CAST -> {
                 Object vote = payload.get("vote");
                 yield vote == null
                         ? "cast a vote"
                         : "voted " + vote.toString().toLowerCase(Locale.ROOT);
             }
-            case "ADR_CREATED" -> "created this ADR";
-            case "ADR_UPDATED" -> "updated this ADR";
-            case "COMMENT_ADDED" -> "added a comment";
+            case AuditActions.ADR_CREATED  -> "created this ADR";
+            case AuditActions.ADR_UPDATED  -> "updated this ADR";
+            case AuditActions.COMMENT_ADDED -> "added a comment";
             default -> type;
         };
     }
 
     private String resolveDetail(String type, Map<String, Object> payload) {
-        if ("STATUS_CHANGED".equals(type)) {
+        if (AuditActions.ADR_STATUS_CHANGED.equals(type)) {
             Object from = payload.get("from");
             Object to = payload.get("to");
             if (from != null && to != null) {
@@ -92,7 +93,7 @@ public class AdrAuditService {
             }
         }
 
-        if ("VOTE_CAST".equals(type)) {
+        if (AuditActions.VOTE_CAST.equals(type)) {
             Object comment = payload.get("comment");
             if (comment != null && !comment.toString().isBlank()) {
                 return "Comment: " + comment;
@@ -106,7 +107,7 @@ public class AdrAuditService {
         Map<String, Object> oldJson = parseMap(event.getOldValueJson());
         Map<String, Object> newJson = parseMap(event.getNewValueJson());
 
-        if ("STATUS_CHANGED".equals(type)) {
+        if (AuditActions.ADR_STATUS_CHANGED.equals(type)) {
             Map<String, Object> payload = new LinkedHashMap<>();
             Object from = oldJson.getOrDefault("status", oldJson.get("from"));
             Object to = newJson.getOrDefault("status", newJson.get("to"));

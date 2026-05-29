@@ -3,6 +3,7 @@ package com.adrplatform.notification.service;
 import com.adrplatform.auth.domain.Role;
 import com.adrplatform.auth.domain.User;
 import com.adrplatform.auth.exception.ResourceNotFoundException;
+import com.adrplatform.auth.repository.NotificationPreferencesRepository;
 import com.adrplatform.auth.repository.UserRepository;
 import com.adrplatform.notification.domain.Notification;
 import com.adrplatform.notification.dto.NotificationDto;
@@ -28,6 +29,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final NotificationPreferencesRepository notificationPreferencesRepository;
 
     // ── Query methods (called by NotificationController) ─────────────────────
 
@@ -79,7 +81,8 @@ public class NotificationService {
                     List<Notification> notifications = userRepository.findAllByWorkspace_Id(workspaceId)
                             .stream()
                             .filter(u -> (u.getRole() == Role.REVIEWER || u.getRole() == Role.APPROVER)
-                                    && !u.getId().equals(actorId))
+                                    && !u.getId().equals(actorId)
+                                    && shouldNotify(u.getId(), "ADR_SUBMITTED_FOR_REVIEW"))
                             .map(u -> buildNotification(u.getId(), workspaceId,
                                     "ADR_SUBMITTED_FOR_REVIEW",
                                     "ADR Submitted for Review",
@@ -89,7 +92,7 @@ public class NotificationService {
                     if (!notifications.isEmpty()) notificationRepository.saveAll(notifications);
                 }
                 case "ACCEPTED" -> {
-                    if (!authorId.equals(actorId)) {
+                    if (!authorId.equals(actorId) && shouldNotify(authorId, "ADR_STATUS_CHANGED")) {
                         notificationRepository.save(buildNotification(authorId, workspaceId,
                                 "ADR_STATUS_CHANGED",
                                 "ADR Accepted",
@@ -98,7 +101,7 @@ public class NotificationService {
                     }
                 }
                 case "REJECTED" -> {
-                    if (!authorId.equals(actorId)) {
+                    if (!authorId.equals(actorId) && shouldNotify(authorId, "ADR_REJECTED")) {
                         notificationRepository.save(buildNotification(authorId, workspaceId,
                                 "ADR_REJECTED",
                                 "ADR Rejected",
@@ -122,6 +125,7 @@ public class NotificationService {
             UUID workspaceId, UUID authorId, UUID voterId) {
         try {
             if (authorId.equals(voterId)) return;
+            if (!shouldNotify(authorId, "VOTE_CAST_ON_MY_ADR")) return;
             String voterName = userRepository.findById(voterId)
                     .map(User::getFullName).orElse("Someone");
             notificationRepository.save(buildNotification(authorId, workspaceId,
@@ -131,6 +135,29 @@ public class NotificationService {
                     adrId, null));
         } catch (Exception ex) {
             log.error("Failed to create vote-cast notification for ADR {}: {}", adrId, ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Called after a comment is added to an ADR. Notifies the ADR author
+     * (unless the commenter is the author themselves).
+     */
+    @Async
+    @Transactional
+    public void notifyCommentAdded(UUID adrId, int adrNumber, String adrTitle,
+            UUID workspaceId, UUID authorId, UUID commenterId) {
+        try {
+            if (authorId.equals(commenterId)) return;
+            if (!shouldNotify(authorId, "COMMENT_ADDED")) return;
+            String commenterName = userRepository.findById(commenterId)
+                    .map(User::getFullName).orElse("Someone");
+            notificationRepository.save(buildNotification(authorId, workspaceId,
+                    "COMMENT_ADDED",
+                    "New Comment on Your ADR",
+                    commenterName + " commented on ADR-" + adrNumber + " — " + adrTitle,
+                    adrId, null));
+        } catch (Exception ex) {
+            log.error("Failed to create comment-added notification for ADR {}: {}", adrId, ex.getMessage(), ex);
         }
     }
 
@@ -161,6 +188,29 @@ public class NotificationService {
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    /**
+     * Returns true if the user has opted in to receive the given notification type
+     * (opt-out model: defaults to true when no preference record exists).
+     * Maps:
+     *   ADR_SUBMITTED_FOR_REVIEW → emailOnReview
+     *   ADR_STATUS_CHANGED       → emailOnStatus
+     *   ADR_REJECTED             → emailOnStatus
+     *   VOTE_CAST_ON_MY_ADR      → emailOnVote
+     *   COMMENT_ADDED            → emailOnStatus
+     *   (anything else)          → true
+     */
+    private boolean shouldNotify(UUID userId, String notificationType) {
+        return notificationPreferencesRepository.findByUser_Id(userId)
+                .map(prefs -> switch (notificationType) {
+                    case "ADR_SUBMITTED_FOR_REVIEW" -> prefs.isEmailOnReview();
+                    case "ADR_STATUS_CHANGED", "ADR_REJECTED" -> prefs.isEmailOnStatus();
+                    case "VOTE_CAST_ON_MY_ADR" -> prefs.isEmailOnVote();
+                    case "COMMENT_ADDED" -> prefs.isEmailOnStatus();
+                    default -> true;
+                })
+                .orElse(true);
+    }
 
     private Notification buildNotification(UUID recipientId, UUID workspaceId,
             String type, String title, String body, UUID adrId, UUID auditEventId) {

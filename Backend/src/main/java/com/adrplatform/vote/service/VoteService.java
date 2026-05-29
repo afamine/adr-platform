@@ -19,6 +19,7 @@ import com.adrplatform.vote.dto.VoteDto;
 import com.adrplatform.vote.exception.AlreadyVotedException;
 import com.adrplatform.vote.exception.InvalidVoteException;
 import com.adrplatform.vote.repository.VoteRepository;
+import com.adrplatform.common.AuditActions;
 import com.adrplatform.notification.service.NotificationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -88,7 +89,7 @@ public class VoteService {
         auditService.record(
                 voter,
                 voter.getWorkspace(),
-                "VOTE_CAST",
+                AuditActions.VOTE_CAST,
                 "ADR",
                 adr.getId(),
                 null,
@@ -113,7 +114,7 @@ public class VoteService {
             auditService.record(
                     voter,
                     voter.getWorkspace(),
-                    "STATUS_CHANGED",
+                    AuditActions.ADR_STATUS_CHANGED,
                     "ADR",
                     adr.getId(),
                     toJson(Map.of("status", previousStatus.name())),

@@ -46,3 +46,9 @@ databaseChangeLog:
       file: db/changelog/V19__add_adr_version.sql
   - include:
       file: db/changelog/V20__create_adr_comment_table.sql
+  - include:
+      file: db/changelog/V21__registration_creates_workspace.sql
+  - include:
+      file: db/changelog/V22__fix_tag_delimiters.sql
+  - include:
+      file: db/changelog/V23__add_adr_supersedes_relationship.sql

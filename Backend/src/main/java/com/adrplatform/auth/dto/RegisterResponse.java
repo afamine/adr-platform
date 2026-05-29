@@ -8,4 +8,6 @@ import lombok.Getter;
 public class RegisterResponse {
     private String message;
     private String email;
+    private String workspaceName;
+    private String workspaceSlug;
 }

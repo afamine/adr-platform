@@ -6,7 +6,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 
@@ -63,7 +62,15 @@ public class Adr {
     private Instant updatedAt;
 
     @Column(name = "review_started_at")
-    private LocalDateTime reviewStartedAt;
+    private Instant reviewStartedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "superseded_by_id")
+    private Adr supersededBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supersedes_id")
+    private Adr supersedes;
 
     @Version
     @Column(name = "version")

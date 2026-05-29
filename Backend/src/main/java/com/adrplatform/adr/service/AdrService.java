@@ -3,7 +3,9 @@ package com.adrplatform.adr.service;
 import com.adrplatform.adr.domain.Adr;
 import com.adrplatform.adr.domain.AdrStatus;
 import com.adrplatform.adr.dto.AdrDto;
+import com.adrplatform.adr.dto.AdrSummaryDto;
 import com.adrplatform.adr.dto.CreateAdrRequest;
+import com.adrplatform.adr.dto.StatusTransitionRequest;
 import com.adrplatform.adr.dto.UpdateAdrRequest;
 import com.adrplatform.adr.exception.AdrAccessDeniedException;
 import com.adrplatform.adr.exception.AdrNotFoundException;
@@ -16,7 +18,10 @@ import com.adrplatform.auth.repository.AuditEventRepository;
 import com.adrplatform.auth.repository.WorkspaceRepository;
 import com.adrplatform.auth.security.TenantContext;
 import com.adrplatform.auth.service.AuditService;
+import com.adrplatform.auth.config.CacheConfig;
 import com.adrplatform.auth.exception.BadRequestException;
+import com.adrplatform.common.AuditActions;
+import org.springframework.cache.annotation.CacheEvict;
 import com.adrplatform.notification.service.NotificationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,6 +36,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -49,27 +55,31 @@ public class AdrService {
     private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
-    public Page<AdrDto> getAllAdrs(AdrStatus status, String search, Pageable pageable) {
+    public Page<AdrDto> getAllAdrs(AdrStatus status, String search, String tag, Pageable pageable) {
         UUID workspaceId = tenantContext.getWorkspaceId();
         if (workspaceId == null) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Workspace context not available");
         }
         String normalizedSearch = (search == null || search.isBlank()) ? null : search.trim();
+        String normalizedTag = (tag == null || tag.isBlank()) ? null : tag.trim().toLowerCase();
         String statusStr = status != null ? status.name() : null;
-        return adrRepository.searchPaged(workspaceId, statusStr, normalizedSearch, pageable)
+        return adrRepository.searchPaged(workspaceId, statusStr, normalizedSearch, normalizedTag, pageable)
                 .map(AdrDto::fromEntity);
     }
 
     @Transactional(readOnly = true)
-    public List<AdrDto> getAllAdrs(AdrStatus status, String search) {
+    public List<AdrDto> getAllAdrs(AdrStatus status, String search, String tag) {
         UUID workspaceId = tenantContext.getWorkspaceId();
         if (workspaceId == null) {
             log.error("TenantContext.workspaceId is null — JWT filter may not be populating it correctly");
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Workspace context not available");
         }
-        List<Adr> list = (status == null && (search == null || search.isBlank()))
+        String normalizedTag = (tag == null || tag.isBlank()) ? null : tag.trim().toLowerCase();
+        boolean noFilters = status == null && (search == null || search.isBlank()) && normalizedTag == null;
+        List<Adr> list = noFilters
                 ? adrRepository.findAllByWorkspace_IdOrderByAdrNumberDesc(workspaceId)
-                : adrRepository.search(workspaceId, status != null ? status.name() : null, (search == null || search.isBlank()) ? null : search.trim());
+                : adrRepository.search(workspaceId, status != null ? status.name() : null,
+                        (search == null || search.isBlank()) ? null : search.trim(), normalizedTag);
         return list.stream().map(AdrDto::fromEntity).toList();
     }
 
@@ -161,7 +171,7 @@ public class AdrService {
 
         log.debug("Loaded ADR tags raw: '{}', parsed: {}", saved.getTagsCsv(), AdrDto.fromEntity(saved).tags());
 
-        auditService.record(actor, actor.getWorkspace(), "ADR_CREATED", "ADR", saved.getId(), null,
+        auditService.record(actor, actor.getWorkspace(), AuditActions.ADR_CREATED, "ADR", saved.getId(), null,
                 toJson(Map.of("adrNumber", saved.getAdrNumber(), "title",
                         saved.getTitle() == null ? "" : saved.getTitle(), "status", saved.getStatus().name())));
 
@@ -169,6 +179,7 @@ public class AdrService {
         return AdrDto.fromEntity(saved);
     }
 
+    @CacheEvict(value = CacheConfig.AI_INSIGHTS_CACHE, allEntries = true)
     @Transactional
     public AdrDto updateAdr(UUID id, UpdateAdrRequest request) {
         User actor = currentUser();
@@ -194,13 +205,15 @@ public class AdrService {
         if (request.tags() != null && !request.tags().isEmpty()) adr.setTagsCsv(joinTags(request.tags()));
 
         Adr saved = adrRepository.save(adr);
-        auditService.record(actor, actor.getWorkspace(), "ADR_UPDATED", "ADR", saved.getId(), null,
+        auditService.record(actor, actor.getWorkspace(), AuditActions.ADR_UPDATED, "ADR", saved.getId(), null,
                 toJson(Map.of("title", saved.getTitle() == null ? "" : saved.getTitle())));
         return AdrDto.fromEntity(saved);
     }
 
+    @CacheEvict(value = CacheConfig.AI_INSIGHTS_CACHE, allEntries = true)
     @Transactional
-    public AdrDto transitionStatus(UUID id, AdrStatus newStatus) {
+    public AdrDto transitionStatus(UUID id, StatusTransitionRequest request) {
+        AdrStatus newStatus = request.status();
         User actor = currentUser();
         UUID workspaceId = tenantContext.getWorkspaceId();
         Adr adr = adrRepository.findByIdAndWorkspace_Id(id, workspaceId)
@@ -215,13 +228,27 @@ public class AdrService {
 
         adr.setStatus(newStatus);
         if (newStatus == AdrStatus.UNDER_REVIEW && adr.getReviewStartedAt() == null) {
-            adr.setReviewStartedAt(java.time.LocalDateTime.now());
+            adr.setReviewStartedAt(java.time.Instant.now());
         }
+
+        if (newStatus == AdrStatus.SUPERSEDED && request.supersededByAdrId() != null) {
+            Adr replacement = adrRepository.findByIdAndWorkspace_Id(request.supersededByAdrId(), workspaceId)
+                    .orElseThrow(() -> new AdrNotFoundException("Replacement ADR not found in this workspace."));
+            if (replacement.getId().equals(adr.getId())) {
+                throw new InvalidTransitionException("An ADR cannot supersede itself.");
+            }
+            adr.setSupersededBy(replacement);
+            replacement.setSupersedes(adr);
+            adrRepository.save(replacement);
+        }
+
         Adr saved = adrRepository.save(adr);
 
-        auditService.record(actor, actor.getWorkspace(), "ADR_STATUS_CHANGED", "ADR", saved.getId(),
+        auditService.record(actor, actor.getWorkspace(), AuditActions.ADR_STATUS_CHANGED, "ADR", saved.getId(),
                 toJson(Map.of("status", old.name())),
-                toJson(Map.of("status", newStatus.name())));
+                toJson(Map.of("status", newStatus.name(),
+                        "supersededByAdrId", request.supersededByAdrId() != null
+                                ? request.supersededByAdrId().toString() : "")));
         notificationService.notifyStatusChanged(saved.getId(), saved.getAdrNumber(), saved.getTitle(),
                 workspaceId, saved.getAuthor().getId(), actor.getId(), newStatus.name());
         return AdrDto.fromEntity(saved);
@@ -237,7 +264,7 @@ public class AdrService {
         Adr adr = adrRepository.findByIdAndWorkspace_Id(id, workspaceId)
                 .orElseThrow(() -> new AdrNotFoundException("ADR not found."));
 
-        auditService.record(actor, actor.getWorkspace(), "ADR_DELETED", "ADR", adr.getId(), null, null);
+        auditService.record(actor, actor.getWorkspace(), AuditActions.ADR_DELETED, "ADR", adr.getId(), null, null);
         adrRepository.delete(adr);
     }
 
@@ -273,7 +300,11 @@ public class AdrService {
                 }
             }
             case ACCEPTED -> {
-                if (target != AdrStatus.SUPERSEDED) {
+                if (target == AdrStatus.SUPERSEDED) {
+                    if (!(role == Role.APPROVER || role == Role.ADMIN)) {
+                        throw new AdrAccessDeniedException("Only APPROVER or ADMIN can supersede an ADR.");
+                    }
+                } else {
                     throw new InvalidTransitionException("Invalid status transition from " + current + " to " + target + ".");
                 }
             }
@@ -288,9 +319,50 @@ public class AdrService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public List<AdrSummaryDto> getEligibleReplacements() {
+        UUID workspaceId = tenantContext.getWorkspaceId();
+        return adrRepository.findEligibleReplacements(workspaceId)
+                .stream()
+                .map(a -> new AdrSummaryDto(a.getId(), a.getAdrNumber(), a.getTitle(), a.getStatus().name()))
+                .toList();
+    }
+
+    public String buildMadrMarkdown(AdrDto adr) {
+        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String date = adr.createdAt() != null ? adr.createdAt().format(dateFmt) : "—";
+        String tags = (adr.tags() == null || adr.tags().isEmpty())
+                ? "—"
+                : String.join(", ", adr.tags());
+
+        return new StringBuilder()
+                .append("# ADR-").append(adr.adrNumber()).append(": ").append(adr.title()).append("\n\n")
+                .append("**Status:** ").append(adr.status()).append("\n")
+                .append("**Date:** ").append(date).append("\n")
+                .append("**Author:** ").append(adr.authorName()).append("\n")
+                .append("**Tags:** ").append(tags).append("\n\n")
+                .append("---\n\n")
+                .append("## Context\n\n")
+                .append(isBlank(adr.context()) ? "_Not provided._" : adr.context().trim()).append("\n\n")
+                .append("## Decision\n\n")
+                .append(isBlank(adr.decision()) ? "_Not provided._" : adr.decision().trim()).append("\n\n")
+                .append("## Consequences\n\n")
+                .append(isBlank(adr.consequences()) ? "_Not provided._" : adr.consequences().trim()).append("\n\n")
+                .append("## Alternatives Considered\n\n")
+                .append(isBlank(adr.alternatives()) ? "_Not provided._" : adr.alternatives().trim()).append("\n\n")
+                .append("---\n")
+                .append("*Generated by ADR Platform*\n")
+                .toString();
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
     private String joinTags(List<String> tags) {
         if (tags == null || tags.isEmpty()) return "";
-        return String.join(",", tags.stream().map(String::trim).filter(s -> !s.isEmpty()).toList());
+        String joined = String.join(",", tags.stream().map(String::trim).filter(s -> !s.isEmpty()).toList());
+        return "," + joined + ",";
     }
 
     private String toJson(Map<String, Object> payload) {

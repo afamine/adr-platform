@@ -74,6 +74,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/workspace/reset").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/analytics/**").hasAnyRole("ADMIN", "APPROVER")
                         .requestMatchers("/api/notifications/**").authenticated()
+                        .requestMatchers("/api/admin/audit/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

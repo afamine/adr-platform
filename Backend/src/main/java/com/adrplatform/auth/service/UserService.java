@@ -12,6 +12,7 @@ import com.adrplatform.auth.dto.UpdateProfileRequest;
 import com.adrplatform.auth.dto.UserDto;
 import com.adrplatform.auth.exception.BadRequestException;
 import com.adrplatform.auth.exception.ConflictException;
+import com.adrplatform.common.AuditActions;
 import com.adrplatform.auth.exception.ResourceNotFoundException;
 import com.adrplatform.auth.repository.NotificationPreferencesRepository;
 import com.adrplatform.auth.repository.UserRepository;
@@ -67,7 +68,7 @@ public class UserService {
         }
         User saved = userRepository.save(user);
 
-        auditService.record(actor, actor.getWorkspace(), "PROFILE_UPDATED", "USER", saved.getId(),
+        auditService.record(actor, actor.getWorkspace(), AuditActions.PROFILE_UPDATED, "USER", saved.getId(),
                 "{\"fullName\":\"" + oldName + "\"}",
                 "{\"fullName\":\"" + saved.getFullName() + "\"}");
 
@@ -148,7 +149,7 @@ public class UserService {
         user.setRole(newRole);
         User saved = userRepository.save(user);
 
-        auditService.record(actor, actor.getWorkspace(), "ROLE_CHANGED", "USER", saved.getId(),
+        auditService.record(actor, actor.getWorkspace(), AuditActions.ROLE_CHANGED, "USER", saved.getId(),
                 "{\"role\":\"" + oldValue + "\"}",
                 "{\"role\":\"" + saved.getRole().name() + "\"}");
 
@@ -174,7 +175,7 @@ public class UserService {
         user.setActive(isActive);
         User saved = userRepository.save(user);
 
-        auditService.record(actor, actor.getWorkspace(), "STATUS_CHANGED", "USER", saved.getId(),
+        auditService.record(actor, actor.getWorkspace(), AuditActions.USER_STATUS_CHANGED, "USER", saved.getId(),
                 "{\"isActive\":" + oldValue + "}",
                 "{\"isActive\":" + saved.isActive() + "}");
 
@@ -215,7 +216,7 @@ public class UserService {
         String inviteUrl = appProperties.getFrontendUrl() + "/accept-invite?token=" + token;
         mailService.sendInvitationEmail(normalizedEmail, workspace.getName(), role.name(), inviteUrl);
 
-        auditService.record(actor, workspace, "USER_INVITED", "USER", saved.getId(), null,
+        auditService.record(actor, workspace, AuditActions.USER_INVITED, "USER", saved.getId(), null,
                 "{\"email\":\"" + normalizedEmail + "\",\"role\":\"" + role.name() + "\"}");
 
         log.info("Invitation sent to {} as {} by {}", normalizedEmail, role, actor.getEmail());
