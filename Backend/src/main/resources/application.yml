@@ -2,10 +2,13 @@ spring:
   application:
     name: AdrProject
   datasource:
-    url: jdbc:postgresql://localhost:5432/Adr_Project
+    url: jdbc:postgresql://localhost:5432/Adr_Project?connectTimeout=5000&socketTimeout=5000
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 10000
+      socket-timeout: 10000
   jpa:
     hibernate:
       ddl-auto: validate
@@ -60,12 +63,14 @@ springdoc:
     path: /v3/api-docs
 
 cors:
+  # Override for production: set CORS_ALLOWED_ORIGINS_0, CORS_ALLOWED_ORIGINS_1, etc.
+  # Example: CORS_ALLOWED_ORIGINS_0=https://myapp.vercel.app
   allowed-origins:
-    - http://localhost:4200
+    - ${CORS_ALLOWED_ORIGINS_0:http://localhost:4200}
 
 password-reset:
   token-ttl: 20m
-  frontend-url: http://localhost:4200/reset-password
+  frontend-url: ${APP_FRONTEND_URL:http://localhost:4200}/reset-password
   email-from: ADR Platform <noreply@example.local>
   email-subject: Reset your ADR Platform password
   app-base-url: ${APP_BASE_URL:http://localhost:8080}

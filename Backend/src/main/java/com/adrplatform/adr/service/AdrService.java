@@ -18,7 +18,6 @@ import com.adrplatform.auth.repository.AuditEventRepository;
 import com.adrplatform.auth.repository.WorkspaceRepository;
 import com.adrplatform.auth.security.TenantContext;
 import com.adrplatform.auth.service.AuditService;
-import com.adrplatform.auth.config.CacheConfig;
 import com.adrplatform.auth.exception.BadRequestException;
 import com.adrplatform.common.AuditActions;
 import org.springframework.cache.annotation.CacheEvict;
@@ -36,7 +35,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -65,22 +67,6 @@ public class AdrService {
         String statusStr = status != null ? status.name() : null;
         return adrRepository.searchPaged(workspaceId, statusStr, normalizedSearch, normalizedTag, pageable)
                 .map(AdrDto::fromEntity);
-    }
-
-    @Transactional(readOnly = true)
-    public List<AdrDto> getAllAdrs(AdrStatus status, String search, String tag) {
-        UUID workspaceId = tenantContext.getWorkspaceId();
-        if (workspaceId == null) {
-            log.error("TenantContext.workspaceId is null — JWT filter may not be populating it correctly");
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Workspace context not available");
-        }
-        String normalizedTag = (tag == null || tag.isBlank()) ? null : tag.trim().toLowerCase();
-        boolean noFilters = status == null && (search == null || search.isBlank()) && normalizedTag == null;
-        List<Adr> list = noFilters
-                ? adrRepository.findAllByWorkspace_IdOrderByAdrNumberDesc(workspaceId)
-                : adrRepository.search(workspaceId, status != null ? status.name() : null,
-                        (search == null || search.isBlank()) ? null : search.trim(), normalizedTag);
-        return list.stream().map(AdrDto::fromEntity).toList();
     }
 
     @Transactional(readOnly = true)
@@ -179,7 +165,7 @@ public class AdrService {
         return AdrDto.fromEntity(saved);
     }
 
-    @CacheEvict(value = CacheConfig.AI_INSIGHTS_CACHE, allEntries = true)
+    @CacheEvict(value = "ai-insights", key = "#id")
     @Transactional
     public AdrDto updateAdr(UUID id, UpdateAdrRequest request) {
         User actor = currentUser();
@@ -210,7 +196,7 @@ public class AdrService {
         return AdrDto.fromEntity(saved);
     }
 
-    @CacheEvict(value = CacheConfig.AI_INSIGHTS_CACHE, allEntries = true)
+    @CacheEvict(value = "ai-insights", key = "#id")
     @Transactional
     public AdrDto transitionStatus(UUID id, StatusTransitionRequest request) {
         AdrStatus newStatus = request.status();
@@ -355,8 +341,215 @@ public class AdrService {
                 .toString();
     }
 
+    public String buildHtmlExport(AdrDto adr) {
+        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String date = adr.createdAt() != null ? adr.createdAt().format(dateFmt) : "-";
+        String tags = (adr.tags() == null || adr.tags().isEmpty())
+                ? "-"
+                : String.join(", ", adr.tags());
+
+        return new StringBuilder()
+                .append("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">")
+                .append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
+                .append("<title>ADR-").append(adr.adrNumber()).append(": ").append(escapeHtml(adr.title())).append("</title>")
+                .append("<style>")
+                .append("body{font-family:Arial,sans-serif;line-height:1.55;color:#111827;max-width:860px;margin:40px auto;padding:0 24px}")
+                .append("h1{font-size:28px;margin-bottom:8px}h2{font-size:18px;margin-top:32px;border-bottom:1px solid #e5e7eb;padding-bottom:6px}")
+                .append(".meta{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;color:#374151;background:#f9fafb;border:1px solid #e5e7eb;padding:14px;border-radius:8px}")
+                .append(".label{font-weight:700;color:#111827}.footer{margin-top:36px;color:#6b7280;font-size:12px}")
+                .append("pre{white-space:pre-wrap;font-family:inherit}")
+                .append("</style></head><body>")
+                .append("<h1>ADR-").append(adr.adrNumber()).append(": ").append(escapeHtml(adr.title())).append("</h1>")
+                .append("<div class=\"meta\">")
+                .append("<div class=\"label\">Status</div><div>").append(escapeHtml(adr.status().name())).append("</div>")
+                .append("<div class=\"label\">Date</div><div>").append(escapeHtml(date)).append("</div>")
+                .append("<div class=\"label\">Author</div><div>").append(escapeHtml(adr.authorName())).append("</div>")
+                .append("<div class=\"label\">Tags</div><div>").append(escapeHtml(tags)).append("</div>")
+                .append("</div>")
+                .append(sectionHtml("Context", adr.context()))
+                .append(sectionHtml("Decision", adr.decision()))
+                .append(sectionHtml("Consequences", adr.consequences()))
+                .append(sectionHtml("Alternatives Considered", adr.alternatives()))
+                .append("<div class=\"footer\">Generated by ADR Platform</div>")
+                .append("</body></html>")
+                .toString();
+    }
+
+    public byte[] buildPdfExport(AdrDto adr) {
+        try {
+            return buildSimplePdf(buildPdfLines(adr));
+        } catch (RuntimeException ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to generate PDF export", ex);
+        }
+    }
+
+    private List<String> buildPdfLines(AdrDto adr) {
+        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String date = adr.createdAt() != null ? adr.createdAt().format(dateFmt) : "-";
+        String tags = (adr.tags() == null || adr.tags().isEmpty())
+                ? "-"
+                : String.join(", ", adr.tags());
+
+        List<String> lines = new ArrayList<>();
+        lines.add("ADR-" + adr.adrNumber() + ": " + safeText(adr.title()));
+        lines.add("");
+        lines.add("Status: " + adr.status());
+        lines.add("Date: " + date);
+        lines.add("Author: " + safeText(adr.authorName()));
+        lines.add("Tags: " + safeText(tags));
+        lines.add("");
+        addWrappedSection(lines, "Context", adr.context());
+        addWrappedSection(lines, "Decision", adr.decision());
+        addWrappedSection(lines, "Consequences", adr.consequences());
+        addWrappedSection(lines, "Alternatives Considered", adr.alternatives());
+        lines.add("");
+        lines.add("Generated by ADR Platform");
+        return lines;
+    }
+
+    private void addWrappedSection(List<String> lines, String title, String content) {
+        lines.add(title);
+        String value = isBlank(content) ? "Not provided." : safeText(content.trim());
+        for (String paragraph : value.split("\\R")) {
+            lines.addAll(wrapLine(paragraph, 92));
+        }
+        lines.add("");
+    }
+
+    private List<String> wrapLine(String value, int maxLength) {
+        List<String> lines = new ArrayList<>();
+        String remaining = value == null ? "" : value.trim();
+        if (remaining.isEmpty()) {
+            lines.add("");
+            return lines;
+        }
+        while (remaining.length() > maxLength) {
+            int breakAt = remaining.lastIndexOf(' ', maxLength);
+            if (breakAt < 24) {
+                breakAt = maxLength;
+            }
+            lines.add(remaining.substring(0, breakAt).trim());
+            remaining = remaining.substring(breakAt).trim();
+        }
+        lines.add(remaining);
+        return lines;
+    }
+
+    private byte[] buildSimplePdf(List<String> lines) {
+        int linesPerPage = 44;
+        List<List<String>> pages = new ArrayList<>();
+        for (int i = 0; i < lines.size(); i += linesPerPage) {
+            pages.add(lines.subList(i, Math.min(i + linesPerPage, lines.size())));
+        }
+        if (pages.isEmpty()) {
+            pages.add(List.of(""));
+        }
+
+        List<byte[]> objects = new ArrayList<>();
+        int pageCount = pages.size();
+        int fontObjectNumber = 3 + (pageCount * 2);
+
+        objects.add("<< /Type /Catalog /Pages 2 0 R >>\n".getBytes(StandardCharsets.ISO_8859_1));
+
+        StringBuilder kids = new StringBuilder();
+        for (int i = 0; i < pageCount; i++) {
+            kids.append(3 + (i * 2)).append(" 0 R ");
+        }
+        objects.add(("<< /Type /Pages /Kids [" + kids + "] /Count " + pageCount + " >>\n")
+                .getBytes(StandardCharsets.ISO_8859_1));
+
+        for (int i = 0; i < pageCount; i++) {
+            int pageObjectNumber = 3 + (i * 2);
+            int contentObjectNumber = pageObjectNumber + 1;
+            objects.add(("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
+                    + "/Resources << /Font << /F1 " + fontObjectNumber + " 0 R >> >> "
+                    + "/Contents " + contentObjectNumber + " 0 R >>\n")
+                    .getBytes(StandardCharsets.ISO_8859_1));
+
+            byte[] stream = buildPdfPageStream(pages.get(i));
+            objects.add(("<< /Length " + stream.length + " >>\nstream\n"
+                    + new String(stream, StandardCharsets.ISO_8859_1)
+                    + "\nendstream\n")
+                    .getBytes(StandardCharsets.ISO_8859_1));
+        }
+
+        objects.add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\n"
+                .getBytes(StandardCharsets.ISO_8859_1));
+
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            out.write("%PDF-1.4\n".getBytes(StandardCharsets.ISO_8859_1));
+            List<Integer> offsets = new ArrayList<>();
+            for (int i = 0; i < objects.size(); i++) {
+                offsets.add(out.size());
+                out.write(((i + 1) + " 0 obj\n").getBytes(StandardCharsets.ISO_8859_1));
+                out.write(objects.get(i));
+                out.write("endobj\n".getBytes(StandardCharsets.ISO_8859_1));
+            }
+
+            int xrefOffset = out.size();
+            out.write(("xref\n0 " + (objects.size() + 1) + "\n").getBytes(StandardCharsets.ISO_8859_1));
+            out.write("0000000000 65535 f \n".getBytes(StandardCharsets.ISO_8859_1));
+            for (Integer offset : offsets) {
+                out.write(String.format("%010d 00000 n \n", offset).getBytes(StandardCharsets.ISO_8859_1));
+            }
+            out.write(("trailer\n<< /Size " + (objects.size() + 1) + " /Root 1 0 R >>\n"
+                    + "startxref\n" + xrefOffset + "\n%%EOF\n").getBytes(StandardCharsets.ISO_8859_1));
+            return out.toByteArray();
+        } catch (Exception ex) {
+            throw new IllegalStateException("Unable to write PDF bytes", ex);
+        }
+    }
+
+    private byte[] buildPdfPageStream(List<String> lines) {
+        StringBuilder stream = new StringBuilder();
+        stream.append("BT\n/F1 12 Tf\n14 TL\n50 790 Td\n");
+        for (String line : lines) {
+            stream.append("(").append(escapePdf(line)).append(") Tj\nT*\n");
+        }
+        stream.append("ET");
+        return stream.toString().getBytes(StandardCharsets.ISO_8859_1);
+    }
+
+    private String escapePdf(String value) {
+        return safeText(value)
+                .replace("\\", "\\\\")
+                .replace("(", "\\(")
+                .replace(")", "\\)");
+    }
+
+    private String safeText(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace('\u2013', '-')
+                .replace('\u2014', '-')
+                .replace('\u2018', '\'')
+                .replace('\u2019', '\'')
+                .replace('\u201c', '"')
+                .replace('\u201d', '"')
+                .replaceAll("[^\\x09\\x0A\\x0D\\x20-\\x7E]", "?");
+    }
+
     private boolean isBlank(String s) {
         return s == null || s.isBlank();
+    }
+
+    private String sectionHtml(String title, String content) {
+        return new StringBuilder()
+                .append("<h2>").append(escapeHtml(title)).append("</h2>")
+                .append("<pre>").append(escapeHtml(isBlank(content) ? "Not provided." : content.trim())).append("</pre>")
+                .toString();
+    }
+
+    private String escapeHtml(String value) {
+        if (value == null) return "";
+        return value
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
     private String joinTags(List<String> tags) {

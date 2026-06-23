@@ -44,7 +44,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh",
                                 "/api/auth/forgot-password", "/api/auth/reset-password",
                                 "/api/auth/verify-email", "/api/auth/resend-verification",
-                                "/api/auth/validate-invite", "/api/auth/accept-invite").permitAll()
+                                "/api/auth/validate-invite", "/api/auth/accept-invite", "/api/auth/2fa/validate").permitAll()
                         .requestMatchers("/api/auth/logout").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/auth/change-password").authenticated()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()

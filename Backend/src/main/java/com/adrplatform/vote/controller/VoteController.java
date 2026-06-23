@@ -7,6 +7,7 @@ import com.adrplatform.vote.service.VoteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.UUID;
 
+@Tag(name = "Votes", description = "Casting and retrieving votes on ADRs")
 @RestController
 @RequestMapping("/api/adrs/{adrId}/votes")
 @RequiredArgsConstructor

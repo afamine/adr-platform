@@ -1,0 +1,29 @@
+{
+  "info": {
+    "name": "ADR Platform - Register",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Alice Example\",\n  \"email\": \"alice@example.com\",\n  \"password\": \"P@ssw0rd1\",\n  \"workspaceName\": \"My Workspace\",\n  \"workspaceSlug\": \"my-workspace\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/auth/register",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api","auth","register"]
+        }
+      }
+    }
+  ]
+}
+

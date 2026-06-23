@@ -52,3 +52,19 @@ databaseChangeLog:
       file: db/changelog/V22__fix_tag_delimiters.sql
   - include:
       file: db/changelog/V23__add_adr_supersedes_relationship.sql
+  - include:
+      file: db/changelog/V24__add_adr_search_trgm_indexes.sql
+  - changeSet:
+      id: "25"
+      author: adr-platform
+      changes:
+        - sqlFile:
+            path: db/changelog/V25__add_totp_fields.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: "26"
+      author: adr-platform
+      changes:
+        - sqlFile:
+            path: db/changelog/V26__add_totp_pending_fields.sql
+            relativeToChangelogFile: false

@@ -18,6 +18,7 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtService jwtService;
+    private final TokenHashService tokenHashService;
 
     /**
      * Persists a refresh token for a user.
@@ -26,7 +27,7 @@ public class RefreshTokenService {
     public RefreshToken create(User user, String token) {
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
-                .token(token)
+                .token(tokenHashService.hash(token))
                 .expiryAt(jwtService.extractExpiration(token))
                 .revoked(false)
                 .build();
@@ -38,7 +39,7 @@ public class RefreshTokenService {
      */
     @Transactional(readOnly = true)
     public RefreshToken validateRefreshToken(String token) {
-        RefreshToken storedToken = refreshTokenRepository.findByToken(token)
+        RefreshToken storedToken = refreshTokenRepository.findByToken(tokenHashService.hash(token))
                 .orElseThrow(() -> new UnauthorizedException("Refresh token not found"));
 
         if (storedToken.isRevoked()) {

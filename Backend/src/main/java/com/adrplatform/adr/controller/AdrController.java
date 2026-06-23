@@ -20,6 +20,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -29,9 +30,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 
+@Tag(name = "ADRs", description = "Architecture Decision Record management endpoints")
 @RestController
 @RequestMapping("/api/adrs")
 @RequiredArgsConstructor
@@ -40,6 +43,13 @@ public class AdrController {
     private final AdrService adrService;
     private final AdrAuditService adrAuditService;
     private final AiInsightService aiInsightService;
+    private static final Map<String, String> SORT_COLUMNS = Map.of(
+            "adrNumber", "adr_number",
+            "title", "title",
+            "status", "status",
+            "createdAt", "created_at",
+            "updatedAt", "updated_at"
+    );
 
     @Operation(summary = "Get the most recently updated ADRs with last-activity info")
     @ApiResponse(responseCode = "200", description = "Recent ADRs returned")
@@ -47,17 +57,6 @@ public class AdrController {
     public ResponseEntity<List<AdrDto>> recent(
             @Parameter(description = "Maximum number of results") @RequestParam(defaultValue = "4") int limit) {
         return ResponseEntity.ok(adrService.getRecentAdrs(limit));
-    }
-
-    @Operation(summary = "List all ADRs in the current workspace")
-    @ApiResponse(responseCode = "200", description = "List returned")
-    @GetMapping
-    public ResponseEntity<List<AdrDto>> list(
-            @Parameter(description = "Filter by status") @RequestParam(value = "status", required = false) AdrStatus status,
-            @Parameter(description = "Search in title/context/decision/alternatives") @RequestParam(value = "search", required = false) String search,
-            @Parameter(description = "Filter by exact tag name") @RequestParam(value = "tag", required = false) String tag
-    ) {
-        return ResponseEntity.ok(adrService.getAllAdrs(status, search, tag));
     }
 
     @Operation(summary = "List ADRs with pagination and sorting")
@@ -71,9 +70,12 @@ public class AdrController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "adrNumber") String sort,
             @RequestParam(defaultValue = "DESC") String direction) {
-        String sortColumn = sort.equals("adrNumber") ? "adr_number" : sort;
-        PageRequest pageable = PageRequest.of(page, size,
-                Sort.by(Sort.Direction.fromString(direction), sortColumn));
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(Math.max(1, size), 100);
+        String sortColumn = SORT_COLUMNS.getOrDefault(sort, "adr_number");
+        Sort.Direction safeDirection = "ASC".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        PageRequest pageable = PageRequest.of(safePage, safeSize,
+                Sort.by(safeDirection, sortColumn));
         return ResponseEntity.ok(adrService.getAllAdrs(status, search, tag, pageable));
     }
 
@@ -106,6 +108,7 @@ public class AdrController {
     @Operation(summary = "Update ADR fields (not status)")
     @ApiResponse(responseCode = "200", description = "ADR updated")
     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content)
+    @ApiResponse(responseCode = "404", description = "ADR not found", content = @Content)
     @PutMapping("/{id}")
     public ResponseEntity<AdrDto> update(@PathVariable("id") UUID id, @Valid @RequestBody UpdateAdrRequest request) {
         return ResponseEntity.ok(adrService.updateAdr(id, request));
@@ -115,6 +118,7 @@ public class AdrController {
     @ApiResponse(responseCode = "200", description = "Status changed")
     @ApiResponse(responseCode = "400", description = "Invalid transition")
     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content)
+    @ApiResponse(responseCode = "404", description = "ADR not found", content = @Content)
     @PatchMapping("/{id}/status")
     public ResponseEntity<AdrDto> transition(@PathVariable("id") UUID id, @Valid @RequestBody StatusTransitionRequest request) {
         return ResponseEntity.ok(adrService.transitionStatus(id, request));
@@ -123,6 +127,7 @@ public class AdrController {
     @Operation(summary = "Delete an ADR (ADMIN only)")
     @ApiResponse(responseCode = "204", description = "Deleted")
     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content)
+    @ApiResponse(responseCode = "404", description = "ADR not found", content = @Content)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") UUID id) {
         adrService.deleteAdr(id);
@@ -139,6 +144,7 @@ public class AdrController {
 
     @Operation(summary = "Generate AI insights for an ADR")
     @ApiResponse(responseCode = "200", description = "Insights generated (may be empty if AI unavailable)")
+    @ApiResponse(responseCode = "404", description = "ADR not found", content = @Content)
     @GetMapping("/{id}/ai-insights")
     public ResponseEntity<List<AiInsightDto>> aiInsights(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(aiInsightService.generateInsights(adrService.getAdrEntity(id)));
@@ -155,7 +161,37 @@ public class AdrController {
                 + adr.title().toLowerCase().replaceAll("[^a-z0-9]+", "-") + ".md";
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                .contentType(MediaType.TEXT_PLAIN)
+                .contentType(MediaType.parseMediaType("text/markdown"))
                 .body(markdown);
+    }
+
+    @Operation(summary = "Export an ADR as a standalone HTML file")
+    @ApiResponse(responseCode = "200", description = "HTML file returned")
+    @ApiResponse(responseCode = "404", description = "ADR not found", content = @Content)
+    @GetMapping("/{id}/export.html")
+    public ResponseEntity<String> exportHtml(@PathVariable("id") UUID id) {
+        AdrDto adr = adrService.getAdrById(id);
+        String html = adrService.buildHtmlExport(adr);
+        String filename = "ADR-" + adr.adrNumber() + "-"
+                + adr.title().toLowerCase().replaceAll("[^a-z0-9]+", "-") + ".html";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.TEXT_HTML)
+                .body(html);
+    }
+
+    @Operation(summary = "Export an ADR as a PDF file")
+    @ApiResponse(responseCode = "200", description = "PDF file returned")
+    @ApiResponse(responseCode = "404", description = "ADR not found", content = @Content)
+    @GetMapping("/{id}/export.pdf")
+    public ResponseEntity<byte[]> exportPdf(@PathVariable("id") UUID id) {
+        AdrDto adr = adrService.getAdrById(id);
+        byte[] pdf = adrService.buildPdfExport(adr);
+        String filename = "ADR-" + adr.adrNumber() + "-"
+                + adr.title().toLowerCase().replaceAll("[^a-z0-9]+", "-") + ".pdf";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 }

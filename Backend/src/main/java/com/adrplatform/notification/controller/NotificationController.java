@@ -7,6 +7,7 @@ import com.adrplatform.notification.dto.NotificationDto;
 import com.adrplatform.notification.dto.UnreadCountDto;
 import com.adrplatform.notification.service.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +51,7 @@ public class NotificationController {
 
     @Operation(summary = "Mark a single notification as read")
     @ApiResponse(responseCode = "200", description = "Notification marked as read")
-    @ApiResponse(responseCode = "404", description = "Notification not found")
+    @ApiResponse(responseCode = "404", description = "Notification not found", content = @Content)
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @PatchMapping("/{id}/read")
     public ResponseEntity<MessageResponse> markRead(@PathVariable UUID id) {

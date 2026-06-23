@@ -1,0 +1,5 @@
+-- TOTP Two-Factor Authentication columns
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS totp_secret  TEXT,
+  ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+

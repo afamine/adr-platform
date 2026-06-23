@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADR Platform - Registration Form</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        input.error {
+            border-color: #e74c3c;
+            background-color: #ffe6e6;
+        }
+
+        input.success {
+            border-color: #27ae60;
+            background-color: #e8f8f5;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        .error-code {
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #c0392b;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #5568d3;
+        }
+
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .response-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .response-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .response-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .response-message ul {
+            margin: 10px 0 0 0;
+            padding-left: 20px;
+        }
+
+        .response-message li {
+            margin-top: 5px;
+        }
+
+        .validation-info {
+            background-color: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #333;
+        }
+
+        .validation-requirement {
+            margin: 4px 0;
+        }
+
+        .requirement-met {
+            color: #27ae60;
+        }
+
+        .requirement-unmet {
+            color: #e74c3c;
+        }
+
+        .validation-icon {
+            margin-right: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Register Account</h1>
+
+        <div class="validation-info">
+            <div class="validation-requirement" id="password-req">
+                <span class="validation-icon">✗</span>
+                <strong>Password:</strong> Min 8 chars, 1 uppercase, 1 digit
+            </div>
+        </div>
+
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="fullName">Full Name</label>
+                <input type="text" id="fullName" name="fullName" placeholder="John Doe" required>
+                <div class="error-message"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" placeholder="john@example.com" required>
+                <div class="error-message"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="P@ssw0rd1" required>
+                <div class="error-message"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="workspaceName">Workspace Name</label>
+                <input type="text" id="workspaceName" name="workspaceName" placeholder="My Workspace" required>
+                <div class="error-message"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="workspaceSlug">Workspace Slug <small>(optional)</small></label>
+                <input type="text" id="workspaceSlug" name="workspaceSlug" placeholder="my-workspace">
+                <div class="error-message"></div>
+            </div>
+
+            <button type="submit">Create Account</button>
+        </form>
+
+        <div id="responseMessage" class="response-message"></div>
+    </div>
+
+    <script>
+        // ============ CLIENT-SIDE VALIDATION RULES ============
+        const validationRules = {
+            fullName: {
+                required: true,
+                minLength: 2,
+                maxLength: 100,
+                pattern: /^[a-zA-Z\s'-]+$/,
+                errors: {
+                    required: "Full name is required",
+                    minLength: "Name must be at least 2 characters",
+                    maxLength: "Name must not exceed 100 characters",
+                    pattern: "Name can only contain letters, spaces, hyphens and apostrophes"
+                }
+            },
+            email: {
+                required: true,
+                pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                errors: {
+                    required: "Email is required",
+                    pattern: "Please enter a valid email address"
+                }
+            },
+            password: {
+                required: true,
+                minLength: 8,
+                pattern: /^(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]*$/,
+                errors: {
+                    required: "Password is required",
+                    minLength: "Password must be at least 8 characters",
+                    pattern: "Password must contain at least one uppercase letter and one digit"
+                }
+            },
+            workspaceName: {
+                required: true,
+                minLength: 3,
+                maxLength: 50,
+                errors: {
+                    required: "Workspace name is required",
+                    minLength: "Workspace name must be at least 3 characters",
+                    maxLength: "Workspace name must not exceed 50 characters"
+                }
+            },
+            workspaceSlug: {
+                required: false,
+                minLength: 3,
+                maxLength: 60,
+                pattern: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+                errors: {
+                    minLength: "Slug must be at least 3 characters",
+                    maxLength: "Slug must not exceed 60 characters",
+                    pattern: "Slug must contain lowercase letters, digits and hyphens only (e.g. my-workspace)"
+                }
+            }
+        };
+
+        // ============ VALIDATION LOGIC ============
+        function validateField(fieldName, value) {
+            const rules = validationRules[fieldName];
+            if (!rules) return null;
+
+            // Check required
+            if (rules.required && (!value || value.trim() === "")) {
+                return { message: rules.errors.required, code: "NOT_BLANK" };
+            }
+
+            if (!value) return null; // Optional field is empty, so valid
+
+            // Check minimum length
+            if (rules.minLength && value.length < rules.minLength) {
+                return { message: rules.errors.minLength, code: "TOO_SHORT" };
+            }
+
+            // Check maximum length
+            if (rules.maxLength && value.length > rules.maxLength) {
+                return { message: rules.errors.maxLength, code: "TOO_LONG" };
+            }
+
+            // Check pattern
+            if (rules.pattern && !rules.pattern.test(value)) {
+                return { message: rules.errors.pattern, code: "INVALID_FORMAT" };
+            }
+
+            return null;
+        }
+
+        function displayFieldError(fieldName, error) {
+            const input = document.getElementById(fieldName);
+            const errorDiv = input.nextElementSibling;
+
+            if (error) {
+                input.classList.add("error");
+                input.classList.remove("success");
+                errorDiv.classList.add("active");
+                errorDiv.innerHTML = `<span class="error-code">${error.code}</span>: ${error.message}`;
+            } else {
+                input.classList.remove("error");
+                input.classList.add("success");
+                errorDiv.classList.remove("active");
+                errorDiv.innerHTML = "";
+            }
+        }
+
+        function updatePasswordRequirement() {
+            const password = document.getElementById("password").value;
+            const hasUpperCase = /[A-Z]/.test(password);
+            const hasDigit = /\d/.test(password);
+            const hasMinLength = password.length >= 8;
+
+            const isMet = hasUpperCase && hasDigit && hasMinLength;
+            const reqElement = document.getElementById("password-req");
+
+            if (isMet) {
+                reqElement.className = "validation-requirement requirement-met";
+                reqElement.innerHTML = '<span class="validation-icon">✓</span><strong>Password:</strong> Met all requirements';
+            } else {
+                reqElement.className = "validation-requirement requirement-unmet";
+                let text = '<span class="validation-icon">✗</span><strong>Password:</strong> ';
+                let reqs = [];
+                if (!hasMinLength) reqs.push("Min 8 chars");
+                if (!hasUpperCase) reqs.push("1 uppercase");
+                if (!hasDigit) reqs.push("1 digit");
+                reqElement.innerHTML = text + reqs.join(", ");
+            }
+        }
+
+        // ============ EVENT LISTENERS ============
+        document.getElementById("registerForm").addEventListener("input", (e) => {
+            if (e.target.name === "password") {
+                updatePasswordRequirement();
+            }
+            const error = validateField(e.target.name, e.target.value);
+            displayFieldError(e.target.name, error);
+        });
+
+        document.getElementById("registerForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            // Validate all fields
+            const form = document.getElementById("registerForm");
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+
+            let hasErrors = false;
+            for (const [fieldName, value] of Object.entries(data)) {
+                const error = validateField(fieldName, value);
+                displayFieldError(fieldName, error);
+                if (error) hasErrors = true;
+            }
+
+            if (hasErrors) {
+                showResponse("Please fix the errors above", false);
+                return;
+            }
+
+            // ============ SUBMIT REQUEST ============
+            try {
+                const button = form.querySelector("button");
+                button.disabled = true;
+                button.textContent = "Creating account...";
+
+                const response = await fetch("http://localhost:8080/api/auth/register", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showResponse("✓ Account created! Please check your email to verify.", true);
+                    form.reset();
+                    document.querySelectorAll("input").forEach(input => {
+                        input.classList.remove("success", "error");
+                    });
+                    updatePasswordRequirement();
+                } else if (response.status === 400) {
+                    const error = await response.json();
+                    showValidationError(error);
+                } else {
+                    const error = await response.json();
+                    showResponse(error.message || "Registration failed", false);
+                }
+            } catch (err) {
+                showResponse("Network error: " + err.message, false);
+            } finally {
+                const button = form.querySelector("button");
+                button.disabled = false;
+                button.textContent = "Create Account";
+            }
+        });
+
+        function showResponse(message, isSuccess) {
+            const responseDiv = document.getElementById("responseMessage");
+            responseDiv.className = "response-message " + (isSuccess ? "success" : "error");
+            responseDiv.textContent = message;
+        }
+
+        function showValidationError(errorResponse) {
+            const responseDiv = document.getElementById("responseMessage");
+            responseDiv.className = "response-message error";
+
+            let html = `<strong>${errorResponse.message}:</strong>`;
+            if (errorResponse.errors && Array.isArray(errorResponse.errors)) {
+                html += "<ul>";
+                errorResponse.errors.forEach(err => {
+                    html += `<li><strong>${err.code}:</strong> ${err.message} (field: ${err.field})</li>`;
+                });
+                html += "</ul>";
+            }
+
+            responseDiv.innerHTML = html;
+        }
+
+        // Initialize
+        updatePasswordRequirement();
+    </script>
+</body>
+</html>
+

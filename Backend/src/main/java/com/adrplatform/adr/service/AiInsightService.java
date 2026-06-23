@@ -2,7 +2,6 @@ package com.adrplatform.adr.service;
 
 import com.adrplatform.adr.domain.Adr;
 import com.adrplatform.adr.dto.AiInsightDto;
-import com.adrplatform.auth.config.CacheConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -28,10 +27,7 @@ public class AiInsightService {
         this.chatClient = chatClientBuilder.build();
     }
 
-    @Cacheable(
-            value = CacheConfig.AI_INSIGHTS_CACHE,
-            key = "#adr.id.toString() + '_' + #adr.updatedAt.toEpochMilli()"
-    )
+    @Cacheable(value = "ai-insights", key = "#adr.id", unless = "#result.isEmpty()")
     public List<AiInsightDto> generateInsights(Adr adr) {
         try {
             String prompt = """

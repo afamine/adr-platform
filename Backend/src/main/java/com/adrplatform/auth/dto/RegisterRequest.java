@@ -21,7 +21,6 @@ public class RegisterRequest {
     @NotBlank
     private String password;
 
-    @NotBlank
     @Size(min = 3, max = 50, message = "Workspace name must be between 3 and 50 characters")
     private String workspaceName;
 

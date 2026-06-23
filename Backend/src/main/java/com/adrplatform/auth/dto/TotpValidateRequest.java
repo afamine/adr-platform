@@ -1,0 +1,10 @@
+package com.adrplatform.auth.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record TotpValidateRequest(
+    @NotBlank String pendingToken,
+    @NotBlank @Size(min = 6, max = 6) String code
+) {}
+

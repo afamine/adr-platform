@@ -1,0 +1,3 @@
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS totp_pending_secret TEXT,
+  ADD COLUMN IF NOT EXISTS totp_pending_expires_at TIMESTAMP WITH TIME ZONE;

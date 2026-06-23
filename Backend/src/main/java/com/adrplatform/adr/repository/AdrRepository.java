@@ -26,10 +26,10 @@ public interface AdrRepository extends JpaRepository<Adr, UUID> {
     @Query("SELECT COUNT(a) FROM Adr a WHERE a.workspace.id = :wsId AND a.status = :status")
     Long countByStatus(@Param("wsId") UUID wsId, @Param("status") AdrStatus status);
 
-    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (updated_at - created_at)) / 86400.0) FROM adr WHERE workspace_id = :wsId AND status IN ('ACCEPTED','REJECTED')", nativeQuery = true)
+    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (updated_at - review_started_at)) / 86400.0) FROM adr WHERE workspace_id = :wsId AND status IN ('ACCEPTED','REJECTED') AND review_started_at IS NOT NULL", nativeQuery = true)
     Double avgReviewTimeDays(@Param("wsId") UUID wsId);
 
-    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (updated_at - created_at)) / 86400.0) FROM adr WHERE workspace_id = :wsId AND status IN ('ACCEPTED','REJECTED') AND updated_at >= :from AND updated_at <= :to", nativeQuery = true)
+    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (updated_at - review_started_at)) / 86400.0) FROM adr WHERE workspace_id = :wsId AND status IN ('ACCEPTED','REJECTED') AND review_started_at IS NOT NULL AND updated_at >= :from AND updated_at <= :to", nativeQuery = true)
     Double avgReviewTimeDaysBetween(@Param("wsId") UUID wsId, @Param("from") Instant from, @Param("to") Instant to);
 
     @Query("SELECT a.status, COUNT(a) FROM Adr a WHERE a.workspace.id = :wsId GROUP BY a.status")

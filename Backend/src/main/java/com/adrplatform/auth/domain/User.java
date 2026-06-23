@@ -66,6 +66,19 @@ public class User implements UserDetails {
     @Builder.Default
     private String avatarColor = "#0F172A";
 
+    @Column(name = "totp_secret")
+    private String totpSecret;
+
+    @Column(name = "totp_pending_secret")
+    private String totpPendingSecret;
+
+    @Column(name = "totp_pending_expires_at")
+    private Instant totpPendingExpiresAt;
+
+    @Builder.Default
+    @Column(name = "totp_enabled", nullable = false)
+    private boolean totpEnabled = false;
+
     @PrePersist
     void prePersist() {
         if (id == null) {

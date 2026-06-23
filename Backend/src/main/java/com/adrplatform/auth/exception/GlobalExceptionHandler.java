@@ -1,6 +1,8 @@
 package com.adrplatform.auth.exception;
 
 import com.adrplatform.auth.dto.ErrorResponse;
+import com.adrplatform.auth.dto.FieldError;
+import com.adrplatform.auth.dto.ValidationErrorResponse;
 import com.adrplatform.adr.exception.AdrAccessDeniedException;
 import com.adrplatform.adr.exception.AdrNotFoundException;
 import com.adrplatform.adr.exception.InvalidTransitionException;
@@ -14,13 +16,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @ControllerAdvice
@@ -62,19 +67,52 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationErrors(
+    public ResponseEntity<ValidationErrorResponse> handleValidationErrors(
             MethodArgumentNotValidException ex, HttpServletRequest request) {
-        Map<String, String> fieldErrors = new LinkedHashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(error ->
-                fieldErrors.put(error.getField(), error.getDefaultMessage())
-        );
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", Instant.now().toString());
-        body.put("status", 400);
-        body.put("message", "Validation failed");
-        body.put("errors", fieldErrors);
-        body.put("path", request.getRequestURI());
-        return ResponseEntity.badRequest().body(body);
+        List<FieldError> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> FieldError.builder()
+                        .field(error.getField())
+                        .message(error.getDefaultMessage())
+                        .code(mapConstraintToCode(error.getCode()))
+                        .rejectedValue(error.getRejectedValue())
+                        .build())
+                .collect(Collectors.toList());
+
+        ValidationErrorResponse response = ValidationErrorResponse.builder()
+                .timestamp(Instant.now())
+                .status(400)
+                .message("Validation failed")
+                .path(request.getRequestURI())
+                .errors(fieldErrors)
+                .build();
+
+        return ResponseEntity.badRequest().body(response);
+    }
+
+    /**
+     * Map Spring constraint annotation names to readable error codes.
+     * Examples: NotBlank -> NOT_BLANK, Email -> INVALID_EMAIL, etc.
+     */
+    private String mapConstraintToCode(String constraintName) {
+        if (constraintName == null) {
+            return "INVALID_VALUE";
+        }
+        return switch (constraintName) {
+            case "NotBlank" -> "NOT_BLANK";
+            case "NotNull" -> "NOT_NULL";
+            case "NotEmpty" -> "NOT_EMPTY";
+            case "Email" -> "INVALID_EMAIL";
+            case "Size" -> "INVALID_SIZE";
+            case "Min" -> "TOO_SMALL";
+            case "Max" -> "TOO_LARGE";
+            case "Pattern" -> "INVALID_FORMAT";
+            case "Range" -> "OUT_OF_RANGE";
+            case "Future" -> "MUST_BE_FUTURE";
+            case "Past" -> "MUST_BE_PAST";
+            case "Positive" -> "MUST_BE_POSITIVE";
+            case "Negative" -> "MUST_BE_NEGATIVE";
+            default -> "INVALID_VALUE";
+        };
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -120,6 +158,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccountDeactivatedException.class)
     public ResponseEntity<ErrorResponse> handleAccountDeactivated(AccountDeactivatedException ex, HttpServletRequest request) {
         return buildErrorWithType(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI(), "ACCOUNT_DEACTIVATED");
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedMediaType(
+            HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type", request.getRequestURI());
     }
 
     @ExceptionHandler(Exception.class)

@@ -28,3 +28,6 @@ cors:
 springdoc:
   swagger-ui:
     enabled: false
+
+spring.ai.openai.api-key: test-key-disabled-in-tests
+spring.ai.openai.chat.client.model: gpt-4

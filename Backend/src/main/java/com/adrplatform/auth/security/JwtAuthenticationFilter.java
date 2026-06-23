@@ -45,6 +45,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         Claims claims = jwtService.parseToken(token);
+        if (jwtService.isPending2faToken(claims)) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\":\"Pending 2FA verification required\"}");
+            return;
+        }
         if (!"access".equals(claims.get("type", String.class))) {
             filterChain.doFilter(request, response);
             return;

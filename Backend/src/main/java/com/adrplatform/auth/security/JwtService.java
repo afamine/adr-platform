@@ -98,4 +98,20 @@ public class JwtService {
                 "type", tokenType
         );
     }
+
+    public String generatePending2faToken(User user) {
+        long ttlMs = 5 * 60 * 1000L; // 5 minutes
+        return Jwts.builder()
+                .subject(user.getId().toString())
+                .claim("type", "pending_2fa")
+                .claim("workspaceId", user.getWorkspace().getId().toString())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + ttlMs))
+                .signWith(secretKey)
+                .compact();
+    }
+
+    public boolean isPending2faToken(Claims claims) {
+        return "pending_2fa".equals(claims.get("type", String.class));
+    }
 }

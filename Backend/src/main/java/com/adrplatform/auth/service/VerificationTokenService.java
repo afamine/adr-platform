@@ -21,6 +21,7 @@ import java.util.UUID;
 public class VerificationTokenService {
 
     private final VerificationTokenRepository verificationTokenRepository;
+    private final TokenHashService tokenHashService;
 
     /**
      * Creates a new token for the user, invalidating any previous unused token of the same type.
@@ -34,7 +35,7 @@ public class VerificationTokenService {
 
         VerificationToken vt = VerificationToken.builder()
                 .user(user)
-                .token(tokenValue)
+                .token(tokenHashService.hash(tokenValue))
                 .tokenType(type)
                 .expiresAt(LocalDateTime.now().plusHours(expiryHours))
                 .used(false)
@@ -54,7 +55,7 @@ public class VerificationTokenService {
             throw new InvalidTokenException("This verification link is invalid or has already been used.");
         }
 
-        VerificationToken token = verificationTokenRepository.findByToken(tokenString)
+        VerificationToken token = verificationTokenRepository.findByToken(tokenHashService.hash(tokenString))
                 .orElseThrow(() -> new InvalidTokenException("This verification link is invalid or has already been used."));
 
         if (token.getTokenType() != expectedType) {
@@ -82,7 +83,7 @@ public class VerificationTokenService {
             throw new InvalidTokenException("This link is invalid or has already been used.");
         }
 
-        VerificationToken token = verificationTokenRepository.findByToken(tokenString)
+        VerificationToken token = verificationTokenRepository.findByToken(tokenHashService.hash(tokenString))
                 .orElseThrow(() -> new InvalidTokenException("This link is invalid or has already been used."));
 
         if (token.getTokenType() != expectedType) {

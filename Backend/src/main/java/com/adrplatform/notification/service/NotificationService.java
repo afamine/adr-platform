@@ -82,7 +82,7 @@ public class NotificationService {
                             .stream()
                             .filter(u -> (u.getRole() == Role.REVIEWER || u.getRole() == Role.APPROVER)
                                     && !u.getId().equals(actorId)
-                                    && shouldNotify(u.getId(), "ADR_SUBMITTED_FOR_REVIEW"))
+                                    && shouldNotify(u.getId(), "REVIEW"))
                             .map(u -> buildNotification(u.getId(), workspaceId,
                                     "ADR_SUBMITTED_FOR_REVIEW",
                                     "ADR Submitted for Review",
@@ -92,7 +92,7 @@ public class NotificationService {
                     if (!notifications.isEmpty()) notificationRepository.saveAll(notifications);
                 }
                 case "ACCEPTED" -> {
-                    if (!authorId.equals(actorId) && shouldNotify(authorId, "ADR_STATUS_CHANGED")) {
+                    if (!authorId.equals(actorId) && shouldNotify(authorId, "STATUS")) {
                         notificationRepository.save(buildNotification(authorId, workspaceId,
                                 "ADR_STATUS_CHANGED",
                                 "ADR Accepted",
@@ -101,7 +101,7 @@ public class NotificationService {
                     }
                 }
                 case "REJECTED" -> {
-                    if (!authorId.equals(actorId) && shouldNotify(authorId, "ADR_REJECTED")) {
+                    if (!authorId.equals(actorId) && shouldNotify(authorId, "STATUS")) {
                         notificationRepository.save(buildNotification(authorId, workspaceId,
                                 "ADR_REJECTED",
                                 "ADR Rejected",
@@ -125,7 +125,7 @@ public class NotificationService {
             UUID workspaceId, UUID authorId, UUID voterId) {
         try {
             if (authorId.equals(voterId)) return;
-            if (!shouldNotify(authorId, "VOTE_CAST_ON_MY_ADR")) return;
+            if (!shouldNotify(authorId, "VOTE")) return;
             String voterName = userRepository.findById(voterId)
                     .map(User::getFullName).orElse("Someone");
             notificationRepository.save(buildNotification(authorId, workspaceId,
@@ -190,26 +190,26 @@ public class NotificationService {
     // ── Private helpers ───────────────────────────────────────────────────────
 
     /**
-     * Returns true if the user has opted in to receive the given notification type
-     * (opt-out model: defaults to true when no preference record exists).
-     * Maps:
-     *   ADR_SUBMITTED_FOR_REVIEW → emailOnReview
-     *   ADR_STATUS_CHANGED       → emailOnStatus
-     *   ADR_REJECTED             → emailOnStatus
-     *   VOTE_CAST_ON_MY_ADR      → emailOnVote
-     *   COMMENT_ADDED            → emailOnStatus
-     *   (anything else)          → true
+     * Checks whether a specific notification type should be sent to a user,
+     * based on their stored NotificationPreferences.
+     *
+     * If no preferences record exists for the user, defaults to TRUE (opt-out model):
+     * users receive notifications until they explicitly disable them.
+     *
+     * @param recipientId The UUID of the notification recipient
+     * @param type        One of: "REVIEW", "VOTE", "STATUS"
+     * @return true if the notification should be created; false if the user opted out
      */
-    private boolean shouldNotify(UUID userId, String notificationType) {
-        return notificationPreferencesRepository.findByUser_Id(userId)
-                .map(prefs -> switch (notificationType) {
-                    case "ADR_SUBMITTED_FOR_REVIEW" -> prefs.isEmailOnReview();
-                    case "ADR_STATUS_CHANGED", "ADR_REJECTED" -> prefs.isEmailOnStatus();
-                    case "VOTE_CAST_ON_MY_ADR" -> prefs.isEmailOnVote();
-                    case "COMMENT_ADDED" -> prefs.isEmailOnStatus();
-                    default -> true;
+    private boolean shouldNotify(UUID recipientId, String type) {
+        return notificationPreferencesRepository
+                .findByUser_Id(recipientId)
+                .map(prefs -> switch (type) {
+                    case "REVIEW"  -> prefs.isEmailOnReview();
+                    case "VOTE"    -> prefs.isEmailOnVote();
+                    case "STATUS"  -> prefs.isEmailOnStatus();
+                    default        -> true;
                 })
-                .orElse(true);
+                .orElse(true); // No preferences record → send by default (opt-out model)
     }
 
     private Notification buildNotification(UUID recipientId, UUID workspaceId,

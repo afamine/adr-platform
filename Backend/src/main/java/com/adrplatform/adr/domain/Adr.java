@@ -51,6 +51,16 @@ public class Adr {
     @Column(name = "tags", columnDefinition = "TEXT")
     private String tagsCsv;
 
+    /**
+     * Semantic embedding vector for this ADR — reserved for future AI-powered similarity search.
+     * Stored as TEXT in PostgreSQL (pgvector stores it natively as vector(1536) if available).
+     * Not currently populated. Will be filled by the AI embedding service in a future release.
+     *
+     * @see <a href="https://github.com/pgvector/pgvector">pgvector</a>
+     */
+    @Column(name = "embedding_vector", columnDefinition = "text")
+    private String embeddingVector;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "author_id", nullable = false)
     private User author;

@@ -26,6 +26,7 @@ import com.adrplatform.auth.repository.UserRepository;
 import com.adrplatform.auth.repository.WorkspaceRepository;
 import com.adrplatform.notification.service.NotificationService;
 import com.adrplatform.auth.security.JwtService;
+import com.adrplatform.auth.service.TotpService;
 import com.adrplatform.auth.security.TokenBlacklistService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,6 +50,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final TotpService totpService;
     private final RefreshTokenService refreshTokenService;
     private final TokenBlacklistService tokenBlacklistService;
     private final AuditService auditService;
@@ -71,7 +73,9 @@ public class AuthService {
 
         passwordPolicyValidator.validate(request.getPassword());
 
-        String workspaceName = request.getWorkspaceName().trim();
+        String workspaceName = request.getWorkspaceName() != null && !request.getWorkspaceName().isBlank()
+                ? request.getWorkspaceName().trim()
+                : request.getFullName().trim() + "'s Workspace";
         String slug = resolveSlug(request.getWorkspaceSlug(), workspaceName);
 
         if (workspaceRepository.findBySlug(slug).isPresent()) {
@@ -90,7 +94,7 @@ public class AuthService {
                 .email(request.getEmail().trim().toLowerCase())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName().trim())
-                .role(Role.ADMIN)
+                .role(Role.AUTHOR)
                 .emailVerified(false)
                 .isActive(false)
                 .build();
@@ -148,6 +152,34 @@ public class AuthService {
 
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
+        // 2FA check — if enabled, return a pending token instead of full JWT
+        if (user.isTotpEnabled()) {
+            String pendingToken = jwtService.generatePending2faToken(user);
+            return AuthResponse.builder()
+                    .requiresTwoFactor(true)
+                    .pendingToken(pendingToken)
+                    .build();
+        }
+
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+        refreshTokenService.create(user, refreshToken);
+
+        auditService.record(user, user.getWorkspace(), AuditActions.USER_LOGGED_IN, "USER", user.getId(), null,
+                toJson(Map.of("email", user.getEmail())));
+
+        return AuthResponse.builder()
+                .token(accessToken)
+                .refreshToken(refreshToken)
+                .user(UserDto.fromEntity(user))
+                .build();
+    }
+
+    /**
+     * Build a full AuthResponse (access + refresh tokens and user DTO) for the given user.
+     * This is used after successful authentication (including after 2FA validation).
+     */
+    public AuthResponse buildAuthResponse(User user) {
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
         refreshTokenService.create(user, refreshToken);

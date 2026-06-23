@@ -9,4 +9,6 @@ public class AuthResponse {
     private String token;
     private String refreshToken;
     private UserDto user;
+    private Boolean requiresTwoFactor;
+    private String pendingToken;
 }

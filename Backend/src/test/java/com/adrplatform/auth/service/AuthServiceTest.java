@@ -13,6 +13,8 @@ import com.adrplatform.auth.repository.UserRepository;
 import com.adrplatform.auth.repository.WorkspaceRepository;
 import com.adrplatform.auth.security.JwtService;
 import com.adrplatform.auth.security.TokenBlacklistService;
+import com.adrplatform.notification.service.NotificationService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +49,8 @@ class AuthServiceTest {
     @Mock
     private JwtService jwtService;
     @Mock
+    private TotpService totpService;
+    @Mock
     private RefreshTokenService refreshTokenService;
     @Mock
     private TokenBlacklistService tokenBlacklistService;
@@ -60,6 +64,10 @@ class AuthServiceTest {
     private MailService mailService;
     @Mock
     private AppProperties appProperties;
+    @Mock
+    private NotificationService notificationService;
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks
     private AuthService authService;
@@ -81,6 +89,7 @@ class AuthServiceTest {
         request.setFullName("John Doe");
         request.setEmail("john@adr.com");
         request.setPassword("Pass1234");
+        request.setWorkspaceName("Default Workspace");
         request.setWorkspaceSlug("default");
 
         User savedUser = User.builder()
@@ -98,7 +107,8 @@ class AuthServiceTest {
         tokenProps.setEmailVerificationExpiryHours(24);
 
         when(userRepository.findByEmail("john@adr.com")).thenReturn(Optional.empty());
-        when(workspaceRepository.findBySlug("default")).thenReturn(Optional.of(workspace));
+        when(workspaceRepository.findBySlug("default")).thenReturn(Optional.empty());
+        when(workspaceRepository.save(any(Workspace.class))).thenReturn(workspace);
         when(passwordEncoder.encode("Pass1234")).thenReturn("hashed");
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
         when(appProperties.getToken()).thenReturn(tokenProps);
