@@ -1,0 +1,50 @@
+<div *ngIf="visible" class="d2-root">
+  <div class="d2-backdrop" (click)="onCancel()"></div>
+
+  <div class="d2-dialog" role="dialog" aria-modal="true">
+    <div class="d2-header">
+      <div class="d2-title">
+        <div class="d2-warning-icon">⚠</div>
+        <h2>Disable Two-Factor Authentication</h2>
+      </div>
+      <button class="d2-close" aria-label="Close" (click)="onCancel()">✕</button>
+    </div>
+
+    <div class="d2-warning">
+      <svg class="d2-warning-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L2 20h20L12 2z" stroke="#D97706" stroke-width="1.5" stroke-linejoin="round"/>
+        <line x1="12" y1="9" x2="12" y2="13" stroke="#D97706" stroke-width="1.5"/>
+        <circle cx="12" cy="17" r="1" fill="#D97706"/>
+      </svg>
+      <span>This will remove 2FA protection from your account and reduce your security.</span>
+    </div>
+
+    <div class="d2-body">
+      <p class="d2-description">
+        Enter your current authenticator code to confirm. This will remove 2FA protection from your account.
+      </p>
+
+      <label class="d2-label">Authenticator Code</label>
+      <input
+        type="text"
+        maxlength="6"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        class="d2-code"
+        [formControl]="codeControl"
+        placeholder="0 0 0 0 0 0"
+      />
+
+      <div *ngIf="errorMsg()" class="d2-error">⊘ {{ errorMsg() }}</div>
+
+      <div class="d2-footer">
+        <button class="d2-btn-ghost" (click)="onCancel()">Cancel</button>
+        <button class="d2-btn-danger" (click)="onDisable()" [disabled]="isLoading() || codeControl.invalid">
+          <span *ngIf="!isLoading()">Disable 2FA</span>
+          <span *ngIf="isLoading()" class="shimmer-text">Disabling...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+

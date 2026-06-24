@@ -1,0 +1,139 @@
+:root {
+  --bg: #F3F4F6;
+  --card-bg: #FFFFFF;
+  --heading: #111827;
+  --muted: #6B7280;
+  --label: #374151;
+  --input-border: #D1D5DB;
+  --input-error: #EF4444;
+  --indigo: #6366F1;
+}
+
+.tov-root {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 24px;
+}
+
+.tov-card {
+  width: 420px;
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 6px 18px rgba(17,24,39,0.06);
+  text-align: center;
+}
+
+.tov-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.tov-heading {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--heading);
+  margin: 0 0 8px 0;
+}
+
+.tov-subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 0 20px 0;
+}
+
+.tov-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.tov-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label);
+  text-align: left;
+}
+
+.tov-code {
+  height: 56px;
+  border: 1.5px solid var(--input-border);
+  border-radius: 8px;
+  font-size: 22px;
+  text-align: center;
+  letter-spacing: 0.5em;
+  outline: none;
+  padding: 0 12px;
+}
+
+.tov-code:focus {
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.06);
+  border-color: var(--indigo);
+}
+
+.tov-code.ng-invalid.ng-touched {
+  border-color: var(--input-error);
+}
+
+.tov-error {
+  color: var(--input-error);
+  font-size: 13px;
+  text-align: left;
+}
+
+.tov-verify {
+  height: 48px;
+  border-radius: 8px;
+  border: none;
+  background: var(--indigo);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.tov-verify[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* shimmer animation */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.tov-verify .shimmer-text {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--indigo) 0%, #818cf8 50%, var(--indigo) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.tov-back {
+  margin-top: 14px;
+  background: none;
+  border: none;
+  color: var(--indigo);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tov-footer {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+

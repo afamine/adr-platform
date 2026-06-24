@@ -41,7 +41,7 @@ export const tokenRefreshInterceptor: HttpInterceptorFn = (
         }
 
         authService.isRefreshing$.next(true);
-        authService.refreshToken$ = authService.refreshToken().pipe(
+        authService.refreshToken$ = authService.refreshTokenOnce().pipe(
           shareReplay(1),
           finalize(() => {
             authService.isRefreshing$.next(false);

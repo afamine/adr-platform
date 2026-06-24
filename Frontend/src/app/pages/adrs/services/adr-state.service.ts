@@ -18,10 +18,12 @@ export class AdrStateService {
   readonly totalPages$ = signal<number>(0);
   readonly searchQuery$ = signal<string>('');
   readonly statusFilter$ = signal<AdrStatus | 'ALL'>('ALL');
+  readonly tagFilter$ = signal<string>('');
 
   private readonly requestParams$ = computed(() => ({
     status: this.statusFilter$() !== 'ALL' ? this.statusFilter$() : undefined,
     search: this.searchQuery$().trim() || undefined,
+    tag: this.tagFilter$().trim() || undefined,
     page: this.currentPage$(),
     size: this.pageSize
   }));

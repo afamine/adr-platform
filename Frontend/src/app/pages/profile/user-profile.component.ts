@@ -4,10 +4,14 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 
-import { AuthUser, NotificationPreferences, Role } from '../../models/auth.models';
+import { AuthUser, NotificationPreferences, Role, TotpStatusResponse } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
+import { TotpService } from '../../services/totp.service';
 import { ChangePasswordModalComponent } from '../../components/change-password-modal/change-password-modal.component';
+import { SecurityCardComponent } from '../../components/security-card/security-card.component';
+import { Enable2faModalComponent } from '../../components/enable-2fa-modal/enable-2fa-modal.component';
+import { Disable2faModalComponent } from '../../components/disable-2fa-modal/disable-2fa-modal.component';
 
 interface RoleConfig {
   bg: string;
@@ -20,7 +24,7 @@ interface RoleConfig {
 @Component({
   selector: 'app-user-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, ChangePasswordModalComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, ChangePasswordModalComponent, SecurityCardComponent, Enable2faModalComponent, Disable2faModalComponent],
   templateUrl: './user-profile.component.html',
   styleUrls: ['./user-profile.component.scss']
 })
@@ -30,6 +34,7 @@ export class UserProfileComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly fb = inject(FormBuilder);
+  private readonly totpService = inject(TotpService);
 
   currentUser: AuthUser | null = this.authService.getCurrentUser();
 
@@ -53,6 +58,9 @@ export class UserProfileComponent implements OnInit {
   isLoading = false;
   isSaving = false;
   showChangePasswordModal = false;
+  totpEnabled = false;
+  showEnable2faModal = false;
+  showDisable2faModal = false;
 
   private readonly roleConfigs: Record<Role, RoleConfig> = {
     [Role.ADMIN]: {
@@ -127,6 +135,7 @@ export class UserProfileComponent implements OnInit {
   ngOnInit(): void {
     this.loadProfile();
     this.loadPreferences();
+    this.load2faStatus();
   }
 
   startEditing(): void {
@@ -252,6 +261,27 @@ export class UserProfileComponent implements OnInit {
 
   onCloseChangePassword(): void {
     this.showChangePasswordModal = false;
+  }
+
+  load2faStatus(): void {
+    this.totpService.getStatus().subscribe(
+      (res: TotpStatusResponse) => {
+        this.totpEnabled = res.enabled;
+      },
+      () => {} // silent fail — UI shows disabled state
+    );
+  }
+
+  on2faEnabled(): void {
+    this.totpEnabled = true;
+    this.showEnable2faModal = false;
+    this.notificationService.success('2FA Enabled', 'Your account is now protected with two-factor authentication.');
+  }
+
+  on2faDisabled(): void {
+    this.totpEnabled = false;
+    this.showDisable2faModal = false;
+    this.notificationService.success('2FA Disabled', 'Two-factor authentication has been removed.');
   }
 
   private getErrorMessage(error: unknown): string {

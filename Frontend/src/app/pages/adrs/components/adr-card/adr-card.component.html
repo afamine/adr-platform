@@ -16,39 +16,26 @@
       }
     </svg>
 
-    <span class="adr-card__title">#{{ adr.adrNumber }} — {{ adr.title }}</span>
+    <span class="adr-card__title">#{{ adr.adrNumber }} - {{ adr.title }}</span>
   </div>
 
   <p class="adr-card__summary">{{ summary }}</p>
-
-  <div
-    class="adr-card__completeness"
-    [class.adr-card__completeness--good]="completenessTone === 'good'"
-    [class.adr-card__completeness--warn]="completenessTone === 'warn'"
-    [class.adr-card__completeness--empty]="completenessTone === 'empty'"
-  >
-    <span class="adr-card__completeness-dot" aria-hidden="true">
-      @if (completeness.percentage === 100) {
-        ✓
-      }
-    </span>
-    <span class="adr-card__completeness-text">{{ completeness.percentage }}% complete</span>
-    <div class="adr-card__progress" aria-hidden="true">
-      <div class="adr-card__progress-fill" [style.width.%]="completeness.percentage"></div>
-    </div>
-  </div>
-
-  @if (completeness.percentage < 100) {
-    <div class="adr-card__missing" [title]="'Missing: ' + completenessMissingText">
-      Missing: {{ completenessMissingText }}
-    </div>
-  }
 
   <div class="adr-card__meta">
     <span [class]="badgeClass">{{ statusLabels[adr.status] }}</span>
 
     @for (tag of visibleTags; track tag) {
-      <span class="adr-card__tag">{{ tag }}</span>
+      <span
+        class="adr-card__tag adr-card__tag--clickable"
+        role="button"
+        tabindex="0"
+        [attr.aria-label]="'Filter ADRs by tag ' + tag"
+        (click)="onTagSelect($event, tag)"
+        (keydown.enter)="onTagSelect($event, tag)"
+        (keydown.space)="onTagSelect($event, tag)"
+      >
+        {{ tag }}
+      </span>
     }
 
     @if (hiddenTagCount > 0) {

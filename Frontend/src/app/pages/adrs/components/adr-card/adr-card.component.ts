@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { Adr, CompletenessResult, completenessScore } from '../../../../models/adr.model';
+import { Adr } from '../../../../models/adr.model';
 
 @Component({
   selector: 'app-adr-card',
@@ -13,6 +13,7 @@ export class AdrCardComponent {
   @Input({ required: true }) adr!: Adr;
   @Input() isSelected = false;
   @Output() selected = new EventEmitter<Adr>();
+  @Output() tagSelected = new EventEmitter<string>();
 
   readonly statusLabels: Record<Adr['status'], string> = {
     DRAFT: 'Draft',
@@ -40,25 +41,12 @@ export class AdrCardComponent {
     return Math.max((this.adr.tags ?? []).length - this.visibleTags.length, 0);
   }
 
-  get completeness(): CompletenessResult {
-    return completenessScore(this.adr);
-  }
-
-  get completenessTone(): 'good' | 'warn' | 'empty' {
-    if (this.completeness.percentage === 100) {
-      return 'good';
-    }
-    if (this.completeness.percentage >= 50) {
-      return 'warn';
-    }
-    return 'empty';
-  }
-
-  get completenessMissingText(): string {
-    return this.completeness.missingSections.join(', ');
-  }
-
   onSelect(): void {
     this.selected.emit(this.adr);
+  }
+
+  onTagSelect(event: Event, tag: string): void {
+    event.stopPropagation();
+    this.tagSelected.emit(tag);
   }
 }

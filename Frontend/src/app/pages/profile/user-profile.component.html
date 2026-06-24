@@ -179,27 +179,12 @@
     </div>
 
     <!-- Card 3: Security -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Security</span>
-      </div>
-
-      <div class="security-row">
-        <div>
-          <div class="security-label">Password</div>
-          <div class="security-sub">Last changed 14 days ago</div>
-        </div>
-        <button class="btn-outline" (click)="goToChangePassword()">Change Password</button>
-      </div>
-
-      <div class="security-row">
-        <div>
-          <div class="security-label">Active sessions</div>
-          <div class="security-sub">1 active session</div>
-        </div>
-        <button class="link-btn" (click)="signOutAllDevices()">Sign out all devices</button>
-      </div>
-    </div>
+    <app-security-card
+      [totpEnabled]="totpEnabled"
+      (enableClicked)="showEnable2faModal = true"
+      (disableClicked)="showDisable2faModal = true"
+      (changePasswordClicked)="showChangePasswordModal = true">
+    </app-security-card>
 
     <!-- Card 4: Notifications -->
     <div class="card">
@@ -264,6 +249,18 @@
     </div>
   </div>
 </div>
+
+<app-enable-2fa-modal
+  [visible]="showEnable2faModal"
+  (closed)="showEnable2faModal = false"
+  (enabled)="on2faEnabled()">
+</app-enable-2fa-modal>
+
+<app-disable-2fa-modal
+  [visible]="showDisable2faModal"
+  (closed)="showDisable2faModal = false"
+  (disabled2fa)="on2faDisabled()">
+</app-disable-2fa-modal>
 
 @if (showChangePasswordModal) {
   <app-change-password-modal (closed)="onCloseChangePassword()" />

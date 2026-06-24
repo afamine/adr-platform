@@ -16,6 +16,7 @@ export class AdrSidebarComponent {
   @Input() selectedId: string | null = null;
   @Input() searchQuery = '';
   @Input() statusFilter: AdrStatus | 'ALL' = 'ALL';
+  @Input() tagFilter = '';
   @Input() canCreate = true;
   @Input() isLoading = false;
   @Input() currentPage = 0;
@@ -26,12 +27,37 @@ export class AdrSidebarComponent {
   @Output() createNew = new EventEmitter<void>();
   @Output() searchChanged = new EventEmitter<string>();
   @Output() filterChanged = new EventEmitter<AdrStatusFilter>();
+  @Output() tagFilterChanged = new EventEmitter<string>();
   @Output() previousPage = new EventEmitter<void>();
   @Output() nextPage = new EventEmitter<void>();
 
   readonly filterOptions = ADR_FILTER_OPTIONS;
 
+  get hasNoResults(): boolean {
+    return !this.isLoading
+      && this.adrs.length === 0
+      && (this.searchQuery.trim() !== '' || this.statusFilter !== 'ALL' || this.tagFilter.trim() !== '');
+  }
+
+  get isTrulyEmpty(): boolean {
+    return !this.isLoading
+      && this.adrs.length === 0
+      && this.searchQuery.trim() === ''
+      && this.statusFilter === 'ALL'
+      && this.tagFilter.trim() === '';
+  }
+
   onSearchInput(query: string): void {
     this.searchChanged.emit(query);
+  }
+
+  onTagSelected(tag: string): void {
+    this.tagFilterChanged.emit(tag);
+  }
+
+  clearFilters(): void {
+    this.filterChanged.emit('ALL');
+    this.searchChanged.emit('');
+    this.tagFilterChanged.emit('');
   }
 }

@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { catchError, map, Observable, of, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AdrDto, AdrStatus, AdrSummary, AuditEventDto, CastVoteRequest, CommentDto, CreateAdrRequest, HistoryEventDto, PageResponse, StatusTransitionRequest, TeamMemberDto, UpdateAdrRequest, VoteDto } from '../models/adr.model';
+import { AdrDto, AdrStatus, AdrSummary, AiInsight, AuditEventDto, CastVoteRequest, CommentDto, CreateAdrRequest, HistoryEventDto, PageResponse, StatusTransitionRequest, TeamMemberDto, UpdateAdrRequest, VoteDto } from '../models/adr.model';
 
 @Injectable({ providedIn: 'root' })
 export class AdrService {
@@ -12,6 +12,7 @@ export class AdrService {
   getAdrs(params?: {
     status?: AdrStatus | 'ALL' | string;
     search?: string;
+    tag?: string;
     page?: number;
     size?: number;
     sort?: string;
@@ -24,6 +25,10 @@ export class AdrService {
 
     if (params?.search?.trim()) {
       httpParams = httpParams.set('search', params.search.trim());
+    }
+
+    if (params?.tag?.trim()) {
+      httpParams = httpParams.set('tag', params.tag.trim());
     }
 
     if (params?.page !== undefined) {
@@ -49,6 +54,7 @@ export class AdrService {
   getAdrsPaged(params?: {
     status?: AdrStatus | 'ALL' | string;
     search?: string;
+    tag?: string;
     page?: number;
     size?: number;
     sort?: string;
@@ -60,6 +66,9 @@ export class AdrService {
     }
     if (params?.search?.trim()) {
       httpParams = httpParams.set('search', params.search.trim());
+    }
+    if (params?.tag?.trim()) {
+      httpParams = httpParams.set('tag', params.tag.trim());
     }
     httpParams = httpParams.set('page', (params?.page ?? 0).toString());
     httpParams = httpParams.set('size', (params?.size ?? 20).toString());
@@ -189,6 +198,12 @@ export class AdrService {
       .pipe(catchError((err) => this.handleError(err)));
   }
 
+  getAiInsights(adrId: string): Observable<AiInsight[]> {
+    return this.http
+      .get<AiInsight[]>(`${this.baseUrl}/api/adrs/${adrId}/ai-insights`)
+      .pipe(catchError((err) => this.handleError(err)));
+  }
+
   exportMarkdown(adrId: string, adrNumber: number): void {
     this.http
       .get(`${this.baseUrl}/api/adrs/${adrId}/export`, { responseType: 'text' })
@@ -200,6 +215,23 @@ export class AdrService {
           const anchor = document.createElement('a');
           anchor.href = url;
           anchor.download = `ADR-${adrNumber}.md`;
+          anchor.click();
+          URL.revokeObjectURL(url);
+        }
+      });
+  }
+
+  exportHtml(adrId: string, adrNumber: number): void {
+    this.http
+      .get(`${this.baseUrl}/api/adrs/${adrId}/export.html`, { responseType: 'text' })
+      .pipe(catchError((err) => this.handleError(err)))
+      .subscribe({
+        next: (html) => {
+          const blob = new Blob([html as string], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = `ADR-${adrNumber}.html`;
           anchor.click();
           URL.revokeObjectURL(url);
         }

@@ -36,4 +36,12 @@ export class AdminLayoutComponent {
   goBackToAdrs(): void {
     void this.router.navigate(['/adrs']);
   }
+
+  openNotifications(): void {
+    void this.router.navigate(['/notifications']);
+  }
+
+  openProfile(): void {
+    void this.router.navigate(['/profile']);
+  }
 }

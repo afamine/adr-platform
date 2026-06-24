@@ -35,6 +35,8 @@ export interface AuthResponse {
   token: string;
   refreshToken: string;
   user: AuthUser;
+  requiresTwoFactor?: boolean;
+  pendingToken?: string;
 }
 
 export interface RefreshTokenRequest {
@@ -111,4 +113,26 @@ export interface NotificationPreferences {
   emailOnStatus: boolean;
   slackEnabled: boolean;
   slackWebhook?: string | null;
+}
+
+export interface TotpSetupResponse {
+  qrCodeBase64: string;
+  secret: string;
+}
+
+export interface TotpEnableRequest {
+  code: string;
+}
+
+export interface TotpVerifyRequest {
+  pendingToken: string;
+  code: string;
+}
+
+export interface TotpDisableRequest {
+  code: string;
+}
+
+export interface TotpStatusResponse {
+  enabled: boolean;
 }

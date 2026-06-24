@@ -43,6 +43,15 @@
         <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
       </svg>
     </label>
+
+    @if (tagFilter) {
+      <div class="adr-sidebar__active-filter">
+        <span class="adr-sidebar__active-filter-label">Tag: {{ tagFilter }}</span>
+        <button type="button" class="adr-sidebar__active-filter-clear" aria-label="Clear tag filter" (click)="tagFilterChanged.emit('')">
+          Clear
+        </button>
+      </div>
+    }
   </div>
 
   <div class="adr-sidebar__list">
@@ -56,11 +65,39 @@
       }
     } @else if (adrs.length) {
       @for (adr of adrs; track adr.id) {
-        <app-adr-card [adr]="adr" [isSelected]="selectedId === adr.id" (selected)="adrSelected.emit($event)" />
+        <app-adr-card
+          [adr]="adr"
+          [isSelected]="selectedId === adr.id"
+          (selected)="adrSelected.emit($event)"
+          (tagSelected)="onTagSelected($event)"
+        />
       }
-    } @else {
-      <div class="adr-sidebar__empty">No ADRs found.</div>
     }
+
+    <div *ngIf="hasNoResults" class="adr-sidebar__empty">
+      <div class="adr-sidebar__empty-icon">🔍</div>
+      <p class="adr-sidebar__empty-title">No ADRs found</p>
+      <p class="adr-sidebar__empty-subtitle">
+        Try adjusting your search or clearing the filter.
+      </p>
+      <button class="adr-sidebar__empty-action" (click)="clearFilters()">
+        Clear filters
+      </button>
+    </div>
+
+    <div *ngIf="isTrulyEmpty" class="adr-sidebar__empty">
+      <div class="adr-sidebar__empty-icon">📋</div>
+      <p class="adr-sidebar__empty-title">No ADRs yet</p>
+      <p class="adr-sidebar__empty-subtitle">
+        Create your first Architecture Decision Record to get started.
+      </p>
+      <button
+        *ngIf="canCreate"
+        class="adr-sidebar__empty-action adr-sidebar__empty-action--primary"
+        (click)="createNew.emit()">
+        + Create first ADR
+      </button>
+    </div>
   </div>
 
   @if (totalPages > 1) {

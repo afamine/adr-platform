@@ -48,6 +48,7 @@ export class AdrDashboardComponent implements OnInit {
   readonly totalPages = computed(() => this.adrState.totalPages$());
   readonly searchQuery = computed(() => this.adrState.searchQuery$());
   readonly statusFilter = computed(() => this.adrState.statusFilter$());
+  readonly tagFilter = computed(() => this.adrState.tagFilter$());
 
   editingAdr: Partial<Adr> | null = null;
   activeTab: 'context' | 'decision' | 'consequences' | 'alternatives' | 'audit' = 'context';
@@ -96,6 +97,12 @@ export class AdrDashboardComponent implements OnInit {
 
   onFilterChange(status: AdrStatus | 'ALL'): void {
     this.adrState.statusFilter$.set(status);
+    this.adrState.currentPage$.set(0);
+    this.loadAdrs();
+  }
+
+  onTagFilterChange(tag: string): void {
+    this.adrState.tagFilter$.set(tag.trim());
     this.adrState.currentPage$.set(0);
     this.loadAdrs();
   }
@@ -509,6 +516,10 @@ export class AdrDashboardComponent implements OnInit {
   onSignOut(): void {
     this.showProfile = false;
     this.authService.logout();
+  }
+
+  onBackToAdminDashboard(): void {
+    void this.router.navigate(['/admin/dashboard']);
   }
 
   get userInitials(): string {

@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../services/auth.service';
 import { ApiErrorBody, LoginRequest, AuthResponse } from '../../../models/auth.models';
+import { TotpService } from '../../../services/totp.service';
 import { NotificationService } from '../../../services/notification.service';
 
 @Component({
@@ -18,6 +19,7 @@ export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly totp = inject(TotpService);
   private readonly notif = inject(NotificationService);
 
   passwordVisible = signal(false);
@@ -54,6 +56,14 @@ export class LoginComponent {
     this.auth.login(request).subscribe({
       next: (response: AuthResponse) => {
         this.isLoading.set(false);
+
+        // NEW: Handle 2FA requirement
+        if (response.requiresTwoFactor && response.pendingToken) {
+          this.totp.savePendingToken(response.pendingToken);
+          this.router.navigate(['/2fa-verify']);
+          return;
+        }
+
         this.auth.saveTokens(response);
 
         // Redirect based on role

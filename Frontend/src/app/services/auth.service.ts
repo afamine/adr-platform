@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { BehaviorSubject, catchError, finalize, Observable, of, take, tap } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, Observable, of, shareReplay, take, tap, throwError } from 'rxjs';
 import {
   AuthResponse,
   ChangePasswordRequest,
@@ -30,8 +30,9 @@ export class AuthService {
   private isLoggingOut = false;
   readonly isRefreshing$ = new BehaviorSubject<boolean>(false);
   refreshToken$: Observable<AuthResponse> | null = null;
+  private refreshInProgress$: Observable<AuthResponse> | null = null;
 
-  // TODO: Migrate to HttpOnly cookies for production (requires backend /api/auth/refresh as cookie endpoint)
+  // Session storage limits token lifetime to the browser session. HttpOnly cookies remain the preferred production target.
 
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.API_URL}/api/auth/login`, request);
@@ -71,19 +72,41 @@ export class AuthService {
     );
   }
 
+  refreshTokenOnce(): Observable<AuthResponse> {
+    if (this.refreshInProgress$) {
+      // Another refresh is already in flight — share its result
+      return this.refreshInProgress$;
+    }
+
+    this.refreshInProgress$ = this.refreshToken().pipe(
+      tap(() => {
+        // Clear the in-progress reference once complete
+        this.refreshInProgress$ = null;
+      }),
+      catchError((err) => {
+        // Clear on error too — allow future attempts
+        this.refreshInProgress$ = null;
+        return throwError(() => err);
+      }),
+      shareReplay(1) // All concurrent subscribers receive the same response
+    );
+
+    return this.refreshInProgress$;
+  }
+
   saveTokens(response: AuthResponse): void {
-    localStorage.setItem(this.TOKEN_KEY, this.encodeToken(response.token));
-    localStorage.setItem(this.REFRESH_KEY, this.encodeToken(response.refreshToken));
-    localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
+    sessionStorage.setItem(this.TOKEN_KEY, this.encodeToken(response.token));
+    sessionStorage.setItem(this.REFRESH_KEY, this.encodeToken(response.refreshToken));
+    sessionStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
   }
 
   getToken(): string | null {
-    const raw = localStorage.getItem(this.TOKEN_KEY);
+    const raw = sessionStorage.getItem(this.TOKEN_KEY);
     return raw ? this.decodeToken(raw) : null;
   }
 
   getRefreshToken(): string | null {
-    const raw = localStorage.getItem(this.REFRESH_KEY);
+    const raw = sessionStorage.getItem(this.REFRESH_KEY);
     return raw ? this.decodeToken(raw) : null;
   }
 
@@ -100,7 +123,7 @@ export class AuthService {
   }
 
   getCurrentUser(): AuthUser | null {
-    const raw = localStorage.getItem(this.USER_KEY);
+    const raw = sessionStorage.getItem(this.USER_KEY);
     try {
       return raw ? (JSON.parse(raw) as AuthUser) : null;
     } catch {
@@ -244,9 +267,9 @@ export class AuthService {
   private finishLogout(): void {
     this.isRefreshing$.next(false);
     this.refreshToken$ = null;
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.REFRESH_KEY);
-    localStorage.removeItem(this.USER_KEY);
+    sessionStorage.removeItem(this.TOKEN_KEY);
+    sessionStorage.removeItem(this.REFRESH_KEY);
+    sessionStorage.removeItem(this.USER_KEY);
     this.router.navigateByUrl('/login');
     this.isLoggingOut = false;
   }

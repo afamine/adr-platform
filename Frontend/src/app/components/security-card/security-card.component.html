@@ -1,0 +1,64 @@
+<div class="sc-card">
+  <div class="sc-header">
+    <div class="sc-header-left">
+      <svg class="sc-lock" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="3" y="8" width="18" height="11" rx="2" stroke="#9CA3AF" stroke-width="1.5"/>
+        <path d="M7 8V6a5 5 0 0 1 10 0v2" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="sc-title">Security</span>
+    </div>
+  </div>
+
+  <!-- Row 1: Two-Factor -->
+  <div class="sc-row sc-row-divider">
+    <div class="sc-left">
+      <div class="sc-row-title">
+        <span class="sc-main">Two-Factor Authentication</span>
+        <span *ngIf="totpEnabled" class="sc-status">
+          <span class="sc-dot"></span>
+          <span class="sc-badge">Active</span>
+        </span>
+      </div>
+      <div class="sc-sub">
+        <ng-container *ngIf="!totpEnabled">Add an extra layer of security to your account</ng-container>
+        <ng-container *ngIf="totpEnabled">Your account is protected with Google Authenticator</ng-container>
+      </div>
+    </div>
+    <div class="sc-right">
+      <button *ngIf="!totpEnabled" class="sc-btn-enable" (click)="onEnable()" [disabled]="isLoading">
+        Enable 2FA
+      </button>
+
+      <button *ngIf="totpEnabled" class="sc-btn-disable" (click)="onDisable()" [disabled]="isLoading">
+        Disable 2FA
+      </button>
+    </div>
+  </div>
+
+  <!-- Row 2: Password -->
+  <div class="sc-row sc-row-divider">
+    <div class="sc-left">
+      <div class="sc-row-title">
+        <span class="sc-main">Password</span>
+      </div>
+      <div class="sc-sub">Last changed 3 months ago</div>
+    </div>
+    <div class="sc-right">
+      <button class="sc-btn-outline" (click)="onChangePassword()">Change Password</button>
+    </div>
+  </div>
+
+  <!-- Row 3: Sessions -->
+  <div class="sc-row">
+    <div class="sc-left">
+      <div class="sc-row-title">
+        <span class="sc-main">Active Sessions</span>
+      </div>
+      <div class="sc-sub">2 devices currently signed in</div>
+    </div>
+    <div class="sc-right">
+      <button class="sc-btn-outline" (click)="onManageSessions()">Manage Sessions</button>
+    </div>
+  </div>
+</div>
+

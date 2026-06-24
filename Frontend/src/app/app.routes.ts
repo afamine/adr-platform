@@ -29,6 +29,12 @@ export const routes: Routes = [
     path: 'verify-email-sent',
     loadComponent: () => import('./pages/auth/verify-email-sent/verify-email-sent.component').then((m) => m.VerifyEmailSentComponent)
   },
+  {
+    path: '2fa-verify',
+    loadComponent: () =>
+      import('./pages/auth/totp-verify/totp-verify.component')
+        .then(m => m.TotpVerifyComponent)
+  },
   { path: 'register', component: RegisterComponent },
   {
     path: 'accept-invite',
@@ -58,6 +64,11 @@ export const routes: Routes = [
     path: 'admin',
     canActivate: [adminGuard],
     children: [
+      {
+        path: 'dashboard',
+        redirectTo: 'users',
+        pathMatch: 'full'
+      },
       {
         path: 'users',
         loadComponent: () => import('./pages/admin/user-management/user-management.component').then((m) => m.UserManagementComponent)

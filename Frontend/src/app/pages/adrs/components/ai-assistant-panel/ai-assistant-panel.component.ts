@@ -1,8 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { ChangeDetectorRef, Component, EventEmitter, Input, NgZone, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
-import { environment } from '../../../../../environments/environment';
+import { ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { Adr, AiInsight } from '../../../../models/adr.model';
+import { AdrService } from '../../../../services/adr.service';
 
 type InsightImpact = AiInsight['impact'];
 
@@ -14,10 +13,8 @@ type InsightImpact = AiInsight['impact'];
   styleUrl: './ai-assistant-panel.component.scss'
 })
 export class AiAssistantPanelComponent implements OnChanges {
-  private readonly http = inject(HttpClient);
-  private readonly ngZone = inject(NgZone);
+  private readonly adrService = inject(AdrService);
   private readonly cdr = inject(ChangeDetectorRef);
-  private readonly apiUrl = environment.apiUrl;
 
   @Input() selectedAdr: Adr | null = null;
   @Output() closePanel = new EventEmitter<void>();
@@ -42,21 +39,17 @@ export class AiAssistantPanelComponent implements OnChanges {
     this.isLoadingInsights = true;
     this.insightsError = false;
 
-    this.http.get<AiInsight[]>(`${this.apiUrl}/api/adrs/${adrId}/ai-insights`).subscribe({
-      next: (insights) => {
-        this.ngZone.run(() => {
-          this.insights = insights;
-          this.isLoadingInsights = false;
-          this.cdr.detectChanges();
-        });
+    this.adrService.getAiInsights(adrId).subscribe({
+      next: (insights: AiInsight[]) => {
+        this.insights = insights;
+        this.isLoadingInsights = false;
+        this.cdr.detectChanges();
       },
       error: () => {
-        this.ngZone.run(() => {
-          this.isLoadingInsights = false;
-          this.insightsError = true;
-          this.insights = [];
-          this.cdr.detectChanges();
-        });
+        this.isLoadingInsights = false;
+        this.insightsError = true;
+        this.insights = [];
+        this.cdr.detectChanges();
       }
     });
   }

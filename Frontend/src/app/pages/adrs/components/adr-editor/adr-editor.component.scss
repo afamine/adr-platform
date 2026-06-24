@@ -435,6 +435,76 @@ $hover-bg: #f9fafb;
   text-underline-offset: 2px;
 }
 
+.adr-editor__markdown-body {
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.7;
+
+  p {
+    margin: 0 0 12px;
+    line-height: 1.7;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 700;
+    margin: 18px 0 10px;
+    color: #0f172a;
+  }
+
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 17px; }
+  h4 { font-size: 15px; }
+
+  ul,
+  ol {
+    padding-left: 20px;
+    margin: 0 0 14px;
+  }
+
+  li {
+    margin-bottom: 6px;
+  }
+
+  code {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+    font-size: 12px;
+  }
+
+  pre {
+    background: #f9fafb;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    overflow-x: auto;
+    margin: 0 0 14px;
+  }
+
+  blockquote {
+    border-left: 3px solid #d1d5db;
+    padding-left: 12px;
+    margin: 0 0 14px;
+    color: #4b5563;
+    font-style: italic;
+  }
+
+  strong {
+    font-weight: 700;
+  }
+
+  a {
+    color: #2563eb;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
+
 .preview-content {
   padding: 32px;
   overflow-y: auto;

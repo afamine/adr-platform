@@ -186,6 +186,7 @@
       [selectedId]="selectedAdr()?.id ?? null"
       [searchQuery]="searchQuery()"
       [statusFilter]="statusFilter()"
+      [tagFilter]="tagFilter()"
       [canCreate]="canCreateAdr"
       [isLoading]="isLoading()"
       [currentPage]="currentPage()"
@@ -195,6 +196,7 @@
       (createNew)="onCreateNew()"
       (searchChanged)="onSearch($event)"
       (filterChanged)="onFilterChange($event)"
+      (tagFilterChanged)="onTagFilterChange($event)"
       (previousPage)="onPreviousPage()"
       (nextPage)="onNextPage()"
     />
@@ -217,6 +219,7 @@
           [isSaving]="isSaving"
           [canEdit]="canEdit()"
           [canDelete]="currentUser?.role === 'ADMIN'"
+          [showAdminDashboardLink]="currentUser?.role === 'ADMIN'"
           [transitions]="getAllowedTransitions()"
           [auditRefreshToken]="auditRefreshToken"
           (tabChanged)="onTabChange($event)"
@@ -231,6 +234,7 @@
           (showCollab)="toggleCollab()"
           (linkedAdrNavigate)="onLinkedAdrNavigate($event)"
           (adrUpdated)="onEditorAdrUpdated($event)"
+          (adminDashboardRequested)="onBackToAdminDashboard()"
         />
       </div>
 
