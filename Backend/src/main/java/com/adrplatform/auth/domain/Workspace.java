@@ -43,6 +43,10 @@ public class Workspace {
     @Column(name = "quorum_mode", nullable = false)
     private String quorumMode = "AUTO";
 
+    @Builder.Default
+    @Column(name = "join_policy", nullable = false)
+    private String joinPolicy = "INVITE_ONLY";
+
     @PrePersist
     void prePersist() {
         if (id == null) {

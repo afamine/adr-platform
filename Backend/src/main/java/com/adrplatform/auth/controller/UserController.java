@@ -1,7 +1,7 @@
 package com.adrplatform.auth.controller;
 
 import com.adrplatform.auth.dto.InviteUserRequest;
-import com.adrplatform.auth.dto.MessageResponse;
+import com.adrplatform.auth.dto.InviteUserResponse;
 import com.adrplatform.auth.dto.NotificationPreferencesDto;
 import com.adrplatform.auth.dto.UpdatePreferencesRequest;
 import com.adrplatform.auth.dto.UpdateProfileRequest;
@@ -10,6 +10,7 @@ import com.adrplatform.auth.dto.UpdateRoleResponse;
 import com.adrplatform.auth.dto.UpdateStatusRequest;
 import com.adrplatform.auth.dto.UpdateStatusResponse;
 import com.adrplatform.auth.dto.UserDto;
+import com.adrplatform.auth.dto.WorkspaceInvitationDto;
 import com.adrplatform.auth.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -123,10 +124,17 @@ public class UserController {
     @ApiResponse(responseCode = "409", description = "Email already exists")
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/invite")
-    public ResponseEntity<MessageResponse> inviteUser(@Valid @RequestBody InviteUserRequest request) {
-        userService.inviteUser(request.getEmail(), request.getRole());
-        return ResponseEntity.ok(MessageResponse.builder()
-                .message("Invitation sent to " + request.getEmail())
-                .build());
+    public ResponseEntity<InviteUserResponse> inviteUser(@Valid @RequestBody InviteUserRequest request) {
+        return ResponseEntity.ok(userService.inviteUser(request.getEmail(), request.getRole()));
+    }
+
+    @Operation(summary = "List workspace invitations")
+    @ApiResponse(responseCode = "200", description = "Invitations retrieved")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/invitations")
+    public ResponseEntity<List<WorkspaceInvitationDto>> listInvitations() {
+        return ResponseEntity.ok(userService.listWorkspaceInvitations());
     }
 }

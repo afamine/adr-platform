@@ -68,3 +68,25 @@ databaseChangeLog:
         - sqlFile:
             path: db/changelog/V26__add_totp_pending_fields.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: "27"
+      author: adr-platform
+      changes:
+        - sqlFile:
+            path: db/changelog/V27__add_totp_setup_required.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: "28"
+      author: adr-platform
+      changes:
+        - sqlFile:
+            path: db/changelog/V28__add_workspace_join_policy.sql
+            relativeToChangelogFile: false
+            splitStatements: false
+  - changeSet:
+      id: "29"
+      author: adr-platform
+      changes:
+        - sqlFile:
+            path: db/changelog/V29__create_workspace_memberships.sql
+            relativeToChangelogFile: false

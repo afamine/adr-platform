@@ -1,6 +1,8 @@
 package com.adrplatform.auth.security;
 
 import com.adrplatform.auth.repository.UserRepository;
+import com.adrplatform.auth.domain.WorkspaceMembershipStatus;
+import com.adrplatform.auth.repository.WorkspaceMembershipRepository;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,6 +26,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final WorkspaceMembershipRepository workspaceMembershipRepository;
     private final ObjectProvider<TenantContext> tenantContextProvider;
     private final ObjectProvider<UserContext> userContextProvider;
     private final TokenBlacklistService tokenBlacklistService;
@@ -57,15 +60,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         UUID userId = UUID.fromString(claims.getSubject());
+        UUID workspaceId = UUID.fromString(claims.get("workspaceId", String.class));
         userRepository.findById(userId).ifPresent(user -> {
             if (!user.isActive()) {
                 return;
             }
+            workspaceMembershipRepository.findByUser_IdAndWorkspace_Id(user.getId(), workspaceId)
+                    .filter(membership -> membership.getStatus() == WorkspaceMembershipStatus.ACTIVE)
+                    .ifPresent(membership -> {
+                        user.setWorkspace(membership.getWorkspace());
+                        user.setRole(membership.getRole());
+                    });
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            tenantContextProvider.getObject().setWorkspaceId(UUID.fromString(claims.get("workspaceId", String.class)));
+            tenantContextProvider.getObject().setWorkspaceId(workspaceId);
             userContextProvider.getObject().set(user);
         });
 

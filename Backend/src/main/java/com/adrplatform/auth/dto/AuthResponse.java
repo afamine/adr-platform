@@ -10,5 +10,6 @@ public class AuthResponse {
     private String refreshToken;
     private UserDto user;
     private Boolean requiresTwoFactor;
+    private Boolean requiresTwoFactorSetup;
     private String pendingToken;
 }

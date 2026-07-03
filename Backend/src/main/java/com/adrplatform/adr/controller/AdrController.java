@@ -55,8 +55,9 @@ public class AdrController {
     @ApiResponse(responseCode = "200", description = "Recent ADRs returned")
     @GetMapping("/recent")
     public ResponseEntity<List<AdrDto>> recent(
-            @Parameter(description = "Maximum number of results") @RequestParam(defaultValue = "4") int limit) {
-        return ResponseEntity.ok(adrService.getRecentAdrs(limit));
+            @Parameter(description = "Maximum number of results") @RequestParam(defaultValue = "4") int limit,
+            @RequestParam(defaultValue = "30d") String timeRange) {
+        return ResponseEntity.ok(adrService.getRecentAdrs(limit, timeRange));
     }
 
     @Operation(summary = "List ADRs with pagination and sorting")
@@ -183,7 +184,7 @@ public class AdrController {
     @Operation(summary = "Export an ADR as a PDF file")
     @ApiResponse(responseCode = "200", description = "PDF file returned")
     @ApiResponse(responseCode = "404", description = "ADR not found", content = @Content)
-    @GetMapping("/{id}/export.pdf")
+    @GetMapping({"/{id}/export/pdf", "/{id}/export.pdf"})
     public ResponseEntity<byte[]> exportPdf(@PathVariable("id") UUID id) {
         AdrDto adr = adrService.getAdrById(id);
         byte[] pdf = adrService.buildPdfExport(adr);

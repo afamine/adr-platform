@@ -24,6 +24,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import com.adrplatform.notification.service.NotificationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -36,9 +37,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -86,8 +87,14 @@ public class AdrService {
 
     @Transactional(readOnly = true)
     public List<AdrDto> getRecentAdrs(int limit) {
+        return getRecentAdrs(limit, "30d");
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdrDto> getRecentAdrs(int limit, String timeRange) {
         UUID workspaceId = tenantContext.getWorkspaceId();
-        return adrRepository.findRecentByWorkspace(workspaceId, PageRequest.of(0, limit))
+        Instant since = resolveAnalyticsRangeStart(timeRange);
+        return adrRepository.findRecentByWorkspaceSince(workspaceId, since, PageRequest.of(0, limit))
                 .stream()
                 .map(adr -> {
                     List<AuditEvent> events = auditEventRepository.findAdrAuditEvents(workspaceId, adr.getId());
@@ -102,6 +109,18 @@ public class AdrService {
                     return AdrDto.fromEntityWithActivity(adr, action, actionDate);
                 })
                 .toList();
+    }
+
+    private Instant resolveAnalyticsRangeStart(String rawRange) {
+        String key = rawRange == null || rawRange.isBlank() ? "30d" : rawRange.trim().toLowerCase();
+        Duration duration = switch (key) {
+            case "24h" -> Duration.ofHours(24);
+            case "7d" -> Duration.ofDays(7);
+            case "30d" -> Duration.ofDays(30);
+            case "90d" -> Duration.ofDays(90);
+            default -> throw new BadRequestException("Unsupported analytics timeRange. Use 24h, 7d, 30d, or 90d.");
+        };
+        return Instant.now().minus(duration);
     }
 
     private String resolveLastAction(String action, String newValueJson) {
@@ -349,8 +368,8 @@ public class AdrService {
                 : String.join(", ", adr.tags());
 
         return new StringBuilder()
-                .append("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">")
-                .append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
+                .append("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"/>")
+                .append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>")
                 .append("<title>ADR-").append(adr.adrNumber()).append(": ").append(escapeHtml(adr.title())).append("</title>")
                 .append("<style>")
                 .append("body{font-family:Arial,sans-serif;line-height:1.55;color:#111827;max-width:860px;margin:40px auto;padding:0 24px}")
@@ -376,159 +395,20 @@ public class AdrService {
     }
 
     public byte[] buildPdfExport(AdrDto adr) {
-        try {
-            return buildSimplePdf(buildPdfLines(adr));
-        } catch (RuntimeException ex) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+            builder.useFastMode();
+            builder.withHtmlContent(buildPdfHtmlExport(adr), null);
+            builder.toStream(out);
+            builder.run();
+            return out.toByteArray();
+        } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to generate PDF export", ex);
         }
     }
 
-    private List<String> buildPdfLines(AdrDto adr) {
-        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        String date = adr.createdAt() != null ? adr.createdAt().format(dateFmt) : "-";
-        String tags = (adr.tags() == null || adr.tags().isEmpty())
-                ? "-"
-                : String.join(", ", adr.tags());
-
-        List<String> lines = new ArrayList<>();
-        lines.add("ADR-" + adr.adrNumber() + ": " + safeText(adr.title()));
-        lines.add("");
-        lines.add("Status: " + adr.status());
-        lines.add("Date: " + date);
-        lines.add("Author: " + safeText(adr.authorName()));
-        lines.add("Tags: " + safeText(tags));
-        lines.add("");
-        addWrappedSection(lines, "Context", adr.context());
-        addWrappedSection(lines, "Decision", adr.decision());
-        addWrappedSection(lines, "Consequences", adr.consequences());
-        addWrappedSection(lines, "Alternatives Considered", adr.alternatives());
-        lines.add("");
-        lines.add("Generated by ADR Platform");
-        return lines;
-    }
-
-    private void addWrappedSection(List<String> lines, String title, String content) {
-        lines.add(title);
-        String value = isBlank(content) ? "Not provided." : safeText(content.trim());
-        for (String paragraph : value.split("\\R")) {
-            lines.addAll(wrapLine(paragraph, 92));
-        }
-        lines.add("");
-    }
-
-    private List<String> wrapLine(String value, int maxLength) {
-        List<String> lines = new ArrayList<>();
-        String remaining = value == null ? "" : value.trim();
-        if (remaining.isEmpty()) {
-            lines.add("");
-            return lines;
-        }
-        while (remaining.length() > maxLength) {
-            int breakAt = remaining.lastIndexOf(' ', maxLength);
-            if (breakAt < 24) {
-                breakAt = maxLength;
-            }
-            lines.add(remaining.substring(0, breakAt).trim());
-            remaining = remaining.substring(breakAt).trim();
-        }
-        lines.add(remaining);
-        return lines;
-    }
-
-    private byte[] buildSimplePdf(List<String> lines) {
-        int linesPerPage = 44;
-        List<List<String>> pages = new ArrayList<>();
-        for (int i = 0; i < lines.size(); i += linesPerPage) {
-            pages.add(lines.subList(i, Math.min(i + linesPerPage, lines.size())));
-        }
-        if (pages.isEmpty()) {
-            pages.add(List.of(""));
-        }
-
-        List<byte[]> objects = new ArrayList<>();
-        int pageCount = pages.size();
-        int fontObjectNumber = 3 + (pageCount * 2);
-
-        objects.add("<< /Type /Catalog /Pages 2 0 R >>\n".getBytes(StandardCharsets.ISO_8859_1));
-
-        StringBuilder kids = new StringBuilder();
-        for (int i = 0; i < pageCount; i++) {
-            kids.append(3 + (i * 2)).append(" 0 R ");
-        }
-        objects.add(("<< /Type /Pages /Kids [" + kids + "] /Count " + pageCount + " >>\n")
-                .getBytes(StandardCharsets.ISO_8859_1));
-
-        for (int i = 0; i < pageCount; i++) {
-            int pageObjectNumber = 3 + (i * 2);
-            int contentObjectNumber = pageObjectNumber + 1;
-            objects.add(("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
-                    + "/Resources << /Font << /F1 " + fontObjectNumber + " 0 R >> >> "
-                    + "/Contents " + contentObjectNumber + " 0 R >>\n")
-                    .getBytes(StandardCharsets.ISO_8859_1));
-
-            byte[] stream = buildPdfPageStream(pages.get(i));
-            objects.add(("<< /Length " + stream.length + " >>\nstream\n"
-                    + new String(stream, StandardCharsets.ISO_8859_1)
-                    + "\nendstream\n")
-                    .getBytes(StandardCharsets.ISO_8859_1));
-        }
-
-        objects.add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\n"
-                .getBytes(StandardCharsets.ISO_8859_1));
-
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            out.write("%PDF-1.4\n".getBytes(StandardCharsets.ISO_8859_1));
-            List<Integer> offsets = new ArrayList<>();
-            for (int i = 0; i < objects.size(); i++) {
-                offsets.add(out.size());
-                out.write(((i + 1) + " 0 obj\n").getBytes(StandardCharsets.ISO_8859_1));
-                out.write(objects.get(i));
-                out.write("endobj\n".getBytes(StandardCharsets.ISO_8859_1));
-            }
-
-            int xrefOffset = out.size();
-            out.write(("xref\n0 " + (objects.size() + 1) + "\n").getBytes(StandardCharsets.ISO_8859_1));
-            out.write("0000000000 65535 f \n".getBytes(StandardCharsets.ISO_8859_1));
-            for (Integer offset : offsets) {
-                out.write(String.format("%010d 00000 n \n", offset).getBytes(StandardCharsets.ISO_8859_1));
-            }
-            out.write(("trailer\n<< /Size " + (objects.size() + 1) + " /Root 1 0 R >>\n"
-                    + "startxref\n" + xrefOffset + "\n%%EOF\n").getBytes(StandardCharsets.ISO_8859_1));
-            return out.toByteArray();
-        } catch (Exception ex) {
-            throw new IllegalStateException("Unable to write PDF bytes", ex);
-        }
-    }
-
-    private byte[] buildPdfPageStream(List<String> lines) {
-        StringBuilder stream = new StringBuilder();
-        stream.append("BT\n/F1 12 Tf\n14 TL\n50 790 Td\n");
-        for (String line : lines) {
-            stream.append("(").append(escapePdf(line)).append(") Tj\nT*\n");
-        }
-        stream.append("ET");
-        return stream.toString().getBytes(StandardCharsets.ISO_8859_1);
-    }
-
-    private String escapePdf(String value) {
-        return safeText(value)
-                .replace("\\", "\\\\")
-                .replace("(", "\\(")
-                .replace(")", "\\)");
-    }
-
-    private String safeText(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value
-                .replace('\u2013', '-')
-                .replace('\u2014', '-')
-                .replace('\u2018', '\'')
-                .replace('\u2019', '\'')
-                .replace('\u201c', '"')
-                .replace('\u201d', '"')
-                .replaceAll("[^\\x09\\x0A\\x0D\\x20-\\x7E]", "?");
+    private String buildPdfHtmlExport(AdrDto adr) {
+        return buildHtmlExport(adr).replaceFirst("(?i)^<!doctype html>", "");
     }
 
     private boolean isBlank(String s) {

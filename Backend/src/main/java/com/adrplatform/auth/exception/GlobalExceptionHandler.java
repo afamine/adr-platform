@@ -152,12 +152,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(EmailNotVerifiedException.class)
     public ResponseEntity<ErrorResponse> handleEmailNotVerified(EmailNotVerifiedException ex, HttpServletRequest request) {
-        return buildErrorWithType(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI(), "EMAIL_NOT_VERIFIED");
+        return buildCodedError(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI(), "EMAIL_NOT_VERIFIED");
     }
 
     @ExceptionHandler(AccountDeactivatedException.class)
     public ResponseEntity<ErrorResponse> handleAccountDeactivated(AccountDeactivatedException ex, HttpServletRequest request) {
-        return buildErrorWithType(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI(), "ACCOUNT_DEACTIVATED");
+        return buildCodedError(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI(), "ACCOUNT_DISABLED");
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
@@ -191,6 +191,18 @@ public class GlobalExceptionHandler {
                 .message(message)
                 .path(path)
                 .errorType(errorType)
+                .build();
+        return ResponseEntity.status(status).body(response);
+    }
+
+    private ResponseEntity<ErrorResponse> buildCodedError(HttpStatus status, String message, String path, String errorCode) {
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .status(status.value())
+                .error(errorCode)
+                .message(message)
+                .path(path)
+                .errorType(errorCode)
                 .build();
         return ResponseEntity.status(status).body(response);
     }

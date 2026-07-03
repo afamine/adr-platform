@@ -9,6 +9,7 @@ public record WorkspaceDto(
         String slug,
         Integer voteQuorum,
         String quorumMode,
+        String joinPolicy,
         Long memberCount,
         Instant createdAt) {
 }

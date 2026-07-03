@@ -31,8 +31,9 @@ public class AnalyticsController {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @ApiResponse(responseCode = "403", description = "Forbidden")
     @GetMapping("/kpis")
-    public ResponseEntity<KpiDto> getKpis() {
-        return ResponseEntity.ok(analyticsService.getKpis());
+    public ResponseEntity<KpiDto> getKpis(
+            @RequestParam(defaultValue = "30d") String timeRange) {
+        return ResponseEntity.ok(analyticsService.getKpis(timeRange));
     }
 
     @Operation(summary = "Get ADR count grouped by status")
@@ -40,8 +41,9 @@ public class AnalyticsController {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @ApiResponse(responseCode = "403", description = "Forbidden")
     @GetMapping("/status-distribution")
-    public ResponseEntity<List<StatusCountDto>> getStatusDistribution() {
-        return ResponseEntity.ok(analyticsService.getStatusDistribution());
+    public ResponseEntity<List<StatusCountDto>> getStatusDistribution(
+            @RequestParam(defaultValue = "30d") String timeRange) {
+        return ResponseEntity.ok(analyticsService.getStatusDistribution(timeRange));
     }
 
     @Operation(summary = "Get weekly ADR creation activity for the last N weeks")
@@ -50,7 +52,7 @@ public class AnalyticsController {
     @ApiResponse(responseCode = "403", description = "Forbidden")
     @GetMapping("/weekly-activity")
     public ResponseEntity<List<WeeklyActivityDto>> getWeeklyActivity(
-            @RequestParam(defaultValue = "5") int weeks) {
-        return ResponseEntity.ok(analyticsService.getWeeklyActivity(weeks));
+            @RequestParam(defaultValue = "30d") String timeRange) {
+        return ResponseEntity.ok(analyticsService.getActivity(timeRange));
     }
 }

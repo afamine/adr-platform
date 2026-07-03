@@ -4,6 +4,7 @@ import com.adrplatform.auth.domain.Role;
 import com.adrplatform.auth.domain.User;
 import com.adrplatform.auth.domain.Workspace;
 import com.adrplatform.auth.repository.UserRepository;
+import com.adrplatform.auth.repository.WorkspaceMembershipRepository;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.FilterChain;
@@ -31,6 +32,7 @@ class JwtAuthenticationFilterTest {
 
     private JwtAuthenticationFilter filter;
     private UserRepository userRepository;
+    private WorkspaceMembershipRepository workspaceMembershipRepository;
     private TenantContext tenantContext;
 
     @BeforeEach
@@ -42,6 +44,7 @@ class JwtAuthenticationFilterTest {
 
         JwtService jwtService = new JwtService(props);
         userRepository = mock(UserRepository.class);
+        workspaceMembershipRepository = mock(WorkspaceMembershipRepository.class);
         tenantContext = new TenantContext();
         ObjectProvider<TenantContext> provider = new ObjectProvider<>() {
             @Override
@@ -87,7 +90,7 @@ class JwtAuthenticationFilterTest {
             }
         };
 
-        filter = new JwtAuthenticationFilter(jwtService, userRepository, provider, userContextProvider, mock(TokenBlacklistService.class));
+        filter = new JwtAuthenticationFilter(jwtService, userRepository, workspaceMembershipRepository, provider, userContextProvider, mock(TokenBlacklistService.class));
     }
 
     @Test

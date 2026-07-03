@@ -6,6 +6,8 @@ import com.adrplatform.auth.domain.TokenType;
 import com.adrplatform.auth.domain.User;
 import com.adrplatform.auth.domain.VerificationToken;
 import com.adrplatform.auth.domain.Workspace;
+import com.adrplatform.auth.domain.WorkspaceMembership;
+import com.adrplatform.auth.domain.WorkspaceMembershipStatus;
 import com.adrplatform.auth.dto.AcceptInviteRequest;
 import com.adrplatform.auth.dto.AuthResponse;
 import com.adrplatform.auth.dto.LoginRequest;
@@ -23,6 +25,7 @@ import com.adrplatform.auth.exception.EmailNotVerifiedException;
 import com.adrplatform.auth.exception.ResourceNotFoundException;
 import com.adrplatform.auth.exception.UnauthorizedException;
 import com.adrplatform.auth.repository.UserRepository;
+import com.adrplatform.auth.repository.WorkspaceMembershipRepository;
 import com.adrplatform.auth.repository.WorkspaceRepository;
 import com.adrplatform.notification.service.NotificationService;
 import com.adrplatform.auth.security.JwtService;
@@ -38,6 +41,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 @Slf4j
@@ -47,10 +52,12 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final WorkspaceRepository workspaceRepository;
+    private final WorkspaceMembershipRepository workspaceMembershipRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final TotpService totpService;
+    private final SecretEncryptionService secretEncryptionService;
     private final RefreshTokenService refreshTokenService;
     private final TokenBlacklistService tokenBlacklistService;
     private final AuditService auditService;
@@ -73,21 +80,36 @@ public class AuthService {
 
         passwordPolicyValidator.validate(request.getPassword());
 
+        String workspaceMode = request.getWorkspaceMode() == null || request.getWorkspaceMode().isBlank()
+                ? "PRIVATE"
+                : request.getWorkspaceMode();
         String workspaceName = request.getWorkspaceName() != null && !request.getWorkspaceName().isBlank()
                 ? request.getWorkspaceName().trim()
                 : request.getFullName().trim() + "'s Workspace";
         String slug = resolveSlug(request.getWorkspaceSlug(), workspaceName);
 
-        if (workspaceRepository.findBySlug(slug).isPresent()) {
-            throw new com.adrplatform.auth.exception.ConflictException(
-                    "Workspace slug '" + slug + "' is already taken. Please choose a different name or slug.");
-        }
+        Workspace workspace;
+        if ("JOIN_TEAM".equals(workspaceMode)) {
+            if (request.getWorkspaceSlug() == null || request.getWorkspaceSlug().isBlank()) {
+                throw new BadRequestException("Workspace slug is required to join a team workspace.");
+            }
+            workspace = workspaceRepository.findBySlug(slug)
+                    .orElseThrow(() -> new BadRequestException("No workspace found with this slug."));
+            if (!"ALLOW_SLUG".equals(workspace.getJoinPolicy())) {
+                throw new BadRequestException("This workspace requires an invitation to join.");
+            }
+        } else {
+            if (workspaceRepository.findBySlug(slug).isPresent()) {
+                throw new com.adrplatform.auth.exception.ConflictException(
+                        "Workspace slug '" + slug + "' is already taken. Please choose a different name or slug.");
+            }
 
-        Workspace workspace = workspaceRepository.save(
-                Workspace.builder()
-                        .name(workspaceName)
-                        .slug(slug)
-                        .build());
+            workspace = workspaceRepository.save(
+                    Workspace.builder()
+                            .name(workspaceName)
+                            .slug(slug)
+                            .build());
+        }
 
         User user = User.builder()
                 .workspace(workspace)
@@ -97,9 +119,12 @@ public class AuthService {
                 .role(Role.AUTHOR)
                 .emailVerified(false)
                 .isActive(false)
+                .totpSetupRequired(true)
                 .build();
+        seedPendingTotpSecret(user);
 
         User saved = userRepository.save(user);
+        activateMembership(saved, workspace, saved.getRole());
 
         int expiryHours = appProperties.getToken().getEmailVerificationExpiryHours();
         String token = verificationTokenService.createToken(saved, TokenType.EMAIL_VERIFICATION, expiryHours);
@@ -108,7 +133,7 @@ public class AuthService {
 
         auditService.record(saved, workspace, AuditActions.USER_REGISTERED, "USER", saved.getId(), null,
                 toJson(Map.of("email", saved.getEmail(), "role", saved.getRole().name(),
-                        "workspaceSlug", slug)));
+                        "workspaceSlug", workspace.getSlug(), "workspaceMode", workspaceMode)));
 
         log.info("New user registered (pending verification): {} — workspace: {}", saved.getEmail(), slug);
         return RegisterResponse.builder()
@@ -147,7 +172,7 @@ public class AuthService {
                         "Please verify your email address before signing in. Check your inbox for the verification link.");
             }
             throw new AccountDeactivatedException(
-                    "Your account has been deactivated. Please contact the platform administrator.");
+                    "Your account is disabled. Please contact your administrator.");
         }
 
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
@@ -172,6 +197,7 @@ public class AuthService {
                 .token(accessToken)
                 .refreshToken(refreshToken)
                 .user(UserDto.fromEntity(user))
+                .requiresTwoFactorSetup(user.isTotpSetupRequired() && !user.isTotpEnabled())
                 .build();
     }
 
@@ -191,6 +217,7 @@ public class AuthService {
                 .token(accessToken)
                 .refreshToken(refreshToken)
                 .user(UserDto.fromEntity(user))
+                .requiresTwoFactorSetup(user.isTotpSetupRequired() && !user.isTotpEnabled())
                 .build();
     }
 
@@ -206,6 +233,11 @@ public class AuthService {
 
         var stored = refreshTokenService.validateRefreshToken(oldRefreshToken);
         User user = stored.getUser();
+        if (!user.isActive()) {
+            refreshTokenService.revokeAllForUser(user);
+            throw new AccountDeactivatedException(
+                    "Your account is disabled. Please contact your administrator.");
+        }
 
         refreshTokenService.revoke(stored);
         String newAccessToken = jwtService.generateAccessToken(user);
@@ -219,6 +251,7 @@ public class AuthService {
                 .token(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .user(UserDto.fromEntity(user))
+                .requiresTwoFactorSetup(user.isTotpSetupRequired() && !user.isTotpEnabled())
                 .build();
     }
 
@@ -348,10 +381,15 @@ public class AuthService {
     public ValidateInviteResponse validateInviteToken(String rawToken) {
         VerificationToken vt = verificationTokenService.peekToken(rawToken, TokenType.WORKSPACE_INVITE);
         User user = vt.getUser();
+        Workspace workspace = vt.getWorkspace() != null ? vt.getWorkspace() : user.getWorkspace();
+        Role role = workspaceMembershipRepository.findByUser_IdAndWorkspace_Id(user.getId(), workspace.getId())
+                .map(WorkspaceMembership::getRole)
+                .orElse(user.getRole());
         return new ValidateInviteResponse(
                 user.getEmail(),
-                user.getWorkspace().getName(),
-                user.getRole().name()
+                workspace.getName(),
+                role.name(),
+                user.getPasswordHash() != null
         );
     }
 
@@ -363,31 +401,53 @@ public class AuthService {
     public AuthResponse acceptInvite(AcceptInviteRequest request) {
         VerificationToken vt = verificationTokenService.validateAndConsume(request.token(), TokenType.WORKSPACE_INVITE);
         User user = vt.getUser();
+        Workspace workspace = vt.getWorkspace() != null ? vt.getWorkspace() : user.getWorkspace();
 
-        if (!request.password().equals(request.confirmPassword())) {
-            throw new BadRequestException("Passwords do not match.");
+        if (user.getPasswordHash() == null) {
+            if (!request.password().equals(request.confirmPassword())) {
+                throw new BadRequestException("Passwords do not match.");
+            }
+            passwordPolicyValidator.validate(request.password());
+            user.setPasswordHash(passwordEncoder.encode(request.password()));
+        } else if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            throw new BadRequestException("Enter your existing password to accept this workspace invite.");
         }
-        passwordPolicyValidator.validate(request.password());
 
-        user.setFullName(request.fullName().trim());
-        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        if (request.fullName() != null && !request.fullName().isBlank() && "Pending invitation".equals(user.getFullName())) {
+            user.setFullName(request.fullName().trim());
+        }
+        WorkspaceMembership membership = workspaceMembershipRepository.findByUser_IdAndWorkspace_Id(user.getId(), workspace.getId())
+                .orElseGet(() -> WorkspaceMembership.builder()
+                        .user(user)
+                        .workspace(workspace)
+                        .role(user.getRole())
+                        .build());
+        membership.setStatus(WorkspaceMembershipStatus.ACTIVE);
+        membership.setAcceptedAt(Instant.now());
+        workspaceMembershipRepository.save(membership);
+
+        user.setWorkspace(workspace);
+        user.setRole(membership.getRole());
         user.setEmailVerified(true);
         user.setActive(true);
+        user.setTotpSetupRequired(true);
+        seedPendingTotpSecret(user);
         userRepository.save(user);
 
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
         refreshTokenService.create(user, refreshToken);
 
-        auditService.record(user, user.getWorkspace(), AuditActions.USER_INVITE_ACCEPTED, "USER", user.getId(), null,
+        auditService.record(user, workspace, AuditActions.USER_INVITE_ACCEPTED, "USER", user.getId(), null,
                 toJson(Map.of("email", user.getEmail())));
 
-        notificationService.notifyNewTeamMember(user.getId(), user.getWorkspace().getId());
+        notificationService.notifyNewTeamMember(user.getId(), workspace.getId());
         log.info("Invite accepted and account activated for {}", user.getEmail());
         return AuthResponse.builder()
                 .token(accessToken)
                 .refreshToken(refreshToken)
                 .user(UserDto.fromEntity(user))
+                .requiresTwoFactorSetup(user.isTotpSetupRequired() && !user.isTotpEnabled())
                 .build();
     }
 
@@ -411,6 +471,25 @@ public class AuthService {
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("Failed to serialize audit payload", ex);
         }
+    }
+
+    private void seedPendingTotpSecret(User user) {
+        String secret = totpService.generateSecret();
+        user.setTotpPendingSecret(secretEncryptionService.encrypt(secret));
+        user.setTotpPendingExpiresAt(Instant.now().plus(24, ChronoUnit.HOURS));
+    }
+
+    private void activateMembership(User user, Workspace workspace, Role role) {
+        WorkspaceMembership membership = workspaceMembershipRepository.findByUser_IdAndWorkspace_Id(user.getId(), workspace.getId())
+                .orElseGet(() -> WorkspaceMembership.builder()
+                        .user(user)
+                        .workspace(workspace)
+                        .createdAt(Instant.now())
+                        .build());
+        membership.setRole(role);
+        membership.setStatus(WorkspaceMembershipStatus.ACTIVE);
+        membership.setAcceptedAt(Instant.now());
+        workspaceMembershipRepository.save(membership);
     }
 
     private String maskEmail(String email) {

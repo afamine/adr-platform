@@ -30,4 +30,7 @@ public class RegisterRequest {
     )
     @Size(min = 3, max = 60, message = "Workspace slug must be between 3 and 60 characters")
     private String workspaceSlug;
+
+    @Pattern(regexp = "^(PRIVATE|JOIN_TEAM)$", message = "workspaceMode must be PRIVATE or JOIN_TEAM")
+    private String workspaceMode;
 }

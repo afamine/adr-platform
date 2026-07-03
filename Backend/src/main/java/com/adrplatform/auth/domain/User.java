@@ -79,6 +79,10 @@ public class User implements UserDetails {
     @Column(name = "totp_enabled", nullable = false)
     private boolean totpEnabled = false;
 
+    @Builder.Default
+    @Column(name = "totp_setup_required", nullable = false)
+    private boolean totpSetupRequired = false;
+
     @PrePersist
     void prePersist() {
         if (id == null) {

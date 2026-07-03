@@ -49,23 +49,45 @@ public class TotpController {
 
     @GetMapping("/setup")
     public ResponseEntity<Map<String, String>> setup(Authentication auth) {
-        User user = (User) auth.getPrincipal();
-        String secret = totpService.generateSecret();
-        String qrBase64 = totpService.generateQrCodeBase64(user.getEmail(), secret);
-        user.setTotpPendingSecret(secretEncryptionService.encrypt(secret));
-        user.setTotpPendingExpiresAt(Instant.now().plus(10, ChronoUnit.MINUTES));
-        userRepository.save(user);
-        return ResponseEntity.ok(Map.of(
-            "qrCodeBase64", qrBase64,
-            "secret", formatSecret(secret)
-        ));
+        return ResponseEntity.ok(createSetup((User) auth.getPrincipal()));
     }
 
     @PostMapping("/enable")
     public ResponseEntity<Map<String, String>> enable(
+            @RequestBody(required = false) Map<String, String> request,
+            Authentication auth) {
+        User user = (User) auth.getPrincipal();
+        if (request != null && request.get("code") != null && !request.get("code").isBlank()) {
+            return verifyPendingSecret(user, request.get("code"));
+        }
+        return ResponseEntity.ok(createSetup(user));
+    }
+
+    private Map<String, String> createSetup(User user) {
+        String secret = user.getTotpPendingSecret() != null
+                && user.getTotpPendingExpiresAt() != null
+                && user.getTotpPendingExpiresAt().isAfter(Instant.now())
+                ? secretEncryptionService.decrypt(user.getTotpPendingSecret())
+                : totpService.generateSecret();
+        String qrBase64 = totpService.generateQrCodeBase64(user.getEmail(), secret);
+        user.setTotpPendingSecret(secretEncryptionService.encrypt(secret));
+        user.setTotpPendingExpiresAt(Instant.now().plus(10, ChronoUnit.MINUTES));
+        userRepository.save(user);
+        return Map.of(
+            "qrCodeBase64", qrBase64,
+            "secret", formatSecret(secret)
+        );
+    }
+
+    @PostMapping("/verify")
+    public ResponseEntity<Map<String, String>> verifySetup(
             @RequestBody @Valid TotpEnableRequest request,
             Authentication auth) {
         User user = (User) auth.getPrincipal();
+        return verifyPendingSecret(user, request.code());
+    }
+
+    private ResponseEntity<Map<String, String>> verifyPendingSecret(User user, String code) {
         if (user.getTotpPendingSecret() == null
                 || user.getTotpPendingExpiresAt() == null
                 || user.getTotpPendingExpiresAt().isBefore(Instant.now())) {
@@ -74,7 +96,7 @@ public class TotpController {
         }
 
         String pendingSecret = secretEncryptionService.decrypt(user.getTotpPendingSecret());
-        if (!totpService.verifyCode(pendingSecret, request.code())) {
+        if (!totpService.verifyCode(pendingSecret, code)) {
             return ResponseEntity.badRequest()
                 .body(Map.of("message", "Invalid code. Please check your authenticator app."));
         }
@@ -82,6 +104,7 @@ public class TotpController {
         user.setTotpPendingSecret(null);
         user.setTotpPendingExpiresAt(null);
         user.setTotpEnabled(true);
+        user.setTotpSetupRequired(false);
         userRepository.save(user);
         return ResponseEntity.ok(Map.of("message", "2FA enabled successfully"));
     }
@@ -102,6 +125,7 @@ public class TotpController {
         }
         user.setTotpSecret(null);
         user.setTotpEnabled(false);
+        user.setTotpSetupRequired(false);
         userRepository.save(user);
         return ResponseEntity.ok(Map.of("message", "2FA has been disabled."));
     }
@@ -115,7 +139,7 @@ public class TotpController {
                     .body(Map.of("message", "Invalid session token."));
             }
             UUID userId = UUID.fromString(claims.getSubject());
-            User user = userRepository.findById(userId)
+            User user = userRepository.findByIdWithWorkspace(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
             if (!user.isActive() || !user.isTotpEnabled() || user.getTotpSecret() == null) {

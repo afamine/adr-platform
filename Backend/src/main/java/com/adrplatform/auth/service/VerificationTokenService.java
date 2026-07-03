@@ -3,6 +3,7 @@ package com.adrplatform.auth.service;
 import com.adrplatform.auth.domain.TokenType;
 import com.adrplatform.auth.domain.User;
 import com.adrplatform.auth.domain.VerificationToken;
+import com.adrplatform.auth.domain.Workspace;
 import com.adrplatform.auth.exception.InvalidTokenException;
 import com.adrplatform.auth.exception.TokenExpiredException;
 import com.adrplatform.auth.repository.VerificationTokenRepository;
@@ -29,12 +30,22 @@ public class VerificationTokenService {
     @Transactional
     public String createToken(User user, TokenType type, int expiryHours) {
         verificationTokenRepository.deleteUnusedByUserAndType(user.getId(), type);
+        return createTokenValue(user, null, type, expiryHours);
+    }
 
+    @Transactional
+    public String createWorkspaceToken(User user, Workspace workspace, TokenType type, int expiryHours) {
+        verificationTokenRepository.deleteUnusedByUserAndWorkspaceAndType(user.getId(), workspace.getId(), type);
+        return createTokenValue(user, workspace, type, expiryHours);
+    }
+
+    private String createTokenValue(User user, Workspace workspace, TokenType type, int expiryHours) {
         String tokenValue = UUID.randomUUID().toString().replace("-", "")
                 + UUID.randomUUID().toString().replace("-", "");
 
         VerificationToken vt = VerificationToken.builder()
                 .user(user)
+                .workspace(workspace)
                 .token(tokenHashService.hash(tokenValue))
                 .tokenType(type)
                 .expiresAt(LocalDateTime.now().plusHours(expiryHours))

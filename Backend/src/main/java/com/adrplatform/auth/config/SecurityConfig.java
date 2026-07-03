@@ -69,6 +69,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/users/invite").hasRole("ADMIN")
                         .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout-all").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/workspace/slug-status").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/workspace").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/workspace").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/workspace/reset").hasRole("ADMIN")

@@ -11,5 +11,6 @@ public record UpdateWorkspaceRequest(
         @NotBlank @Size(max = 100) String name,
         @NotBlank @Pattern(regexp = "^[a-z0-9-]+$", message = "Slug may only contain lowercase letters, digits, and hyphens.") String slug,
         @NotNull @Min(1) @Max(10) Integer voteQuorum,
-        @NotBlank @Pattern(regexp = "^(AUTO|MANUAL)$", message = "quorumMode must be AUTO or MANUAL.") String quorumMode) {
+        @NotBlank @Pattern(regexp = "^(AUTO|MANUAL)$", message = "quorumMode must be AUTO or MANUAL.") String quorumMode,
+        @NotBlank @Pattern(regexp = "^(INVITE_ONLY|ALLOW_SLUG|CLOSED)$", message = "joinPolicy must be INVITE_ONLY, ALLOW_SLUG, or CLOSED.") String joinPolicy) {
 }

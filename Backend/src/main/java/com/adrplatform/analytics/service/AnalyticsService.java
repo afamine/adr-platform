@@ -5,15 +5,18 @@ import com.adrplatform.adr.repository.AdrRepository;
 import com.adrplatform.analytics.dto.KpiDto;
 import com.adrplatform.analytics.dto.StatusCountDto;
 import com.adrplatform.analytics.dto.WeeklyActivityDto;
+import com.adrplatform.auth.exception.BadRequestException;
 import com.adrplatform.auth.security.TenantContext;
 import com.adrplatform.vote.repository.VoteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -32,43 +35,39 @@ public class AnalyticsService {
     private final TenantContext tenantContext;
 
     @Transactional(readOnly = true)
-    public KpiDto getKpis() {
+    public KpiDto getKpis(String timeRange) {
         UUID wsId = tenantContext.getWorkspaceId();
+        ResolvedRange range = resolveRange(timeRange);
 
-        long total = nullSafe(adrRepository.countByWorkspace(wsId));
-
-        Instant firstOfMonth = LocalDate.now(ZoneOffset.UTC)
-                .withDayOfMonth(1).atStartOfDay().toInstant(ZoneOffset.UTC);
-        long thisMonth = nullSafe(adrRepository.countSince(wsId, firstOfMonth));
-
-        long accepted = nullSafe(adrRepository.countByStatus(wsId, AdrStatus.ACCEPTED));
-        long rejected = nullSafe(adrRepository.countByStatus(wsId, AdrStatus.REJECTED));
+        long total = nullSafe(adrRepository.countCreatedBetween(wsId, range.from(), range.to()));
+        long accepted = nullSafe(adrRepository.countByStatusUpdatedBetween(
+                wsId, AdrStatus.ACCEPTED, range.from(), range.to()));
+        long rejected = nullSafe(adrRepository.countByStatusUpdatedBetween(
+                wsId, AdrStatus.REJECTED, range.from(), range.to()));
         long closed = accepted + rejected;
         double acceptanceRate = closed == 0 ? 0.0 : round1((accepted * 100.0) / closed);
 
-        Double rawAvg = adrRepository.avgReviewTimeDays(wsId);
+        Double rawAvg = adrRepository.avgReviewTimeDaysBetween(wsId, range.from(), range.to());
         double avgReviewDays = rawAvg != null ? round1(rawAvg) : 0.0;
 
-        Instant now = Instant.now();
-        Instant prevMonthStart = LocalDate.now(ZoneOffset.UTC)
-                .minusMonths(1).withDayOfMonth(1).atStartOfDay().toInstant(ZoneOffset.UTC);
-        Instant prevMonthEnd = firstOfMonth.minusSeconds(1);
-        Double avgThisMonth = adrRepository.avgReviewTimeDaysBetween(wsId, firstOfMonth, now);
-        Double avgPrevMonth = adrRepository.avgReviewTimeDaysBetween(wsId, prevMonthStart, prevMonthEnd);
-        Double delta = (avgThisMonth != null && avgPrevMonth != null)
-                ? round1(avgThisMonth - avgPrevMonth) : null;
+        Instant previousFrom = range.from().minus(range.duration());
+        Double avgPrevious = adrRepository.avgReviewTimeDaysBetween(wsId, previousFrom, range.from());
+        Double delta = (rawAvg != null && avgPrevious != null) ? round1(rawAvg - avgPrevious) : null;
 
-        long pending = nullSafe(adrRepository.countByStatus(wsId, AdrStatus.UNDER_REVIEW));
-        long pendingApprover = nullSafe(voteRepository.countUnderReviewWithNoApproverVote(wsId));
+        long pending = nullSafe(adrRepository.countByStatusCreatedBetween(
+                wsId, AdrStatus.UNDER_REVIEW, range.from(), range.to()));
+        long pendingApprover = nullSafe(voteRepository.countUnderReviewWithNoApproverVoteCreatedBetween(
+                wsId, range.from(), range.to()));
 
-        return new KpiDto(total, thisMonth, acceptanceRate,
+        return new KpiDto(total, total, acceptanceRate,
                 accepted, rejected, avgReviewDays, delta, pending, pendingApprover);
     }
 
     @Transactional(readOnly = true)
-    public List<StatusCountDto> getStatusDistribution() {
+    public List<StatusCountDto> getStatusDistribution(String timeRange) {
         UUID wsId = tenantContext.getWorkspaceId();
-        List<Object[]> rows = adrRepository.countGroupByStatus(wsId);
+        ResolvedRange range = resolveRange(timeRange);
+        List<Object[]> rows = adrRepository.countGroupByStatusCreatedBetween(wsId, range.from(), range.to());
 
         Map<String, Long> countMap = rows.stream()
                 .collect(Collectors.toMap(
@@ -81,26 +80,88 @@ public class AnalyticsService {
     }
 
     @Transactional(readOnly = true)
-    public List<WeeklyActivityDto> getWeeklyActivity(int weeks) {
-        UUID wsId = tenantContext.getWorkspaceId();
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMM d");
-        List<WeeklyActivityDto> result = new ArrayList<>();
-
-        for (int i = 0; i < weeks; i++) {
-            LocalDate weekStart = LocalDate.now(ZoneOffset.UTC)
-                    .minusWeeks(weeks - 1 - i)
-                    .with(DayOfWeek.MONDAY);
-            LocalDate weekEnd = weekStart.plusDays(6);
-
-            Instant from = weekStart.atStartOfDay().toInstant(ZoneOffset.UTC);
-            Instant to = weekEnd.atTime(23, 59, 59).toInstant(ZoneOffset.UTC);
-
-            long count = nullSafe(adrRepository.countCreatedBetween(wsId, from, to));
-            String label = fmt.format(weekStart) + " - " + fmt.format(weekEnd);
-            result.add(new WeeklyActivityDto("W" + (i + 1), label, count));
+    public List<WeeklyActivityDto> getActivity(String timeRange) {
+        ResolvedRange range = resolveRange(timeRange);
+        if ("24h".equals(range.key())) {
+            return getHourlyActivity(range);
         }
+        if ("7d".equals(range.key())) {
+            return getDailyActivity(range, 7);
+        }
+        return getWeeklyActivity(range);
+    }
 
+    private List<WeeklyActivityDto> getHourlyActivity(ResolvedRange range) {
+        UUID wsId = tenantContext.getWorkspaceId();
+        List<WeeklyActivityDto> result = new ArrayList<>();
+        LocalDateTime currentHour = LocalDateTime.now(ZoneOffset.UTC)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+        DateTimeFormatter labelFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+        for (int i = 23; i >= 0; i--) {
+            LocalDateTime bucketStartTime = currentHour.minusHours(i);
+            Instant from = bucketStartTime.toInstant(ZoneOffset.UTC);
+            Instant to = bucketStartTime.plusHours(1).minusNanos(1).toInstant(ZoneOffset.UTC);
+            long count = nullSafe(adrRepository.countCreatedBetween(wsId, from, minInstant(to, range.to())));
+            String label = labelFormatter.format(bucketStartTime);
+            result.add(new WeeklyActivityDto(label, label, count));
+        }
         return result;
+    }
+
+    private List<WeeklyActivityDto> getDailyActivity(ResolvedRange range, int days) {
+        UUID wsId = tenantContext.getWorkspaceId();
+        List<WeeklyActivityDto> result = new ArrayList<>();
+        DateTimeFormatter labelFormatter = DateTimeFormatter.ofPattern("MMM d");
+
+        for (int i = days - 1; i >= 0; i--) {
+            LocalDate day = LocalDate.now(ZoneOffset.UTC).minusDays(i);
+            Instant from = day.atStartOfDay().toInstant(ZoneOffset.UTC);
+            Instant to = day.plusDays(1).atStartOfDay().minusNanos(1).toInstant(ZoneOffset.UTC);
+            long count = nullSafe(adrRepository.countCreatedBetween(wsId, from, to));
+            String label = labelFormatter.format(day);
+            result.add(new WeeklyActivityDto(label, label, count));
+        }
+        return result;
+    }
+
+    private List<WeeklyActivityDto> getWeeklyActivity(ResolvedRange range) {
+        UUID wsId = tenantContext.getWorkspaceId();
+        List<WeeklyActivityDto> result = new ArrayList<>();
+        DateTimeFormatter labelFormatter = DateTimeFormatter.ofPattern("MMM d");
+        Instant cursor = range.from();
+        int index = 1;
+
+        while (cursor.isBefore(range.to())) {
+            Instant next = minInstant(cursor.plus(Duration.ofDays(7)), range.to());
+            long count = nullSafe(adrRepository.countCreatedBetween(wsId, cursor, next));
+            String label = labelFormatter.format(cursor.atZone(ZoneOffset.UTC))
+                    + " - "
+                    + labelFormatter.format(next.atZone(ZoneOffset.UTC));
+            result.add(new WeeklyActivityDto("W" + index, label, count));
+            cursor = next;
+            index++;
+        }
+        return result;
+    }
+
+    private ResolvedRange resolveRange(String rawRange) {
+        String key = rawRange == null || rawRange.isBlank() ? "30d" : rawRange.trim().toLowerCase();
+        Instant to = Instant.now();
+        Duration duration = switch (key) {
+            case "24h" -> Duration.ofHours(24);
+            case "7d" -> Duration.ofDays(7);
+            case "30d" -> Duration.ofDays(30);
+            case "90d" -> Duration.ofDays(90);
+            default -> throw new BadRequestException("Unsupported analytics timeRange. Use 24h, 7d, 30d, or 90d.");
+        };
+        return new ResolvedRange(key, to.minus(duration), to, duration);
+    }
+
+    private Instant minInstant(Instant first, Instant second) {
+        return first.isBefore(second) ? first : second;
     }
 
     private long nullSafe(Long value) {
@@ -109,5 +170,8 @@ public class AnalyticsService {
 
     private double round1(double v) {
         return Math.round(v * 10.0) / 10.0;
+    }
+
+    private record ResolvedRange(String key, Instant from, Instant to, Duration duration) {
     }
 }
