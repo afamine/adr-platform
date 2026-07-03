@@ -159,7 +159,7 @@ export class UserProfileComponent implements OnInit {
         this.isSaving = false;
         this.isEditing = false;
         this.currentUser = updated;
-        localStorage.setItem('adr_user', JSON.stringify(updated));
+        this.authService.saveUser(updated);
         this.notificationService.success('Profile updated', 'Your name has been saved.');
       },
       error: (err) => {
@@ -182,7 +182,7 @@ export class UserProfileComponent implements OnInit {
       next: (updated) => {
         this.currentUser = updated;
         this.showColorPicker = false;
-        localStorage.setItem('adr_user', JSON.stringify(updated));
+        this.authService.saveUser(updated);
         this.notificationService.success('Avatar updated', 'Your avatar color has been changed.');
       },
       error: () => {
@@ -197,7 +197,7 @@ export class UserProfileComponent implements OnInit {
       next: (user) => {
         this.currentUser = user;
         this.selectedColor = user.avatarColor || '#0F172A';
-        localStorage.setItem('adr_user', JSON.stringify(user));
+        this.authService.saveUser(user);
       },
       error: (err) => {
         this.notificationService.error('Failed to load profile', this.getErrorMessage(err));

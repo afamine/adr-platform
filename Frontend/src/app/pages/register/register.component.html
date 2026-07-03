@@ -24,7 +24,7 @@
         <div class="step-connector"></div>
         <div class="step-item">
           <span class="step-number">2</span>
-          <span class="step-label">Join workspace</span>
+          <span class="step-label">Choose workspace</span>
         </div>
         <div class="step-connector"></div>
         <div class="step-item">
@@ -44,7 +44,7 @@
 
     <mat-card class="register-card">
       <h2>Create your account</h2>
-      <p class="subtitle">Join workspace and start capturing decisions</p>
+      <p class="subtitle">Create a private workspace or join a team workspace</p>
 
       <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" novalidate>
         <div class="field-group">
@@ -133,19 +133,75 @@
           </mat-form-field>
         </div>
 
+        <div class="workspace-choice" role="group" aria-label="Workspace choice">
+          <button
+            type="button"
+            class="choice-tile"
+            [class.selected]="workspaceMode() === 'PRIVATE'"
+            (click)="setWorkspaceMode('PRIVATE')"
+          >
+            <span class="choice-title">Create my own private workspace</span>
+            <span class="choice-desc">Best for a solo account or a new team space.</span>
+          </button>
+
+          <button
+            type="button"
+            class="choice-tile"
+            [class.selected]="workspaceMode() === 'JOIN_TEAM'"
+            (click)="setWorkspaceMode('JOIN_TEAM')"
+          >
+            <span class="choice-title">Join a team workspace</span>
+            <span class="choice-desc">Use a slug from your workspace admin.</span>
+          </button>
+        </div>
+
         <div class="field-group">
           <div class="label-row">
-            <label>Workspace Slug</label>
-            <span class="optional-pill">optional</span>
+            <label>{{ workspaceSlugLabel }}</label>
+            <span class="optional-pill" *ngIf="workspaceMode() === 'PRIVATE'">optional</span>
           </div>
           <mat-form-field appearance="outline" class="app-field">
             <mat-icon matPrefix>domain</mat-icon>
             <input matInput formControlName="workspaceSlug" placeholder="your-workspace" />
-            <mat-hint>Optional. Leave empty to join the default workspace. Ask your admin for a workspace slug if you need to join a specific team.</mat-hint>
+            <mat-hint>{{ workspaceSlugHint }}</mat-hint>
+            <mat-error *ngIf="controlHasError('workspaceSlug', 'required')">
+              Workspace slug is required to join a team
+            </mat-error>
             <mat-error *ngIf="controlHasError('workspaceSlug', 'pattern')">
               Workspace slug can only contain lowercase letters, numbers, and hyphens
             </mat-error>
           </mat-form-field>
+          <div
+            class="slug-feedback"
+            *ngIf="
+              registerForm.controls.workspaceSlug.value?.trim() &&
+              !controlHasError('workspaceSlug', 'pattern') &&
+              (isCheckingSlug() || slugStatus())
+            "
+            [class.ok]="
+              slugStatus() &&
+              ((workspaceMode() === 'JOIN_TEAM' && slugStatus()?.canJoinBySlug) ||
+                (workspaceMode() === 'PRIVATE' && !slugStatus()?.exists))
+            "
+            [class.warn]="
+              slugStatus() &&
+              ((workspaceMode() === 'JOIN_TEAM' && !slugStatus()?.canJoinBySlug) ||
+                (workspaceMode() === 'PRIVATE' && slugStatus()?.exists))
+            "
+          >
+            <mat-icon>{{ isCheckingSlug() ? 'hourglass_empty' : 'info' }}</mat-icon>
+            <span *ngIf="isCheckingSlug()">Checking workspace slug...</span>
+            <span *ngIf="!isCheckingSlug() && workspaceMode() === 'JOIN_TEAM'">
+              {{ slugStatus()?.message || 'Enter a workspace slug to check access.' }}
+            </span>
+            <span *ngIf="!isCheckingSlug() && workspaceMode() === 'PRIVATE'">
+              {{
+                slugStatus()?.exists
+                  ? 'This slug is already used by another workspace.'
+                  : 'This slug is available for your private workspace.'
+              }}
+            </span>
+          </div>
         </div>
 
         <button
@@ -153,9 +209,9 @@
           color="primary"
           type="submit"
           class="submit-button"
-          [disabled]="registerForm.invalid || isLoading()"
+          [disabled]="registerForm.invalid || isLoading() || isWorkspaceSlugBlocking"
         >
-          {{ isLoading() ? 'Creating Account...' : 'Create Account' }}
+          {{ submitLabel }}
         </button>
       </form>
 

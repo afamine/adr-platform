@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
 import { forkJoin } from 'rxjs';
 
-import { KpiResponse, RecentAdrDto, StatusCount, WeeklyActivity } from '../../../models/analytics.models';
+import { AnalyticsTimeRange, KpiResponse, RecentAdrDto, StatusCount, WeeklyActivity } from '../../../models/analytics.models';
 import { AnalyticsService } from '../../../services/analytics.service';
 import { NotificationService } from '../../../services/notification.service';
 
@@ -14,6 +14,7 @@ Chart.register(...registerables);
 
 interface BarItem { status: string; count: number; color: string; }
 interface ActivityRow { id: string; title: string; status: string; author: string; action: string; date: string; }
+interface TimeRangeOption { label: string; value: AnalyticsTimeRange; }
 
 @Component({
   selector: 'app-analytics-dashboard',
@@ -35,6 +36,13 @@ export class AnalyticsDashboardComponent implements OnInit, AfterViewInit, OnDes
   @ViewChild('lineChart') lineChartRef!: ElementRef<HTMLCanvasElement>;
 
   isLoading = false;
+  selectedTimeRange: AnalyticsTimeRange = '30d';
+  readonly timeRangeOptions: TimeRangeOption[] = [
+    { label: 'Last 24 hours', value: '24h' },
+    { label: 'Last 7 days', value: '7d' },
+    { label: 'Last 30 days', value: '30d' },
+    { label: 'Last 90 days', value: '90d' }
+  ];
 
   kpis = {
     totalAdrs: 0,
@@ -62,12 +70,17 @@ export class AnalyticsDashboardComponent implements OnInit, AfterViewInit, OnDes
   };
 
   ngOnInit(): void {
+    this.loadDashboard();
+  }
+
+  loadDashboard(): void {
     this.isLoading = true;
+    const timeRange = this.selectedTimeRange;
     forkJoin({
-      kpis: this.analyticsService.getKpis(),
-      distribution: this.analyticsService.getStatusDistribution(),
-      weekly: this.analyticsService.getWeeklyActivity(5),
-      recent: this.analyticsService.getRecentAdrs(4)
+      kpis: this.analyticsService.getKpis(timeRange),
+      distribution: this.analyticsService.getStatusDistribution(timeRange),
+      weekly: this.analyticsService.getWeeklyActivity(timeRange),
+      recent: this.analyticsService.getRecentAdrs(4, timeRange)
     }).subscribe({
       next: ({ kpis, distribution, weekly, recent }) => {
         this.ngZone.run(() => {
@@ -87,6 +100,18 @@ export class AnalyticsDashboardComponent implements OnInit, AfterViewInit, OnDes
         });
       }
     });
+  }
+
+  get selectedTimeRangeLabel(): string {
+    return this.timeRangeOptions.find((option) => option.value === this.selectedTimeRange)?.label ?? 'Last 30 days';
+  }
+
+  setTimeRange(timeRange: AnalyticsTimeRange): void {
+    if (this.selectedTimeRange === timeRange || this.isLoading) {
+      return;
+    }
+    this.selectedTimeRange = timeRange;
+    this.loadDashboard();
   }
 
   ngAfterViewInit(): void {
@@ -128,9 +153,9 @@ export class AnalyticsDashboardComponent implements OnInit, AfterViewInit, OnDes
       acceptanceRate: k.acceptanceRate.toFixed(0) + '%',
       avgReviewTime: k.avgReviewTimeDays.toFixed(1) + 'd',
       pendingVotes: k.pendingVotes,
-      totalAdrsSubtext: `+${k.totalAdrsThisMonth} this month`,
+      totalAdrsSubtext: this.selectedTimeRangeLabel,
       acceptanceSubtext: `${k.acceptedCount} accepted / ${k.rejectedCount} rejected`,
-      reviewTimeDelta: delta != null ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}d vs last month` : '',
+      reviewTimeDelta: delta != null ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}d vs previous period` : '',
       reviewTimeDeltaImproving: delta == null || delta <= 0,
       pendingSubtext: `${k.pendingApproverDecisions} ADRs awaiting APPROVER decision`
     };
@@ -153,7 +178,7 @@ export class AnalyticsDashboardComponent implements OnInit, AfterViewInit, OnDes
 
   private updateChart(weekly: WeeklyActivity[]): void {
     if (!this.lineChart) return;
-    const labels = weekly.map(w => w.week);
+    const labels = weekly.map(w => w.label || w.week);
     const counts = weekly.map(w => w.count);
     this.lineChart.data.labels = labels;
     this.lineChart.data.datasets[0].data = counts;

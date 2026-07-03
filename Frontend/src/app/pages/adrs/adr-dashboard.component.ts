@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, HostListener, NgZone, OnInit, computed, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, HostListener, NgZone, OnInit, computed, effect, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
 import { AdrEditorComponent } from './components/adr-editor/adr-editor.component';
@@ -9,6 +10,7 @@ import { AiAssistantPanelComponent } from './components/ai-assistant-panel/ai-as
 import { CollaborationPanelComponent } from './components/collaboration-panel/collaboration-panel.component';
 import { VoteModalComponent } from './components/vote-modal/vote-modal.component';
 import { ChangePasswordModalComponent } from '../../components/change-password-modal/change-password-modal.component';
+import { WorkspaceSwitcherComponent } from '../../components/workspace-switcher/workspace-switcher.component';
 import { allowedTransitions, Adr, AdrStatus, CastVoteRequest, CreateAdrRequest, UpdateAdrRequest, VoteDto } from '../../models/adr.model';
 import { AuthService } from '../../services/auth.service';
 import { AdrService } from '../../services/adr.service';
@@ -21,7 +23,7 @@ import { AdrStateService } from './services/adr-state.service';
 @Component({
   selector: 'app-adr-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, AdrSidebarComponent, AdrEditorComponent, AiAssistantPanelComponent, CollaborationPanelComponent, VoteModalComponent, ChangePasswordModalComponent],
+  imports: [CommonModule, FormsModule, AdrSidebarComponent, AdrEditorComponent, AiAssistantPanelComponent, CollaborationPanelComponent, VoteModalComponent, ChangePasswordModalComponent, WorkspaceSwitcherComponent],
   templateUrl: './adr-dashboard.component.html',
   styleUrl: './adr-dashboard.component.scss'
 })
@@ -32,6 +34,7 @@ export class AdrDashboardComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly title = inject(Title);
   private readonly notificationService = inject(NotificationService);
   private readonly notifCenterService = inject(NotificationCenterService);
   private readonly confirmService = inject(ConfirmService);
@@ -42,6 +45,10 @@ export class AdrDashboardComponent implements OnInit {
 
   readonly adrs = computed(() => this.adrState.adrs$());
   readonly selectedAdr = computed(() => this.adrState.selectedAdr$());
+  private readonly selectedAdrTitleEffect = effect(() => {
+    const adr = this.selectedAdr();
+    this.title.setTitle(adr ? `ADR #${adr.adrNumber} - Axiom ADR` : 'Dashboard - Axiom ADR');
+  });
   readonly isLoading = computed(() => this.adrState.isLoading$());
   readonly currentPage = computed(() => this.adrState.currentPage$());
   readonly totalElements = computed(() => this.adrState.totalElements$());

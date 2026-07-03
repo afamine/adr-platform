@@ -1,0 +1,16 @@
+<main class="setup-2fa">
+  <section class="setup-2fa__panel">
+    <div class="setup-2fa__eyebrow">Account security</div>
+    <h1>Two-factor authentication is required</h1>
+    <p>
+      Scan the QR code with your authenticator app, then enter the 6-digit code to finish setting up your account.
+    </p>
+  </section>
+
+  <app-enable-2fa-modal
+    [visible]="showSetupModal && !isCheckingStatus"
+    [allowCancel]="false"
+    (closed)="keepModalOpen()"
+    (enabled)="onEnabled()">
+  </app-enable-2fa-modal>
+</main>

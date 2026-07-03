@@ -3,17 +3,20 @@ import { Component, inject } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
+import { NotificationDropdownComponent } from '../../components/notification-dropdown/notification-dropdown.component';
+import { WorkspaceSwitcherComponent } from '../../components/workspace-switcher/workspace-switcher.component';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, WorkspaceSwitcherComponent, NotificationDropdownComponent],
   templateUrl: './admin-layout.component.html',
   styleUrls: ['./admin-layout.component.scss']
 })
 export class AdminLayoutComponent {
   private readonly router = inject(Router);
-  readonly currentUser = inject(AuthService).getCurrentUser();
+  private readonly authService = inject(AuthService);
+  readonly currentUser = this.authService.getCurrentUser();
 
   get userInitials(): string {
     return (this.currentUser?.fullName || 'AP')
@@ -37,11 +40,11 @@ export class AdminLayoutComponent {
     void this.router.navigate(['/adrs']);
   }
 
-  openNotifications(): void {
-    void this.router.navigate(['/notifications']);
-  }
-
   openProfile(): void {
     void this.router.navigate(['/profile']);
+  }
+
+  logout(): void {
+    this.authService.logout();
   }
 }

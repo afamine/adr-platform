@@ -1,0 +1,13 @@
+<label class="workspace-switcher" *ngIf="shouldShow">
+  <span class="workspace-switcher__label">Workspace</span>
+  <select
+    [ngModel]="selectedWorkspaceId"
+    (ngModelChange)="onWorkspaceChange($event)"
+    [disabled]="isLoading || isSwitching"
+    aria-label="Switch workspace"
+  >
+    <option *ngFor="let workspace of workspaces" [ngValue]="workspace.workspaceId">
+      {{ workspace.workspaceName }} · {{ workspace.role }}
+    </option>
+  </select>
+</label>

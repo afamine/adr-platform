@@ -1,6 +1,5 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ChangeDetectorRef, Component, NgZone, OnInit, inject } from '@angular/core';
-import { Router } from '@angular/router';
 
 import { BellNotification, NotificationApiDto } from '../../models/notification.models';
 import { NotificationCenterService } from '../../services/notification-center.service';
@@ -14,7 +13,7 @@ import { NotificationCenterService } from '../../services/notification-center.se
 })
 export class NotificationsComponent implements OnInit {
   private readonly notifService = inject(NotificationCenterService);
-  private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -92,7 +91,7 @@ export class NotificationsComponent implements OnInit {
   }
 
   goBack(): void {
-    void this.router.navigate(['/adrs']);
+    this.location.back();
   }
 
   private map(dto: NotificationApiDto): BellNotification {

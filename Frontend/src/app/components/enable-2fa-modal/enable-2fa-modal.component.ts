@@ -16,6 +16,7 @@ export class Enable2faModalComponent implements OnChanges, OnDestroy {
   private readonly totp = inject(TotpService);
 
   @Input() visible = false;
+  @Input() allowCancel = true;
   @Output() closed = new EventEmitter<void>();
   @Output() enabled = new EventEmitter<void>();
 
@@ -124,6 +125,10 @@ export class Enable2faModalComponent implements OnChanges, OnDestroy {
   }
 
   onCancel(): void {
+    if (!this.allowCancel) {
+      return;
+    }
+
     this.closed.emit();
     this.resetState();
   }

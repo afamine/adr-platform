@@ -14,9 +14,13 @@
     <div class="sc-left">
       <div class="sc-row-title">
         <span class="sc-main">Two-Factor Authentication</span>
-        <span *ngIf="totpEnabled" class="sc-status">
-          <span class="sc-dot"></span>
-          <span class="sc-badge">Active</span>
+        <span
+          class="sc-badge"
+          [class.sc-badge--enabled]="totpEnabled"
+          [class.sc-badge--disabled]="!totpEnabled"
+        >
+          <span class="sc-dot" aria-hidden="true"></span>
+          {{ totpStatusLabel }}
         </span>
       </div>
       <div class="sc-sub">
@@ -25,12 +29,16 @@
       </div>
     </div>
     <div class="sc-right">
-      <button *ngIf="!totpEnabled" class="sc-btn-enable" (click)="onEnable()" [disabled]="isLoading">
-        Enable 2FA
-      </button>
-
-      <button *ngIf="totpEnabled" class="sc-btn-disable" (click)="onDisable()" [disabled]="isLoading">
-        Disable 2FA
+      <button
+        type="button"
+        class="sc-action-btn"
+        [class.sc-action-btn--primary]="!totpEnabled"
+        [class.sc-action-btn--danger]="totpEnabled"
+        (click)="totpEnabled ? onDisable() : onEnable()"
+        [disabled]="isLoading"
+        [attr.aria-label]="totpEnabled ? 'Disable two-factor authentication' : 'Enable two-factor authentication'"
+      >
+        {{ totpActionLabel }}
       </button>
     </div>
   </div>

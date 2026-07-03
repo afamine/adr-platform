@@ -50,7 +50,7 @@
           <p>
             You've been invited to <strong>{{ inviteDetails()?.workspaceName }}</strong>
             as a <strong>{{ roleLabel(inviteDetails()!.role) }}</strong>.
-            Set up your account below.
+            {{ isExistingAccountInvite ? 'Enter your existing password to add this workspace to your account.' : 'Set up your account below.' }}
           </p>
         </div>
 
@@ -66,7 +66,7 @@
           </div>
 
           <div class="field-group">
-            <label for="password">Password</label>
+            <label for="password">{{ passwordLabel }}</label>
             <div
               class="input-wrapper"
               [class.invalid]="
@@ -115,7 +115,7 @@
 
           <button class="submit" type="submit" [disabled]="isSubmitting()">
             <span class="spinner" *ngIf="isSubmitting()"></span>
-            <span>{{ isSubmitting() ? 'Creating account...' : 'Accept invitation' }}</span>
+            <span>{{ submitLabel }}</span>
           </button>
         </form>
 
@@ -129,11 +129,11 @@
         <div class="form-heading">
           <h2>Welcome aboard!</h2>
           <p>
-            Your account has been created and you're all set. You'll be redirected to the dashboard in a moment.
+            Your workspace access is ready. You'll be redirected to the dashboard in a moment.
           </p>
         </div>
         <div class="success">
-          Account created successfully. Redirecting...
+          Invitation accepted successfully. Redirecting...
         </div>
         <a routerLink="/adrs" class="back-link">Go to dashboard</a>
       </ng-container>

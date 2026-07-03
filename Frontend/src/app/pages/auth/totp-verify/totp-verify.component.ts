@@ -59,6 +59,12 @@ export class TotpVerifyComponent implements OnInit, OnDestroy {
 
     this.totp.validateLogin({ pendingToken, code }).subscribe({
       next: (response) => {
+        if (!response.user) {
+          this.errorMessage.set('Invalid authentication response. Please log in again.');
+          this.isLoading.set(false);
+          return;
+        }
+
         this.auth.saveTokens(response);
         this.totp.clearPendingToken();
         // Redirect based on role

@@ -20,6 +20,8 @@ export const tokenRefreshInterceptor: HttpInterceptorFn = (
     return throwError(() => refreshError);
   };
 
+  const isAuthRequest = req.url.includes('/api/auth/');
+
   const retryRequest = () => {
     const token = authService.getToken();
     const retryReq = token
@@ -32,7 +34,7 @@ export const tokenRefreshInterceptor: HttpInterceptorFn = (
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !req.url.includes('/api/auth/')) {
+      if (error.status === 401 && !isAuthRequest) {
         if (authService.isRefreshing$.value && authService.refreshToken$) {
           return authService.refreshToken$.pipe(
             switchMap(() => retryRequest()),
@@ -55,7 +57,14 @@ export const tokenRefreshInterceptor: HttpInterceptorFn = (
         );
       }
 
-      if (error.status === 403) {
+      const body = error.error as { error?: string; errorType?: string } | null;
+      const errorCode = body?.errorType || body?.error;
+      const isLoginHandledError = isAuthRequest
+        || errorCode === 'ACCOUNT_DISABLED'
+        || errorCode === 'ACCOUNT_DEACTIVATED'
+        || errorCode === 'EMAIL_NOT_VERIFIED';
+
+      if (error.status === 403 && !isLoginHandledError) {
         notificationService.error(
           'Access denied',
           'You do not have permission to perform this action.'

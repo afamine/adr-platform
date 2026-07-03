@@ -24,8 +24,44 @@
 
           <div class="field-group">
             <label class="field-label">Workspace slug</label>
-            <input class="field-input" type="text" [(ngModel)]="workspaceSlug" name="workspaceSlug" />
-            <div class="field-helper">Used in URLs and API calls</div>
+            <div class="input-action-row">
+              <input class="field-input" type="text" [(ngModel)]="workspaceSlug" name="workspaceSlug" />
+              <button class="btn-secondary" type="button" (click)="copyWorkspaceSlug()">Copy slug</button>
+            </div>
+            <div class="field-helper">Share this slug only when your join mode allows team members to use it.</div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Workspace join mode</label>
+            <div class="join-policy-tiles">
+              <button
+                type="button"
+                class="join-policy-tile"
+                [class.selected]="joinPolicy === 'INVITE_ONLY'"
+                (click)="setJoinPolicy('INVITE_ONLY')"
+              >
+                <span class="tile-title">Invite only</span>
+                <span class="tile-desc">Admins invite members by email. Slug sign-up is blocked.</span>
+              </button>
+              <button
+                type="button"
+                class="join-policy-tile"
+                [class.selected]="joinPolicy === 'ALLOW_SLUG'"
+                (click)="setJoinPolicy('ALLOW_SLUG')"
+              >
+                <span class="tile-title">Allow join by slug</span>
+                <span class="tile-desc">New users can join this workspace during registration.</span>
+              </button>
+              <button
+                type="button"
+                class="join-policy-tile"
+                [class.selected]="joinPolicy === 'CLOSED'"
+                (click)="setJoinPolicy('CLOSED')"
+              >
+                <span class="tile-title">Disable public joining</span>
+                <span class="tile-desc">Slug sign-up is unavailable. Existing members keep access.</span>
+              </button>
+            </div>
           </div>
 
           <div class="save-row">

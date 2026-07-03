@@ -105,6 +105,51 @@
   margin-top: 4px;
 }
 
+.input-action-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.input-action-row .field-input {
+  flex: 1;
+}
+
+.join-policy-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.join-policy-tile {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  padding: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.join-policy-tile:hover {
+  border-color: #9ca3af;
+}
+
+.join-policy-tile.selected {
+  border-color: #1d9e75;
+  box-shadow: 0 0 0 1px #1d9e75;
+}
+
+.join-policy-tile .tile-title,
+.join-policy-tile .tile-desc {
+  display: block;
+  padding-left: 0;
+}
+
+.join-policy-tile .tile-title {
+  margin-bottom: 5px;
+}
+
 /* ── Quorum ── */
 .quorum-row {
   display: flex;
@@ -242,6 +287,24 @@
   }
 }
 
+.btn-secondary {
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+
+  &:hover {
+    background: #f9fafb;
+  }
+}
+
 .save-row {
   display: flex;
   justify-content: flex-end;
@@ -298,5 +361,16 @@
 
   &:hover {
     background: #fef2f2;
+  }
+}
+
+@media (max-width: 900px) {
+  .join-policy-tiles {
+    grid-template-columns: 1fr;
+  }
+
+  .input-action-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

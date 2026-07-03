@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, HostListener, NgZone, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { AuthUser, Role } from '../../../models/auth.models';
+import { AuthUser, Role, WorkspaceInvitation } from '../../../models/auth.models';
 import { AuthService } from '../../../services/auth.service';
 import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout.component';
 import { ConfirmService } from '../../../services/confirm.service';
@@ -25,6 +25,7 @@ export class UserManagementComponent implements OnInit {
 
   users: AuthUser[] = [];
   filteredUsers: AuthUser[] = [];
+  invitations: WorkspaceInvitation[] = [];
   searchQuery = '';
   roleFilter: Role | 'ALL' = 'ALL';
   openDropdownId: string | null = null;
@@ -34,6 +35,10 @@ export class UserManagementComponent implements OnInit {
   inviteEmail = '';
   inviteRole: Role = Role.REVIEWER;
   isInviting = false;
+  latestInviteLink = '';
+  inviteError = '';
+  isLoadingInvitations = false;
+  private lastSuccessfulInviteSignature = '';
 
   readonly roles: Role[] = [Role.AUTHOR, Role.REVIEWER, Role.APPROVER, Role.ADMIN];
   readonly roleConfig: Record<Role, { bg: string; color: string }> = {
@@ -51,6 +56,7 @@ export class UserManagementComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadUsers();
+    this.loadInvitations();
   }
 
   @HostListener('document:click', ['$event'])
@@ -142,6 +148,9 @@ export class UserManagementComponent implements OnInit {
   openInviteModal(): void {
     this.inviteEmail = '';
     this.inviteRole = Role.REVIEWER;
+    this.latestInviteLink = '';
+    this.inviteError = '';
+    this.lastSuccessfulInviteSignature = '';
     this.showInviteModal = true;
   }
 
@@ -150,38 +159,93 @@ export class UserManagementComponent implements OnInit {
     this.showInviteModal = false;
   }
 
+  get isInviteSentForCurrentInput(): boolean {
+    return this.currentInviteSignature === this.lastSuccessfulInviteSignature;
+  }
+
+  get canSubmitInvite(): boolean {
+    return !this.isInviting && !!this.inviteEmail.trim() && !this.isInviteSentForCurrentInput;
+  }
+
+  get inviteButtonLabel(): string {
+    if (this.isInviting) return 'Sending...';
+    if (this.isInviteSentForCurrentInput) return 'Invite sent ✓';
+    return 'Send invite';
+  }
+
+  onInviteEmailChange(email: string): void {
+    this.inviteEmail = email;
+    this.inviteError = '';
+  }
+
+  onInviteRoleChange(role: Role): void {
+    this.inviteRole = role;
+    this.inviteError = '';
+  }
+
   submitInvite(): void {
     const email = this.inviteEmail.trim().toLowerCase();
-    if (!email) return;
+    if (!email || this.isInviting || this.isInviteSentForCurrentInput) return;
 
+    const role = this.inviteRole;
+    this.inviteError = '';
     this.isInviting = true;
-    this.authService.inviteUser(email, this.inviteRole).subscribe({
-      next: () => {
+    this.authService.inviteUser(email, role).subscribe({
+      next: (response) => {
         this.isInviting = false;
-        this.showInviteModal = false;
+        this.lastSuccessfulInviteSignature = this.buildInviteSignature(email, role);
+        this.latestInviteLink = response.inviteLink;
         this.notificationService.success(
           'Invitation sent',
           `An invitation has been sent to ${email}.`
         );
         this.loadUsers();
+        this.loadInvitations();
       },
       error: (error) => {
         this.isInviting = false;
-        this.notificationService.error('Invitation failed', this.getErrorMessage(error));
+        this.inviteError = this.getErrorMessage(error);
+        this.notificationService.error('Invitation failed', this.inviteError);
       }
     });
+  }
+
+  loadInvitations(): void {
+    this.isLoadingInvitations = true;
+    this.authService.getWorkspaceInvitations().subscribe({
+      next: (invitations) => {
+        this.invitations = invitations;
+        this.isLoadingInvitations = false;
+      },
+      error: (error) => {
+        this.isLoadingInvitations = false;
+        this.notificationService.error('Unable to load invitations', this.getErrorMessage(error));
+      }
+    });
+  }
+
+  async copyInviteLink(link = this.latestInviteLink): Promise<void> {
+    if (!link) return;
+
+    try {
+      await navigator.clipboard.writeText(link);
+      this.notificationService.success('Invite link copied', 'The invitation link is ready to share.');
+    } catch {
+      this.notificationService.error('Copy failed', 'Please copy the link manually.');
+    }
   }
 
   async deactivateUser(user: AuthUser): Promise<void> {
     this.openDropdownId = null;
     const newStatus = !user.isActive;
+    const userName = user.fullName || user.email;
 
     const confirmed = await this.confirmService.confirm({
       title: newStatus ? 'Activate account' : 'Deactivate account',
       message: newStatus
-        ? `Reactivate ${user.fullName}? They will be able to sign in again.`
-        : `Are you sure you want to deactivate ${user.fullName}? They will be unable to sign in.`,
-      confirmLabel: newStatus ? 'Activate' : 'Deactivate',
+        ? `Reactivate ${userName}? They will be able to sign in again and continue using their existing workspace access.`
+        : `Deactivate ${userName}? They will be unable to sign in, but their ADRs, votes, comments, and audit history will remain visible with authorship preserved.`,
+      confirmLabel: newStatus ? 'Activate account' : 'Deactivate account',
       cancelLabel: 'Cancel',
       danger: !newStatus
     });
@@ -192,7 +256,7 @@ export class UserManagementComponent implements OnInit {
         const label = newStatus ? 'activated' : 'deactivated';
         this.notificationService.success(
           `User ${label}`,
-          `${user.fullName} has been ${label}.`
+          `${userName} has been ${label}.`
         );
         this.loadUsers();
       },
@@ -233,7 +297,7 @@ export class UserManagementComponent implements OnInit {
   }
 
   getStatusLabel(user: AuthUser): string {
-    return user.isActive === false ? 'Inactive' : 'Active';
+    return user.isActive === false ? 'Account disabled' : 'Active';
   }
 
   getJoinedLabel(createdAt: string): string {
@@ -249,6 +313,29 @@ export class UserManagementComponent implements OnInit {
     }).format(parsedDate);
   }
 
+  getInvitationDateLabel(value: string): string {
+    return this.getJoinedLabel(value);
+  }
+
+  getInvitationStatusLabel(invitation: WorkspaceInvitation): string {
+    switch (invitation.status) {
+      case 'ACCEPTED':
+        return 'Accepted';
+      case 'EXPIRED':
+        return 'Expired';
+      default:
+        return 'Pending';
+    }
+  }
+
+  getInvitationStatusClass(invitation: WorkspaceInvitation): string {
+    return invitation.status.toLowerCase();
+  }
+
+  trackByInvitationId(_: number, invitation: WorkspaceInvitation): string {
+    return invitation.tokenId;
+  }
+
   trackByUserId(_: number, user: AuthUser): string {
     return user.id;
   }
@@ -260,5 +347,13 @@ export class UserManagementComponent implements OnInit {
     }
 
     return 'Please try again.';
+  }
+
+  private get currentInviteSignature(): string {
+    return this.buildInviteSignature(this.inviteEmail.trim().toLowerCase(), this.inviteRole);
+  }
+
+  private buildInviteSignature(email: string, role: Role): string {
+    return `${email}|${role}`;
   }
 }

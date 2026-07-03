@@ -17,6 +17,14 @@ export class SecurityCardComponent {
   @Output() changePasswordClicked = new EventEmitter<void>();
   @Output() manageSessionsClicked = new EventEmitter<void>();
 
+  get totpStatusLabel(): string {
+    return this.totpEnabled ? 'Enabled' : 'Disabled';
+  }
+
+  get totpActionLabel(): string {
+    return this.totpEnabled ? 'Disable 2FA' : 'Enable 2FA';
+  }
+
   onEnable(): void {
     if (this.isLoading) return;
     this.enableClicked.emit();

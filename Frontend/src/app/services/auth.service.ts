@@ -14,7 +14,9 @@ import {
   RegisterResponse,
   Role,
   ValidateInviteResponse,
-  AcceptInviteRequest
+  AcceptInviteRequest,
+  InviteUserResponse,
+  WorkspaceInvitation
 } from '../models/auth.models';
 import { environment } from '../../environments/environment';
 
@@ -95,9 +97,16 @@ export class AuthService {
   }
 
   saveTokens(response: AuthResponse): void {
+    if (!response.token || !response.refreshToken || !response.user) {
+      throw new Error('Cannot save incomplete authentication response.');
+    }
     sessionStorage.setItem(this.TOKEN_KEY, this.encodeToken(response.token));
     sessionStorage.setItem(this.REFRESH_KEY, this.encodeToken(response.refreshToken));
-    sessionStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
+    this.saveUser(response.user);
+  }
+
+  saveUser(user: AuthUser): void {
+    sessionStorage.setItem(this.USER_KEY, JSON.stringify(user));
   }
 
   getToken(): string | null {
@@ -199,11 +208,15 @@ export class AuthService {
     );
   }
 
-  inviteUser(email: string, role: Role): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(
+  inviteUser(email: string, role: Role): Observable<InviteUserResponse> {
+    return this.http.post<InviteUserResponse>(
       `${this.API_URL}/api/users/invite`,
       { email, role }
     );
+  }
+
+  getWorkspaceInvitations(): Observable<WorkspaceInvitation[]> {
+    return this.http.get<WorkspaceInvitation[]>(`${this.API_URL}/api/users/invitations`);
   }
 
   getMyProfile(): Observable<AuthUser> {

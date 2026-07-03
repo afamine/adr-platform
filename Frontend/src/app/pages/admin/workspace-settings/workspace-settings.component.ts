@@ -4,6 +4,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout.component';
+import { UpdateWorkspaceRequest, WorkspaceJoinPolicy } from '../../../models/auth.models';
 import { NotificationService } from '../../../services/notification.service';
 import { WorkspaceService } from '../../../services/workspace.service';
 
@@ -22,6 +23,7 @@ export class WorkspaceSettingsComponent implements OnInit {
 
   workspaceName = '';
   workspaceSlug = '';
+  joinPolicy: WorkspaceJoinPolicy = 'INVITE_ONLY';
   quorum = 2;
   quorumMode: 'auto' | 'manual' = 'auto';
   isLoading = false;
@@ -37,6 +39,7 @@ export class WorkspaceSettingsComponent implements OnInit {
       next: (ws) => {
         this.workspaceName = ws.name;
         this.workspaceSlug = ws.slug;
+        this.joinPolicy = ws.joinPolicy ?? 'INVITE_ONLY';
         this.quorum = ws.voteQuorum;
         this.quorumMode = ws.quorumMode === 'MANUAL' ? 'manual' : 'auto';
         this.isLoading = false;
@@ -50,17 +53,13 @@ export class WorkspaceSettingsComponent implements OnInit {
 
   saveWorkspaceInfo(): void {
     this.isSaving = true;
-    this.workspaceService.updateWorkspace({
-      name: this.workspaceName.trim(),
-      slug: this.workspaceSlug.trim().toLowerCase(),
-      voteQuorum: this.quorum,
-      quorumMode: this.quorumMode === 'manual' ? 'MANUAL' : 'AUTO'
-    }).subscribe({
+    this.workspaceService.updateWorkspace(this.buildUpdateRequest()).subscribe({
       next: (ws) => {
         this.workspaceName = ws.name;
         this.workspaceSlug = ws.slug;
+        this.joinPolicy = ws.joinPolicy;
         this.isSaving = false;
-        this.notificationService.success('Workspace updated', 'Name and slug saved successfully.');
+        this.notificationService.success('Workspace updated', 'Workspace identity and joining policy saved.');
       },
       error: (err) => {
         this.isSaving = false;
@@ -71,15 +70,11 @@ export class WorkspaceSettingsComponent implements OnInit {
 
   saveConfiguration(): void {
     this.isSaving = true;
-    this.workspaceService.updateWorkspace({
-      name: this.workspaceName.trim(),
-      slug: this.workspaceSlug.trim().toLowerCase(),
-      voteQuorum: this.quorum,
-      quorumMode: this.quorumMode === 'manual' ? 'MANUAL' : 'AUTO'
-    }).subscribe({
+    this.workspaceService.updateWorkspace(this.buildUpdateRequest()).subscribe({
       next: (ws) => {
         this.quorum = ws.voteQuorum;
         this.quorumMode = ws.quorumMode === 'MANUAL' ? 'manual' : 'auto';
+        this.joinPolicy = ws.joinPolicy;
         this.isSaving = false;
         this.notificationService.success('Configuration saved', 'Vote settings updated successfully.');
       },
@@ -104,6 +99,35 @@ export class WorkspaceSettingsComponent implements OnInit {
         this.notificationService.error('Failed to reset', this.getErrorMessage(err));
       }
     });
+  }
+
+  setJoinPolicy(policy: WorkspaceJoinPolicy): void {
+    this.joinPolicy = policy;
+  }
+
+  async copyWorkspaceSlug(): Promise<void> {
+    const slug = this.workspaceSlug.trim().toLowerCase();
+    if (!slug) {
+      this.notificationService.warning('No slug to copy', 'Save a workspace slug first.');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(slug);
+      this.notificationService.success('Workspace slug copied', slug);
+    } catch {
+      this.notificationService.error('Copy failed', 'Please copy the slug manually.');
+    }
+  }
+
+  private buildUpdateRequest(): UpdateWorkspaceRequest {
+    return {
+      name: this.workspaceName.trim(),
+      slug: this.workspaceSlug.trim().toLowerCase(),
+      voteQuorum: this.quorum,
+      quorumMode: this.quorumMode === 'manual' ? 'MANUAL' : 'AUTO',
+      joinPolicy: this.joinPolicy
+    };
   }
 
   private getErrorMessage(error: unknown): string {

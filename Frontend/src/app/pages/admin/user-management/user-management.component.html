@@ -7,7 +7,7 @@
             <span class="count-badge">{{ filteredUsers.length }} users</span>
           </div>
         </div>
-        <button type="button" class="invite-btn" (click)="openInviteModal()">Invite User</button>
+        <button type="button" class="invite-btn" (click)="openInviteModal()">Invite user to this workspace</button>
       </div>
 
       <div class="search-row">
@@ -52,6 +52,7 @@
                 <div class="user-name">
                   {{ user.fullName }}
                   <span class="you-tag" *ngIf="isCurrentUser(user.id)">(You)</span>
+                  <span class="disabled-badge" *ngIf="user.isActive === false">Account disabled</span>
                 </div>
                 <div class="user-email">{{ user.email }}</div>
               </div>
@@ -97,7 +98,7 @@
                 <div class="dropdown-divider"></div>
 
                 <button type="button" class="dropdown-item danger" (click)="deactivateUser(user)">
-                  {{ user.isActive === false ? 'Activate' : 'Deactivate' }}
+                  {{ user.isActive === false ? 'Activate account' : 'Deactivate account' }}
                 </button>
               </div>
             </div>
@@ -108,17 +109,67 @@
           No users match your search.
         </div>
       </div>
+
+      <div class="invitations-section">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Workspace Invitations</h2>
+            <p class="section-subtitle">Track invites sent from this workspace.</p>
+          </div>
+          <button type="button" class="btn-secondary" (click)="loadInvitations()" [disabled]="isLoadingInvitations">
+            Refresh
+          </button>
+        </div>
+
+        <div class="invite-table-card">
+          <div class="invite-table-header">
+            <div class="th">Email</div>
+            <div class="th">Role</div>
+            <div class="th">Status</div>
+            <div class="th">Sent</div>
+            <div class="th">Expires</div>
+          </div>
+
+          <div *ngIf="isLoadingInvitations" class="loading-state">Loading invitations...</div>
+
+          <ng-container *ngIf="!isLoadingInvitations && invitations.length > 0">
+            <div class="invite-table-row" *ngFor="let invitation of invitations; trackBy: trackByInvitationId">
+              <div class="invite-email">{{ invitation.email }}</div>
+              <div>
+                <span class="role-badge" [ngStyle]="getRoleStyles(invitation.role)">
+                  {{ invitation.role }}
+                </span>
+              </div>
+              <div>
+                <span class="invite-status" [ngClass]="getInvitationStatusClass(invitation)">
+                  {{ getInvitationStatusLabel(invitation) }}
+                </span>
+              </div>
+              <div class="joined-text">{{ getInvitationDateLabel(invitation.createdAt) }}</div>
+              <div class="joined-text">{{ getInvitationDateLabel(invitation.expiresAt) }}</div>
+            </div>
+          </ng-container>
+
+          <div *ngIf="!isLoadingInvitations && invitations.length === 0" class="loading-state">
+            No invitations have been sent yet.
+          </div>
+        </div>
+      </div>
   </main>
 
   <!-- Invite User Modal -->
   <div class="modal-backdrop" *ngIf="showInviteModal" (click)="closeInviteModal()">
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2 class="modal-title">Invite User</h2>
+        <h2 class="modal-title">Invite user to this workspace</h2>
         <button type="button" class="modal-close" (click)="closeInviteModal()" aria-label="Close">✕</button>
       </div>
 
       <div class="modal-body">
+        <p class="modal-helper">
+          The invitation email lets this person activate an account inside the current workspace.
+        </p>
+
         <div class="field-group">
           <label class="field-label" for="invite-email">Email address</label>
           <input
@@ -126,21 +177,35 @@
             type="email"
             class="field-input"
             placeholder="user@company.com"
-            [(ngModel)]="inviteEmail"
+            [ngModel]="inviteEmail"
+            (ngModelChange)="onInviteEmailChange($event)"
             [disabled]="isInviting"
           />
         </div>
 
         <div class="field-group">
-          <label class="field-label" for="invite-role">Role</label>
+          <label class="field-label" for="invite-role">Select role</label>
           <select
             id="invite-role"
             class="field-input"
-            [(ngModel)]="inviteRole"
+            [ngModel]="inviteRole"
+            (ngModelChange)="onInviteRoleChange($event)"
             [disabled]="isInviting"
           >
             <option *ngFor="let role of roles" [ngValue]="role">{{ role }}</option>
           </select>
+        </div>
+
+        <p class="modal-helper invite-error" *ngIf="inviteError" role="alert">
+          {{ inviteError }}
+        </p>
+
+        <div class="invite-link-result" *ngIf="latestInviteLink">
+          <label class="field-label" for="invite-link">Invite link</label>
+          <div class="invite-link-row">
+            <input id="invite-link" class="field-input" type="text" [ngModel]="latestInviteLink" readonly />
+            <button type="button" class="btn-secondary" (click)="copyInviteLink()">Copy link</button>
+          </div>
         </div>
       </div>
 
@@ -148,8 +213,8 @@
         <button type="button" class="btn-secondary" (click)="closeInviteModal()" [disabled]="isInviting">
           Cancel
         </button>
-        <button type="button" class="btn-primary" (click)="submitInvite()" [disabled]="isInviting || !inviteEmail.trim()">
-          {{ isInviting ? 'Sending…' : 'Send Invitation' }}
+        <button type="button" class="btn-primary" (click)="submitInvite()" [disabled]="!canSubmitInvite">
+          {{ inviteButtonLabel }}
         </button>
       </div>
     </div>

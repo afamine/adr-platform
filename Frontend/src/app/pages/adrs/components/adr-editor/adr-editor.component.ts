@@ -1,5 +1,5 @@
 import { CommonModule, formatDate } from '@angular/common';
-import { ChangeDetectorRef, Component, EventEmitter, Input, NgZone, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, HostListener, Input, NgZone, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
@@ -77,6 +77,7 @@ export class AdrEditorComponent implements OnChanges {
   isPreviewMode = false;
   showSupersedeModal = false;
   isSubmittingSupersede = false;
+  showExportMenu = false;
   tagInput = '';
   readonly form = this.formBuilder.nonNullable.group({
     title: ['', [Validators.required, Validators.maxLength(255)]],
@@ -169,15 +170,36 @@ export class AdrEditorComponent implements OnChanges {
     this.isPreviewMode = !this.isPreviewMode;
   }
 
-  onExportClick(): void {
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest('.adr-editor__export-menu')) {
+      this.showExportMenu = false;
+    }
+  }
+
+  toggleExportMenu(): void {
+    this.showExportMenu = !this.showExportMenu;
+  }
+
+  onExportMarkdownClick(): void {
     if (this.adr) {
       this.adrService.exportMarkdown(this.adr.id, this.adr.adrNumber);
+      this.showExportMenu = false;
+    }
+  }
+
+  onExportPdfClick(): void {
+    if (this.adr) {
+      this.adrService.exportPdf(this.adr.id, this.adr.adrNumber);
+      this.showExportMenu = false;
     }
   }
 
   onExportHtmlClick(): void {
     if (this.adr) {
       this.adrService.exportHtml(this.adr.id, this.adr.adrNumber);
+      this.showExportMenu = false;
     }
   }
 

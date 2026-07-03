@@ -23,12 +23,12 @@ export class TotpService {
 
   /** Generate a new secret + QR code. Does NOT enable 2FA yet. */
   setup(): Observable<TotpSetupResponse> {
-    return this.http.get<TotpSetupResponse>(`${this.API_URL}/api/auth/2fa/setup`);
+    return this.http.post<TotpSetupResponse>(`${this.API_URL}/api/auth/2fa/enable`, {});
   }
 
   /** Enable 2FA: save secret and verify first code. */
   enable(payload: TotpEnableRequest): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.API_URL}/api/auth/2fa/enable`, payload);
+    return this.http.post<{ message: string }>(`${this.API_URL}/api/auth/2fa/verify`, payload);
   }
 
   /** Disable 2FA: requires current valid TOTP code. */

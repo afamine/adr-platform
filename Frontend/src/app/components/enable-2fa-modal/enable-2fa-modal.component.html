@@ -23,7 +23,7 @@
     <ng-container *ngIf="step() !== 'success'">
       <div class="e2-header">
         <h2>Set Up Two-Factor Authentication</h2>
-        <button class="e2-close" aria-label="Close" (click)="onCancel()">✕</button>
+        <button *ngIf="allowCancel" class="e2-close" aria-label="Close" (click)="onCancel()">✕</button>
       </div>
 
       <div class="e2-step">
@@ -58,7 +58,7 @@
           </div>
 
           <div class="e2-footer-actions">
-            <button class="e2-btn-ghost" (click)="onCancel()">Cancel</button>
+            <button *ngIf="allowCancel" class="e2-btn-ghost" (click)="onCancel()">Cancel</button>
             <button class="e2-btn-primary" (click)="goToStep2()" [disabled]="!setupData">Next →</button>
           </div>
         </div>

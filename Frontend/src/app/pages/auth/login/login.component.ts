@@ -6,7 +6,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../services/auth.service';
 import { ApiErrorBody, LoginRequest, AuthResponse } from '../../../models/auth.models';
 import { TotpService } from '../../../services/totp.service';
-import { NotificationService } from '../../../services/notification.service';
 
 @Component({
   selector: 'app-login',
@@ -20,7 +19,6 @@ export class LoginComponent {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly totp = inject(TotpService);
-  private readonly notif = inject(NotificationService);
 
   passwordVisible = signal(false);
   isLoading = signal(false);
@@ -64,7 +62,17 @@ export class LoginComponent {
           return;
         }
 
+        if (!response.user) {
+          this.errorMessage.set('Invalid authentication response. Please try again.');
+          return;
+        }
+
         this.auth.saveTokens(response);
+
+        if (response.requiresTwoFactorSetup || response.user.totpSetupRequired) {
+          this.router.navigate(['/setup-2fa']);
+          return;
+        }
 
         // Redirect based on role
         if (response.user.role === 'ADMIN') {
@@ -76,17 +84,22 @@ export class LoginComponent {
       error: (err) => {
         this.isLoading.set(false);
         const body = err?.error as ApiErrorBody | undefined;
+        const errorCode = body?.errorType || body?.error;
 
-        if (err.status === 403 && body?.errorType === 'EMAIL_NOT_VERIFIED') {
+        if (err.status === 403 && (errorCode === 'ACCOUNT_DISABLED' || errorCode === 'ACCOUNT_DEACTIVATED')) {
+          this.emailNotVerified.set(false);
+          this.errorMessage.set(body?.message || 'Your account is disabled. Please contact your administrator.');
+          return;
+        }
+
+        if (err.status === 403 && errorCode === 'EMAIL_NOT_VERIFIED') {
           this.emailNotVerified.set(true);
-          this.errorMessage.set(null);
-          this.notif.warning('Email not verified', 'Check your inbox before signing in.');
+          this.errorMessage.set('Please verify your email address before signing in.');
           return;
         }
 
         if (err.status === 401) {
           this.errorMessage.set('Invalid email or password. Please try again.');
-          this.notif.error('Sign-in failed', 'Incorrect email or password.');
           return;
         }
 
@@ -95,8 +108,12 @@ export class LoginComponent {
           return;
         }
 
-        this.errorMessage.set('Unable to connect to server. Please try again.');
-        this.notif.error('Network error', 'Unable to reach the server.');
+        if (err.status === 0) {
+          this.errorMessage.set('Unable to connect to server. Please try again.');
+          return;
+        }
+
+        this.errorMessage.set(body?.message || 'Sign-in failed. Please try again.');
       },
       complete: () => {
         this.isLoading.set(false);

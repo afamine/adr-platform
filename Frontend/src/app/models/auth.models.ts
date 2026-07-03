@@ -7,6 +7,7 @@ export interface RegisterRequest {
   fullName: string;
   email: string;
   password: string;
+  workspaceMode?: 'PRIVATE' | 'JOIN_TEAM';
   workspaceSlug?: string;
 }
 
@@ -29,14 +30,22 @@ export interface AuthUser {
   isActive?: boolean;
   emailVerified?: boolean;
   avatarColor?: string;
+  totpSetupRequired?: boolean;
 }
 
 export interface AuthResponse {
-  token: string;
-  refreshToken: string;
-  user: AuthUser;
+  token?: string;
+  refreshToken?: string;
+  user?: AuthUser;
   requiresTwoFactor?: boolean;
+  requiresTwoFactorSetup?: boolean;
   pendingToken?: string;
+}
+
+export interface InviteUserResponse {
+  message: string;
+  inviteLink: string;
+  invitation: WorkspaceInvitation;
 }
 
 export interface RefreshTokenRequest {
@@ -66,12 +75,13 @@ export interface MessageResponse {
   message: string;
 }
 
-export type AuthErrorType = 'EXPIRED' | 'INVALID' | 'EMAIL_NOT_VERIFIED' | string;
+export type AuthErrorType = 'EXPIRED' | 'INVALID' | 'EMAIL_NOT_VERIFIED' | 'ACCOUNT_DISABLED' | 'ACCOUNT_DEACTIVATED' | string;
 
 export interface ValidateInviteResponse {
   email: string;
   workspaceName: string;
   role: Role;
+  existingAccount: boolean;
 }
 
 export interface AcceptInviteRequest {
@@ -96,15 +106,49 @@ export interface WorkspaceInfo {
   slug: string;
   voteQuorum: number;
   quorumMode: 'AUTO' | 'MANUAL';
+  joinPolicy: WorkspaceJoinPolicy;
   memberCount: number;
   createdAt: string;
 }
+
+export type WorkspaceJoinPolicy = 'INVITE_ONLY' | 'ALLOW_SLUG' | 'CLOSED';
 
 export interface UpdateWorkspaceRequest {
   name: string;
   slug: string;
   voteQuorum: number;
   quorumMode: 'AUTO' | 'MANUAL';
+  joinPolicy: WorkspaceJoinPolicy;
+}
+
+export interface WorkspaceSlugStatus {
+  slug: string;
+  exists: boolean;
+  workspaceName?: string | null;
+  joinPolicy?: WorkspaceJoinPolicy | null;
+  canJoinBySlug: boolean;
+  message: string;
+}
+
+export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED';
+
+export interface WorkspaceInvitation {
+  tokenId: string;
+  userId: string;
+  email: string;
+  role: Role;
+  status: InvitationStatus;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface WorkspaceMembership {
+  workspaceId: string;
+  workspaceName: string;
+  workspaceSlug: string;
+  role: Role;
+  current: boolean;
+  joinedAt: string;
 }
 
 export interface NotificationPreferences {

@@ -238,6 +238,23 @@ export class AdrService {
       });
   }
 
+  exportPdf(adrId: string, adrNumber: number): void {
+    this.http
+      .get(`${this.baseUrl}/api/adrs/${adrId}/export/pdf`, { responseType: 'blob' })
+      .pipe(catchError((err) => this.handleError(err)))
+      .subscribe({
+        next: (pdf) => {
+          const blob = new Blob([pdf], { type: 'application/pdf' });
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = `ADR-${adrNumber}.pdf`;
+          anchor.click();
+          URL.revokeObjectURL(url);
+        }
+      });
+  }
+
   private handleError(err: any) {
     const msg = err.error?.message || 'An error occurred';
     return throwError(() => ({ status: err.status, message: msg, errorType: err.error?.errorType }));

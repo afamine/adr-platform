@@ -1,0 +1,93 @@
+<div class="notification-dropdown">
+  <button
+    type="button"
+    class="notification-trigger"
+    aria-label="Notifications"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="isOpen"
+    (click)="toggle($event)"
+  >
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    </svg>
+    <ng-container *ngIf="liveUnreadCount$ | async as liveCount">
+      <span class="notification-badge" *ngIf="liveCount > 0">{{ liveCount > 9 ? '9+' : liveCount }}</span>
+    </ng-container>
+  </button>
+
+  <section class="notification-panel" role="dialog" aria-label="Notifications" *ngIf="isOpen">
+    <div class="notification-header">
+      <span class="notification-title">Notifications</span>
+      <span class="notification-unread-badge" *ngIf="unreadCount > 0">{{ unreadCount }} unread</span>
+      <button type="button" class="notification-close" aria-label="Close notifications" (click)="close()">x</button>
+    </div>
+
+    <div class="notification-toolbar">
+      <div class="notification-tabs" role="tablist" aria-label="Notification filter">
+        <button
+          type="button"
+          class="notification-tab"
+          role="tab"
+          [class.active]="activeTab === 'all'"
+          [attr.aria-selected]="activeTab === 'all'"
+          (click)="setActiveTab('all')"
+        >
+          All
+        </button>
+        <button
+          type="button"
+          class="notification-tab"
+          role="tab"
+          [class.active]="activeTab === 'unread'"
+          [attr.aria-selected]="activeTab === 'unread'"
+          (click)="setActiveTab('unread')"
+        >
+          Unread
+        </button>
+      </div>
+
+      <button type="button" class="mark-read-btn" *ngIf="notifications.length > 0" (click)="markAllRead()">
+        Mark all read
+      </button>
+    </div>
+
+    <div class="notification-list">
+      <div class="notification-empty" *ngIf="isLoading">Loading notifications...</div>
+
+      <ng-container *ngIf="!isLoading && displayedNotifications.length > 0">
+        <div
+          class="notification-item"
+          role="button"
+          tabindex="0"
+          [class.unread]="notification.unread"
+          *ngFor="let notification of displayedNotifications"
+          (click)="markRead(notification.id)"
+          (keydown.enter)="markRead(notification.id)"
+          (keydown.space)="markRead(notification.id)"
+        >
+          <span class="notification-dot" [style.background]="notification.dotColor"></span>
+          <span class="notification-content">
+            <span class="notification-row">
+              <span class="notification-item-title">{{ notification.title }}</span>
+              <span class="notification-time">{{ notification.time }}</span>
+            </span>
+            <span class="notification-body">{{ notification.body }}</span>
+            <button
+              type="button"
+              class="notification-action"
+              *ngIf="notification.action"
+              (click)="openNotificationAction($event, notification)"
+            >
+              {{ notification.action }}
+            </button>
+          </span>
+        </div>
+      </ng-container>
+
+      <div class="notification-empty" *ngIf="!isLoading && displayedNotifications.length === 0">
+        No {{ activeTab === 'unread' ? 'unread ' : '' }}notifications
+      </div>
+    </div>
+  </section>
+</div>

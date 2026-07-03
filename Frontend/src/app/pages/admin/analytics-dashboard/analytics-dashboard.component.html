@@ -3,11 +3,18 @@
       <!-- Top row: title + period selector -->
       <div class="content-header">
         <h1 class="page-title">Analytics Dashboard</h1>
-        <div class="period-select">
-          Last 30 days
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
+        <div class="period-tabs" role="group" aria-label="Analytics time range">
+          <button
+            class="period-tab"
+            type="button"
+            *ngFor="let option of timeRangeOptions"
+            [class.active]="selectedTimeRange === option.value"
+            [disabled]="isLoading"
+            [attr.aria-pressed]="selectedTimeRange === option.value"
+            (click)="setTimeRange(option.value)"
+          >
+            {{ option.label }}
+          </button>
         </div>
       </div>
 
@@ -82,7 +89,7 @@
         <!-- Line Chart: Weekly Activity -->
         <div class="chart-card chart-card--line">
           <div class="chart-card-header">
-            <div class="chart-title">Weekly Activity</div>
+            <div class="chart-title">ADR Activity</div>
           </div>
           <div class="line-chart-wrap">
             <canvas #lineChart></canvas>

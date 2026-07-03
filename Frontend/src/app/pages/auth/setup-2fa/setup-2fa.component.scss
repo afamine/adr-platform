@@ -1,0 +1,40 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.setup-2fa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 32px;
+  background: #f8fafc;
+}
+
+.setup-2fa__panel {
+  width: min(100%, 560px);
+  text-align: center;
+}
+
+.setup-2fa__eyebrow {
+  margin-bottom: 10px;
+  color: #6366f1;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.setup-2fa h1 {
+  margin: 0 0 12px;
+  color: #111827;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.setup-2fa p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 15px;
+  line-height: 1.6;
+}

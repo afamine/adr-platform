@@ -41,6 +41,21 @@ export class AcceptInviteComponent implements OnInit {
 
   token: string | null = null;
 
+  get isExistingAccountInvite(): boolean {
+    return this.inviteDetails()?.existingAccount === true;
+  }
+
+  get passwordLabel(): string {
+    return this.isExistingAccountInvite ? 'Existing account password' : 'Password';
+  }
+
+  get submitLabel(): string {
+    if (this.isSubmitting()) {
+      return this.isExistingAccountInvite ? 'Joining workspace...' : 'Creating account...';
+    }
+    return 'Accept invitation';
+  }
+
   inviteForm: FormGroup = this.fb.group(
     {
       fullName: ['', [Validators.required, Validators.minLength(2)]],
@@ -100,7 +115,14 @@ export class AcceptInviteComponent implements OnInit {
         this.isSubmitting.set(false);
         this.auth.saveTokens(response);
         this.state.set('SUCCESS');
-        setTimeout(() => this.router.navigate(['/adrs']), 2000);
+        setTimeout(() => {
+          if (response.requiresTwoFactorSetup || response.user?.totpSetupRequired) {
+            this.router.navigate(['/setup-2fa']);
+            return;
+          }
+
+          this.router.navigate(['/adrs']);
+        }, 2000);
       },
       error: (err) => {
         this.isSubmitting.set(false);
