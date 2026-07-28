@@ -213,7 +213,7 @@
     <div class="dashboard-layout">
       <div class="editor-area">
         @if (canVoteOnAdr(selectedAdr())) {
-          <div style="display: flex; justify-content: flex-end; padding: 12px 16px 0;">
+          <div class="adr-dashboard__vote-action">
             <button type="button" (click)="openVoteModal(selectedAdr()!)">Vote</button>
           </div>
         }

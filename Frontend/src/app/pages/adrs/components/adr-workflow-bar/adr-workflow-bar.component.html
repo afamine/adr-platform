@@ -1,0 +1,15 @@
+@if (transitions.length) {
+  <section class="adr-workflow" aria-label="ADR workflow">
+    <div class="adr-workflow__label"><span aria-hidden="true">◆</span> Workflow</div>
+    <div class="adr-workflow__steps">
+      @for (action of actions; track action.status) {
+        @if (isAvailable(action.status)) {
+          <button type="button" class="adr-workflow__button" [class]="'adr-workflow__button adr-workflow__button--' + action.tone" (click)="request(action.status)">
+            {{ action.label }}
+          </button>
+        }
+      }
+    </div>
+    @if (currentStatus) { <span class="adr-workflow__current">Current: {{ currentStatus.replace('_', ' ') }}</span> }
+  </section>
+}

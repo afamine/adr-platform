@@ -62,6 +62,10 @@
       </div>
     </form>
   } @else if (adr; as currentAdr) {
+    <div class="adr-editor__detail-shell">
+    <div class="adr-editor__breadcrumb">
+      <span>{{ currentAdr.projectName || 'Without Project' }}</span><span aria-hidden="true">›</span><strong>ADR-{{ currentAdr.adrNumber | number:'2.0-0' }}</strong>
+    </div>
     <div class="adr-editor__topbar">
       <div class="adr-editor__title-block">ADR-{{ currentAdr.adrNumber }} — {{ currentAdr.title }}</div>
 
@@ -162,7 +166,8 @@
 
     <div class="status-tags-bar">
       <div class="status-group">
-        <span class="bar-label">Status:</span>
+        <app-adr-status-badge [status]="currentAdr.status" />
+        <span class="bar-label">Status</span>
         <select class="status-select" [ngModel]="currentAdr.status" [ngModelOptions]="{ standalone: true }" (ngModelChange)="statusChanged.emit($event)">
           @for (option of statusOptions; track option.value) {
             <option [ngValue]="option.value">{{ option.label }}</option>
@@ -171,7 +176,7 @@
       </div>
 
       <div class="tags-group">
-        <span class="bar-label">Tags:</span>
+        <span class="bar-label">Tags</span>
         @if (currentAdr.tags.length) {
           @for (tag of currentAdr.tags; track tag) {
             <span class="tag-chip">{{ tag }}</span>
@@ -184,6 +189,13 @@
       <div class="author-label">Author: {{ currentAdr.authorName }}</div>
     </div>
 
+    <app-adr-workflow-bar
+      [transitions]="transitions"
+      [currentStatus]="currentAdr.status"
+      (transitionRequested)="onTransitionClick($event)"
+    />
+
+    <div class="adr-editor__section-card">
     <div class="adr-editor__tabs" role="tablist" aria-label="ADR sections">
       @for (tab of tabs; track tab.key) {
         <button
@@ -372,6 +384,8 @@
       }
     </div>
 
+    </div>
+
     <div class="adr-editor__relationship-stack">
       @if (adr.supersededById) {
         <app-superseded-banner
@@ -399,15 +413,7 @@
       />
     }
 
-    @if (transitions.length) {
-      <div class="adr-editor__transitions">
-        @for (status of transitions; track status) {
-          <button class="adr-editor__transition-button" type="button" (click)="onTransitionClick(status)">
-            {{ getTransitionLabel(status) }}
-          </button>
-        }
-      </div>
-    }
+    </div>
   } @else {
     <div class="adr-editor__empty-state">Select an ADR to start editing.</div>
   }

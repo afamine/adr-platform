@@ -58,7 +58,7 @@
     <div class="project-board__header">
       <span>Projects</span>
       @if (canManageProjects) {
-        <button type="button" class="project-board__add" (click)="openCreateProject()" aria-label="Create project">+</button>
+        <button type="button" class="project-board__add" (click)="openCreateProject()" aria-label="Add project"><span>+</span> Add Project</button>
       }
     </div>
 
@@ -77,10 +77,11 @@
       @for (project of activeProjects; track project.id) {
         <section class="project-group" (dragover)="$event.preventDefault()" (drop)="onDrop($event, project.id)">
           <div class="project-group__header">
-            <div class="project-group__name" [title]="project.description || project.name">
+            <button type="button" class="project-group__name" [title]="project.description || project.name" (click)="toggleProject(project.id)">
+              <span class="project-group__chevron" [class.project-group__chevron--closed]="!isProjectExpanded(project.id)">⌄</span>
               <span class="project-group__dot"></span>{{ project.name }}
               <span class="project-group__count">{{ adrsForProject(project.id).length }}</span>
-            </div>
+            </button>
             @if (canManageProjects) {
               <div class="project-group__actions">
                 <button type="button" (click)="openEditProject(project)" aria-label="Edit project">Edit</button>
@@ -88,6 +89,7 @@
               </div>
             }
           </div>
+          @if (isProjectExpanded(project.id)) {
           @for (adr of adrsForProject(project.id); track adr.id) {
             <div class="project-card" [draggable]="canMoveAdrs" (dragstart)="onDragStart($event, adr)" (dragend)="onDragEnd()">
               <app-adr-card [adr]="adr" [isSelected]="selectedId === adr.id" (selected)="adrSelected.emit($event)" (tagSelected)="onTagSelected($event)" />
@@ -95,19 +97,22 @@
           } @empty {
             <div class="project-drop-hint">Drop an ADR here</div>
           }
+          }
         </section>
       }
 
       <section class="project-group project-group--unassigned" (dragover)="$event.preventDefault()" (drop)="onDrop($event, null)">
         <div class="project-group__header">
-          <div class="project-group__name"><span class="project-group__dot project-group__dot--muted"></span>Without project <span class="project-group__count">{{ unassignedAdrs.length }}</span></div>
+          <button type="button" class="project-group__name" (click)="unassignedExpanded = !unassignedExpanded"><span class="project-group__chevron" [class.project-group__chevron--closed]="!unassignedExpanded">⌄</span><span class="project-group__dot project-group__dot--muted"></span>Without project <span class="project-group__count">{{ unassignedAdrs.length }}</span></button>
         </div>
+        @if (unassignedExpanded) {
         @for (adr of unassignedAdrs; track adr.id) {
           <div class="project-card" [draggable]="canMoveAdrs" (dragstart)="onDragStart($event, adr)" (dragend)="onDragEnd()">
             <app-adr-card [adr]="adr" [isSelected]="selectedId === adr.id" (selected)="adrSelected.emit($event)" (tagSelected)="onTagSelected($event)" />
           </div>
         } @empty {
           <div class="project-drop-hint">Drop an ADR here</div>
+        }
         }
       </section>
     </div>

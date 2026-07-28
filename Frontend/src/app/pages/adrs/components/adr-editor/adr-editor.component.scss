@@ -910,3 +910,40 @@ $hover-bg: #f9fafb;
     align-items: stretch;
   }
 }
+
+// Figma ADR interface shell — existing Angular events and data remain unchanged.
+:host { min-height: 0; background: #f9fafb; }
+.adr-editor { background: #f9fafb; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+.adr-editor__detail-shell { box-sizing: border-box; width: 100%; max-width: none; min-width: 0; margin: 0; padding: 18px 24px 26px; }
+.adr-editor__breadcrumb { display: flex; align-items: center; gap: 7px; min-height: 22px; margin: 0 0 10px; color: #9ca3af; font-size: 12px; }
+.adr-editor__breadcrumb strong { color: #4b5563; font-weight: 600; }
+.adr-editor__topbar { align-items: flex-start; gap: 14px; padding: 18px 20px; border: 1px solid #e5e7eb; border-bottom: 0; border-radius: 8px 8px 0 0; background: #fff; }
+.adr-editor__title-block { font-size: 16px; line-height: 1.45; }
+.adr-editor__date { padding-top: 2px; color: #9ca3af; font-size: 11px; }
+.adr-editor__actions { justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
+.adr-editor__ghost-button, .adr-editor__danger-button { min-height: 30px; height: 30px; padding: 0 9px; border-radius: 6px; font-size: 11px; border-color: #e5e7eb; color: #4b5563; }
+.adr-editor__ghost-button:hover, .adr-editor__ghost-button--active { background: #f3f4f6; color: #4338ca; }
+.adr-editor__danger-button { background: #fef2f2; border-color: #fecaca; }
+.status-tags-bar { gap: 12px; min-height: 38px; padding: 8px 20px; border: 1px solid #e5e7eb; border-top-color: #f3f4f6; background: #fff; }
+.status-group, .tags-group { gap: 7px; }
+.bar-label { margin: 0; color: #9ca3af; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.status-select { border-color: #e5e7eb; background: #fafafa; color: #4b5563; font-size: 11px; }
+.tag-chip { padding: 3px 7px; border-radius: 4px; background: #f3f4f6; color: #6b7280; }
+.author-label { color: #9ca3af; font-size: 11px; }
+.adr-editor__section-card { overflow: hidden; border: 1px solid #e5e7eb; border-top: 0; border-radius: 0 0 8px 8px; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .03); }
+.adr-editor__tabs { gap: 0; padding: 0 20px; background: #fff; }
+.adr-editor__tab { padding: 12px 14px; color: #6b7280; font-size: 12px; font-weight: 600; }
+.adr-editor__tab--active { border-bottom-color: #6366f1; color: #6366f1; }
+.adr-editor__content { min-height: 300px; padding: 20px; overflow: visible; }
+.adr-editor__read-panel { min-height: 250px; padding: 0; border-radius: 0; background: transparent; color: #4b5563; font-size: 13px; line-height: 1.75; }
+.adr-editor__relationship-stack { box-sizing: border-box; width: 100%; max-width: none; min-width: 0; margin: 12px 0 0; padding: 0 24px; }
+.adr-editor__form { width: auto; box-sizing: border-box; margin: 18px 24px; padding: 22px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .03); }
+.adr-editor__input, .adr-editor__textarea--edit { border-color: #e5e7eb; border-radius: 6px; font-family: inherit; }
+.adr-editor__save-button { border-radius: 6px; background: #6366f1; }
+.adr-editor__save-button:hover { background: #4f46e5; }
+@media (max-width: 760px) {
+  .adr-editor__detail-shell, .adr-editor__form, .adr-editor__relationship-stack { width: calc(100% - 24px); }
+  .adr-editor__topbar { flex-direction: column; }
+  .adr-editor__actions { width: 100%; justify-content: flex-start; }
+  .author-label { width: 100%; margin-left: 0; }
+}

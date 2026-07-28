@@ -45,10 +45,18 @@ export class AdrSidebarComponent {
   projectName = '';
   projectDescription = '';
   draggedAdr: Adr | null = null;
+  private readonly collapsedProjectIds = new Set<string>();
+  unassignedExpanded = true;
 
   get activeProjects(): ProjectDto[] { return this.projects.filter((project) => !project.archived); }
   get unassignedAdrs(): Adr[] { return this.adrs.filter((adr) => !adr.projectId); }
   adrsForProject(projectId: string): Adr[] { return this.adrs.filter((adr) => adr.projectId === projectId); }
+  isProjectExpanded(projectId: string): boolean { return !this.collapsedProjectIds.has(projectId); }
+
+  toggleProject(projectId: string): void {
+    if (this.collapsedProjectIds.has(projectId)) this.collapsedProjectIds.delete(projectId);
+    else this.collapsedProjectIds.add(projectId);
+  }
 
   get hasNoResults(): boolean {
     return !this.isLoading

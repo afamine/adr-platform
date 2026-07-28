@@ -20,6 +20,8 @@ import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
 import { SupersedeModalComponent } from '../supersede-modal/supersede-modal.component';
 import { SupersededBannerComponent } from '../superseded-banner/superseded-banner.component';
 import { SupersedesBadgeComponent } from '../supersedes-badge/supersedes-badge.component';
+import { AdrStatusBadgeComponent } from '../adr-status-badge/adr-status-badge.component';
+import { AdrWorkflowBarComponent } from '../adr-workflow-bar/adr-workflow-bar.component';
 
 @Component({
   selector: 'app-adr-editor',
@@ -31,7 +33,9 @@ import { SupersedesBadgeComponent } from '../supersedes-badge/supersedes-badge.c
     MarkdownPipe,
     SupersedeModalComponent,
     SupersededBannerComponent,
-    SupersedesBadgeComponent
+    SupersedesBadgeComponent,
+    AdrStatusBadgeComponent,
+    AdrWorkflowBarComponent
   ],
   templateUrl: './adr-editor.component.html',
   styleUrl: './adr-editor.component.scss'

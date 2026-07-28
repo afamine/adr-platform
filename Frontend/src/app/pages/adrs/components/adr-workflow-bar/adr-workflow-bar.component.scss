@@ -1,0 +1,11 @@
+:host { display: block; }
+.adr-workflow { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 20px; border-top: 1px solid #f3f4f6; background: #fafafa; flex-wrap: wrap; }
+.adr-workflow__label { color: #6366f1; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+.adr-workflow__steps { display: flex; gap: 7px; flex-wrap: wrap; }
+.adr-workflow__button { min-height: 29px; border: 1px solid; border-radius: 6px; padding: 0 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
+.adr-workflow__button--propose { border-color: #fde68a; background: #fffbeb; color: #b45309; }
+.adr-workflow__button--review { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+.adr-workflow__button--accept { border-color: #a7f3d0; background: #ecfdf5; color: #047857; }
+.adr-workflow__button--reject { border-color: #fecaca; background: #fef2f2; color: #dc2626; }
+.adr-workflow__button--neutral { border-color: #d1d5db; background: #fff; color: #4b5563; }
+.adr-workflow__current { margin-left: auto; color: #9ca3af; font-size: 11px; text-transform: capitalize; }

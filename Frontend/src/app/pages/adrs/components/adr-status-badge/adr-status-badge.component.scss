@@ -1,0 +1,23 @@
+:host { display: inline-flex; }
+
+.adr-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.adr-status-badge--compact { padding: 2px 6px; font-size: 10px; }
+.adr-status-badge__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.adr-status-badge--draft { color: #4b5563; background: #f3f4f6; border-color: #e5e7eb; }
+.adr-status-badge--proposed { color: #b45309; background: #fffbeb; border-color: #fde68a; }
+.adr-status-badge--under_review { color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe; }
+.adr-status-badge--accepted { color: #047857; background: #ecfdf5; border-color: #a7f3d0; }
+.adr-status-badge--rejected { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
+.adr-status-badge--superseded { color: #c2410c; background: #fff7ed; border-color: #fed7aa; }
