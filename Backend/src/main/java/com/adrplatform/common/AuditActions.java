@@ -10,6 +10,11 @@ public final class AuditActions {
     public static final String ADR_DELETED        = "ADR_DELETED";
     public static final String ADR_STATUS_CHANGED = "ADR_STATUS_CHANGED";
 
+    // --- Projects ---
+    public static final String PROJECT_CREATED  = "PROJECT_CREATED";
+    public static final String PROJECT_UPDATED  = "PROJECT_UPDATED";
+    public static final String PROJECT_ARCHIVED = "PROJECT_ARCHIVED";
+
     // --- Vote ---
     public static final String VOTE_CAST          = "VOTE_CAST";
 

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
+import java.util.UUID;
 
 public record CreateAdrRequest(
         @NotBlank @Size(max = 255) String title,
@@ -15,5 +16,6 @@ public record CreateAdrRequest(
         @Size(max = 20) List<
                 @NotBlank
                 @Size(max = 40)
-                @Pattern(regexp = "^[A-Za-z0-9][A-Za-z0-9 _-]*$") String> tags
+                @Pattern(regexp = "^[A-Za-z0-9][A-Za-z0-9 _-]*$") String> tags,
+        UUID projectId
 ) {}

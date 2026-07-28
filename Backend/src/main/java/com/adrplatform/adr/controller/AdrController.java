@@ -2,6 +2,7 @@ package com.adrplatform.adr.controller;
 
 import com.adrplatform.adr.domain.AdrStatus;
 import com.adrplatform.adr.dto.AdrDto;
+import com.adrplatform.adr.dto.AssignProjectRequest;
 import com.adrplatform.adr.dto.AdrSummaryDto;
 import com.adrplatform.adr.dto.AiInsightDto;
 import com.adrplatform.adr.dto.AuditEventDto;
@@ -113,6 +114,12 @@ public class AdrController {
     @PutMapping("/{id}")
     public ResponseEntity<AdrDto> update(@PathVariable("id") UUID id, @Valid @RequestBody UpdateAdrRequest request) {
         return ResponseEntity.ok(adrService.updateAdr(id, request));
+    }
+
+    @Operation(summary = "Move an ADR to a project in the active workspace")
+    @PatchMapping("/{id}/project")
+    public ResponseEntity<AdrDto> assignProject(@PathVariable UUID id, @RequestBody AssignProjectRequest request) {
+        return ResponseEntity.ok(adrService.assignProject(id, request.projectId()));
     }
 
     @Operation(summary = "Transition ADR status")

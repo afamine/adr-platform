@@ -15,6 +15,10 @@ import java.util.UUID;
 
 public interface AdrRepository extends JpaRepository<Adr, UUID> {
 
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("update Adr a set a.project = null where a.project.id = :projectId")
+    void clearProjectByProjectId(@org.springframework.data.repository.query.Param("projectId") UUID projectId);
+
     List<Adr> findAllByWorkspace_IdOrderByAdrNumberDesc(UUID workspaceId);
 
     @Query("SELECT COUNT(a) FROM Adr a WHERE a.workspace.id = :wsId")

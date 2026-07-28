@@ -11,6 +11,8 @@ import com.adrplatform.adr.exception.AdrAccessDeniedException;
 import com.adrplatform.adr.exception.AdrNotFoundException;
 import com.adrplatform.adr.exception.InvalidTransitionException;
 import com.adrplatform.adr.repository.AdrRepository;
+import com.adrplatform.project.domain.Project;
+import com.adrplatform.project.repository.ProjectRepository;
 import com.adrplatform.auth.domain.AuditEvent;
 import com.adrplatform.auth.domain.Role;
 import com.adrplatform.auth.domain.User;
@@ -50,6 +52,7 @@ import java.util.UUID;
 public class AdrService {
 
     private final AdrRepository adrRepository;
+    private final ProjectRepository projectRepository;
     private final AuditEventRepository auditEventRepository;
     private final WorkspaceRepository workspaceRepository;
     private final TenantContext tenantContext;
@@ -162,6 +165,7 @@ public class AdrService {
 
         Adr adr = Adr.builder()
                 .workspace(actor.getWorkspace())
+                .project(request.projectId() == null ? null : findActiveProject(request.projectId(), workspaceId))
                 .adrNumber(nextNumber)
                 .title(request.title().trim())
                 .status(AdrStatus.DRAFT)
@@ -208,11 +212,40 @@ public class AdrService {
         if (request.consequences() != null) adr.setConsequences(request.consequences());
         if (request.alternatives() != null) adr.setAlternatives(request.alternatives());
         if (request.tags() != null && !request.tags().isEmpty()) adr.setTagsCsv(joinTags(request.tags()));
+        if (request.projectId() != null) adr.setProject(findActiveProject(request.projectId(), workspaceId));
 
         Adr saved = adrRepository.save(adr);
         auditService.record(actor, actor.getWorkspace(), AuditActions.ADR_UPDATED, "ADR", saved.getId(), null,
                 toJson(Map.of("title", saved.getTitle() == null ? "" : saved.getTitle())));
         return AdrDto.fromEntity(saved);
+    }
+
+    @Transactional
+    public AdrDto assignProject(UUID id, UUID projectId) {
+        User actor = currentUser();
+        UUID workspaceId = tenantContext.getWorkspaceId();
+        Adr adr = adrRepository.findByIdAndWorkspace_Id(id, workspaceId)
+                .orElseThrow(() -> new AdrNotFoundException("ADR not found."));
+        if (actor.getRole() != Role.ADMIN) {
+            boolean isOwner = adr.getAuthor().getId().equals(actor.getId());
+            if (!isOwner || !(adr.getStatus() == AdrStatus.DRAFT || adr.getStatus() == AdrStatus.PROPOSED)) {
+                throw new AdrAccessDeniedException("You don't have permission to move this ADR.");
+            }
+        }
+        Project project = projectId == null ? null : findActiveProject(projectId, workspaceId);
+        adr.setProject(project);
+        Adr saved = adrRepository.save(adr);
+        auditService.record(actor, actor.getWorkspace(), AuditActions.ADR_UPDATED, "ADR", saved.getId(), null,
+                toJson(Map.of("projectId", project == null ? "" : project.getId().toString(),
+                        "projectName", project == null ? "" : project.getName())));
+        return AdrDto.fromEntity(saved);
+    }
+
+    private Project findActiveProject(UUID projectId, UUID workspaceId) {
+        Project project = projectRepository.findByIdAndWorkspace_Id(projectId, workspaceId)
+                .orElseThrow(() -> new BadRequestException("Project not found in this workspace."));
+        if (project.isArchived()) throw new BadRequestException("Archived projects cannot receive ADRs.");
+        return project;
     }
 
     @CacheEvict(value = "ai-insights", key = "#id")

@@ -2,6 +2,7 @@ package com.adrplatform.adr.domain;
 
 import com.adrplatform.auth.domain.User;
 import com.adrplatform.auth.domain.Workspace;
+import com.adrplatform.project.domain.Project;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,6 +25,10 @@ public class Adr {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "workspace_id", nullable = false)
     private Workspace workspace;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id")
+    private Project project;
 
     @Column(name = "adr_number", nullable = false)
     private Integer adrNumber;

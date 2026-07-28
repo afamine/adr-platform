@@ -90,3 +90,10 @@ databaseChangeLog:
         - sqlFile:
             path: db/changelog/V29__create_workspace_memberships.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: "30"
+      author: adr-platform
+      changes:
+        - sqlFile:
+            path: db/changelog/V30__create_projects.sql
+            relativeToChangelogFile: false
