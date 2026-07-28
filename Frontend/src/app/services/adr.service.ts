@@ -110,6 +110,11 @@ export class AdrService {
       );
   }
 
+  assignProject(id: string, projectId: string | null): Observable<AdrDto> {
+    return this.http.patch<AdrDto>(`${this.baseUrl}/api/adrs/${id}/project`, { projectId })
+      .pipe(map((adr) => this.normalizeTags(adr)), catchError((err) => this.handleError(err)));
+  }
+
   getEligibleReplacements(): Observable<AdrSummary[]> {
     return this.http
       .get<AdrSummary[]>(`${this.baseUrl}/api/adrs/eligible-as-replacement`)

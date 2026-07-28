@@ -19,6 +19,8 @@ import { NotificationService } from '../../services/notification.service';
 import { NotificationCenterService } from '../../services/notification-center.service';
 import { BellNotification, NotificationApiDto } from '../../models/notification.models';
 import { AdrStateService } from './services/adr-state.service';
+import { ProjectDto, ProjectRequest } from '../../models/project.model';
+import { ProjectService } from '../../services/project.service';
 
 @Component({
   selector: 'app-adr-dashboard',
@@ -29,6 +31,7 @@ import { AdrStateService } from './services/adr-state.service';
 })
 export class AdrDashboardComponent implements OnInit {
   private readonly adrService = inject(AdrService);
+  private readonly projectService = inject(ProjectService);
   private readonly adrState = inject(AdrStateService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -81,14 +84,19 @@ export class AdrDashboardComponent implements OnInit {
   auditRefreshToken = 0;
   emailNotifications = true;
   currentUser = this.authService.getCurrentUser();
+  projects: ProjectDto[] = [];
 
   get canCreateAdr(): boolean {
     const role = this.currentUser?.role;
     return role === 'AUTHOR' || role === 'ADMIN';
   }
 
+  get canManageProjects(): boolean { return this.currentUser?.role === 'ADMIN'; }
+  get canMoveAdrs(): boolean { return this.currentUser?.role === 'ADMIN' || this.currentUser?.role === 'AUTHOR'; }
+
   ngOnInit(): void {
     this.loadAdrs();
+    this.loadProjects();
     this.loadNotifications();
     this.notifCenterService.startPolling(this.destroyRef);
   }
@@ -140,6 +148,47 @@ export class AdrDashboardComponent implements OnInit {
     this.editingAdr = { title: '', tags: [], status: 'DRAFT' };
     this.adrState.clearSelection();
     this.activeTab = 'context';
+  }
+
+  onCreateProject(request: ProjectRequest): void {
+    this.projectService.createProject(request).subscribe({
+      next: () => { this.notificationService.success('Project created'); this.loadProjects(); },
+      error: (err) => this.handleError(err)
+    });
+  }
+
+  onUpdateProject(event: { id: string; request: ProjectRequest }): void {
+    this.projectService.updateProject(event.id, event.request).subscribe({
+      next: () => { this.notificationService.success('Project updated'); this.loadProjects(); this.loadAdrs(); },
+      error: (err) => this.handleError(err)
+    });
+  }
+
+  async onArchiveProject(projectId: string): Promise<void> {
+    const project = this.projects.find((item) => item.id === projectId);
+    if (!project) return;
+    const confirmed = await this.confirmService.confirm({
+      title: 'Archive project',
+      message: `Archive "${project.name}"? Its ADRs will return to Without project.`,
+      confirmLabel: 'Archive project',
+      cancelLabel: 'Cancel',
+      danger: false
+    });
+    if (!confirmed) return;
+    this.projectService.archiveProject(projectId).subscribe({
+      next: () => { this.notificationService.success('Project archived'); this.loadProjects(); this.loadAdrs(); },
+      error: (err) => this.handleError(err)
+    });
+  }
+
+  onMoveAdr(event: { adr: Adr; projectId: string | null }): void {
+    this.adrService.assignProject(event.adr.id, event.projectId).subscribe({
+      next: (updated) => {
+        this.adrState.updateAdrInList(updated);
+        this.notificationService.success('ADR moved', updated.projectName ? `Moved to ${updated.projectName}.` : 'Moved to Without project.');
+      },
+      error: (err) => this.handleError(err)
+    });
   }
 
   onSaveCreate(body: CreateAdrRequest): void {
@@ -583,6 +632,13 @@ export class AdrDashboardComponent implements OnInit {
 
   private loadAdrs(selectId?: string): void {
     this.adrState.loadAdrs(selectId);
+  }
+
+  private loadProjects(): void {
+    this.projectService.getProjects().subscribe({
+      next: (projects) => this.projects = projects,
+      error: (err) => this.handleError(err)
+    });
   }
 
   private handleError(err: { status?: number; message?: string; errorType?: string }, reloadOnNotFound = false): void {

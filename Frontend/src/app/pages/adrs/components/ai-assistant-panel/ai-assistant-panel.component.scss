@@ -59,6 +59,13 @@
   line-height: 1.4;
 }
 
+.ai-disclaimer {
+  margin-top: 10px;
+  color: #6b7280;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .ai-panel__summary {
   margin: 12px;
   padding: 12px;
@@ -246,32 +253,4 @@
   color: #6b7280;
   font-size: 12px;
   line-height: 1.5;
-}
-
-.ai-panel__buttons {
-  margin-top: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.ai-panel__action {
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 6px 8px;
-  font-size: 11px;
-  color: #374151;
-  cursor: pointer;
-}
-
-.ai-panel__apply {
-  margin-left: auto;
-  border: 0;
-  background: #0f172a;
-  color: #ffffff;
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 11px;
-  cursor: pointer;
 }

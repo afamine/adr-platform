@@ -194,6 +194,9 @@
       [currentPage]="currentPage()"
       [totalPages]="totalPages()"
       [totalElements]="totalElements()"
+      [projects]="projects"
+      [canManageProjects]="canManageProjects"
+      [canMoveAdrs]="canMoveAdrs"
       (adrSelected)="onSelectAdr($event)"
       (createNew)="onCreateNew()"
       (searchChanged)="onSearch($event)"
@@ -201,6 +204,10 @@
       (tagFilterChanged)="onTagFilterChange($event)"
       (previousPage)="onPreviousPage()"
       (nextPage)="onNextPage()"
+      (projectCreated)="onCreateProject($event)"
+      (projectUpdated)="onUpdateProject($event)"
+      (projectArchived)="onArchiveProject($event)"
+      (adrMoved)="onMoveAdr($event)"
     />
 
     <div class="dashboard-layout">

@@ -24,6 +24,8 @@ export interface AdrDto {
   createdAt: string;
   updatedAt: string;
   workspaceId: string;
+  projectId?: string | null;
+  projectName?: string | null;
 }
 
 export interface VoteDto {
@@ -74,6 +76,7 @@ export interface CreateAdrRequest {
   consequences?: string;
   alternatives?: string;
   tags?: string[];
+  projectId?: string | null;
 }
 
 export interface UpdateAdrRequest {
@@ -83,6 +86,7 @@ export interface UpdateAdrRequest {
   consequences?: string;
   alternatives?: string;
   tags?: string[];
+  projectId?: string | null;
 }
 
 export interface StatusTransitionRequest {

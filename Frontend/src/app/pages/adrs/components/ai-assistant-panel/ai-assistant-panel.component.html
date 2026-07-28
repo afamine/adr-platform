@@ -11,6 +11,9 @@
       <button class="ai-panel__close" type="button" (click)="closePanel.emit()">Close</button>
     </div>
     <div class="ai-panel__header-subtitle">AI-powered insights and recommendations for your architectural decision</div>
+    <div class="ai-disclaimer">
+      Les données de cet ADR sont envoyées à un fournisseur d'IA externe pour analyse. Aucune donnée n'est stockée par ce fournisseur. En utilisant cette fonctionnalité, vous acceptez ces conditions.
+    </div>
   </header>
 
   @if (isLoadingInsights) {
@@ -49,7 +52,7 @@
           <span class="ai-panel__card-icon" aria-hidden="true">{{ getInsightIcon(insight.impact) }}</span>
           <div class="ai-panel__card-title">{{ insight.title }}</div>
           <span class="ai-panel__confidence" [class]="'ai-panel__confidence ' + getConfidenceBadgeClass(insight.impact)">
-            {{ insight.confidence }}% confidence
+            {{ insight.confidence | confidence }} confidence
           </span>
         </div>
 
@@ -60,7 +63,7 @@
         <div class="ai-panel__confidence-row">
           <span class="ai-panel__confidence-label">Confidence Score</span>
           <div class="ai-panel__progress">
-            <div class="ai-panel__progress-fill" [style.width.%]="insight.confidence"></div>
+            <div class="ai-panel__progress-fill" [style.width.%]="insight.confidence * 100"></div>
           </div>
         </div>
 
@@ -73,11 +76,7 @@
           <div class="ai-panel__source"><span>Source:</span> {{ insight.source }}</div>
         }
 
-        <div class="ai-panel__buttons">
-          <button class="ai-panel__action" type="button">👍 Helpful</button>
-          <button class="ai-panel__action" type="button">👎 Not Helpful</button>
-          <button class="ai-panel__apply" type="button">Apply</button>
-        </div>
+        <!-- Feedback feature reserved for future version -->
       </article>
       }
     } @else if (insightsError) {

@@ -2,13 +2,14 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { Adr, AiInsight } from '../../../../models/adr.model';
 import { AdrService } from '../../../../services/adr.service';
+import { ConfidencePipe } from '../../../../shared/pipes/confidence.pipe';
 
 type InsightImpact = AiInsight['impact'];
 
 @Component({
   selector: 'app-ai-assistant-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ConfidencePipe],
   templateUrl: './ai-assistant-panel.component.html',
   styleUrl: './ai-assistant-panel.component.scss'
 })

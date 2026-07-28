@@ -54,6 +54,65 @@
     }
   </div>
 
+  <section class="project-board" aria-label="Projects">
+    <div class="project-board__header">
+      <span>Projects</span>
+      @if (canManageProjects) {
+        <button type="button" class="project-board__add" (click)="openCreateProject()" aria-label="Create project">+</button>
+      }
+    </div>
+
+    @if (showProjectForm) {
+      <form class="project-form" (ngSubmit)="saveProject()">
+        <input [(ngModel)]="projectName" name="projectName" maxlength="120" placeholder="Project name" required>
+        <textarea [(ngModel)]="projectDescription" name="projectDescription" maxlength="2000" placeholder="Short description (optional)"></textarea>
+        <div class="project-form__actions">
+          <button type="button" (click)="cancelProjectForm()">Cancel</button>
+          <button type="submit" class="project-form__save">{{ editingProject ? 'Save' : 'Create' }}</button>
+        </div>
+      </form>
+    }
+
+    <div class="project-groups">
+      @for (project of activeProjects; track project.id) {
+        <section class="project-group" (dragover)="$event.preventDefault()" (drop)="onDrop($event, project.id)">
+          <div class="project-group__header">
+            <div class="project-group__name" [title]="project.description || project.name">
+              <span class="project-group__dot"></span>{{ project.name }}
+              <span class="project-group__count">{{ adrsForProject(project.id).length }}</span>
+            </div>
+            @if (canManageProjects) {
+              <div class="project-group__actions">
+                <button type="button" (click)="openEditProject(project)" aria-label="Edit project">Edit</button>
+                <button type="button" (click)="projectArchived.emit(project.id)" aria-label="Archive project">Archive</button>
+              </div>
+            }
+          </div>
+          @for (adr of adrsForProject(project.id); track adr.id) {
+            <div class="project-card" [draggable]="canMoveAdrs" (dragstart)="onDragStart($event, adr)" (dragend)="onDragEnd()">
+              <app-adr-card [adr]="adr" [isSelected]="selectedId === adr.id" (selected)="adrSelected.emit($event)" (tagSelected)="onTagSelected($event)" />
+            </div>
+          } @empty {
+            <div class="project-drop-hint">Drop an ADR here</div>
+          }
+        </section>
+      }
+
+      <section class="project-group project-group--unassigned" (dragover)="$event.preventDefault()" (drop)="onDrop($event, null)">
+        <div class="project-group__header">
+          <div class="project-group__name"><span class="project-group__dot project-group__dot--muted"></span>Without project <span class="project-group__count">{{ unassignedAdrs.length }}</span></div>
+        </div>
+        @for (adr of unassignedAdrs; track adr.id) {
+          <div class="project-card" [draggable]="canMoveAdrs" (dragstart)="onDragStart($event, adr)" (dragend)="onDragEnd()">
+            <app-adr-card [adr]="adr" [isSelected]="selectedId === adr.id" (selected)="adrSelected.emit($event)" (tagSelected)="onTagSelected($event)" />
+          </div>
+        } @empty {
+          <div class="project-drop-hint">Drop an ADR here</div>
+        }
+      </section>
+    </div>
+  </section>
+
   <div class="adr-sidebar__list">
     @if (isLoading) {
       @for (_ of [1, 2, 3, 4, 5]; track _) {
@@ -62,15 +121,6 @@
           <div class="skeleton-line skeleton-body"></div>
           <div class="skeleton-line skeleton-tags"></div>
         </div>
-      }
-    } @else if (adrs.length) {
-      @for (adr of adrs; track adr.id) {
-        <app-adr-card
-          [adr]="adr"
-          [isSelected]="selectedId === adr.id"
-          (selected)="adrSelected.emit($event)"
-          (tagSelected)="onTagSelected($event)"
-        />
       }
     }
 
