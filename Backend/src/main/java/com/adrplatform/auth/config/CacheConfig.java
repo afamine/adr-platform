@@ -22,7 +22,7 @@ public class CacheConfig {
      */
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager manager = new CaffeineCacheManager("ai-insights");
+        CaffeineCacheManager manager = new CaffeineCacheManager();
         manager.setCaffeine(
             Caffeine.newBuilder()
                 .expireAfterWrite(2, TimeUnit.HOURS)

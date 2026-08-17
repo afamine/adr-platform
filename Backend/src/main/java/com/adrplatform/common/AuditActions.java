@@ -21,6 +21,9 @@ public final class AuditActions {
     // --- Comment ---
     public static final String COMMENT_ADDED      = "COMMENT_ADDED";
 
+    // --- AI assist ---
+    public static final String AI_ANALYSIS_TRIGGERED = "AI_ANALYSIS_TRIGGERED";
+
     // --- User ---
     public static final String USER_REGISTERED      = "USER_REGISTERED";
     public static final String USER_LOGGED_IN       = "USER_LOGGED_IN";

@@ -1,6 +1,7 @@
 package com.adrplatform.auth.config;
 
 import com.adrplatform.auth.security.CustomUserDetailsService;
+import com.adrplatform.adr.config.AiAssistProperties;
 import com.adrplatform.auth.security.JwtAuthenticationFilter;
 import com.adrplatform.auth.security.JwtProperties;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ import java.util.List;
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
-@EnableConfigurationProperties({JwtProperties.class, CorsProperties.class, PasswordResetProperties.class, AppProperties.class})
+@EnableConfigurationProperties({JwtProperties.class, CorsProperties.class, PasswordResetProperties.class, AppProperties.class, AiAssistProperties.class})
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -53,7 +54,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/adrs/*/votes").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/adrs/*/votes/my-vote").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/adrs/*/audit").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/adrs/*/ai-insights").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/adrs/*/ai-insights/latest").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/adrs/*/ai-insights/analyze").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/adrs", "/api/adrs/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/adrs").hasAnyRole("AUTHOR","ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/adrs/**").authenticated()
@@ -76,6 +78,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/analytics/**").hasAnyRole("ADMIN", "APPROVER")
                         .requestMatchers("/api/notifications/**").authenticated()
                         .requestMatchers("/api/admin/audit/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/email-templates/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

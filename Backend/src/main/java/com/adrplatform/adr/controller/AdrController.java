@@ -4,7 +4,8 @@ import com.adrplatform.adr.domain.AdrStatus;
 import com.adrplatform.adr.dto.AdrDto;
 import com.adrplatform.adr.dto.AssignProjectRequest;
 import com.adrplatform.adr.dto.AdrSummaryDto;
-import com.adrplatform.adr.dto.AiInsightDto;
+import com.adrplatform.adr.dto.AiAnalysisResultDto;
+import com.adrplatform.adr.dto.AiAnalysisTriggerResponse;
 import com.adrplatform.adr.dto.AuditEventDto;
 import com.adrplatform.adr.dto.CreateAdrRequest;
 import com.adrplatform.adr.dto.StatusTransitionRequest;
@@ -150,12 +151,20 @@ public class AdrController {
         return ResponseEntity.ok(adrAuditService.getAuditLog(id));
     }
 
-    @Operation(summary = "Generate AI insights for an ADR")
-    @ApiResponse(responseCode = "200", description = "Insights generated (may be empty if AI unavailable)")
+    @Operation(summary = "Start AI analysis for an ADR")
+    @ApiResponse(responseCode = "202", description = "Analysis queued or an existing matching analysis returned")
     @ApiResponse(responseCode = "404", description = "ADR not found", content = @Content)
-    @GetMapping("/{id}/ai-insights")
-    public ResponseEntity<List<AiInsightDto>> aiInsights(@PathVariable("id") UUID id) {
-        return ResponseEntity.ok(aiInsightService.generateInsights(adrService.getAdrEntity(id)));
+    @PostMapping("/{id}/ai-insights/analyze")
+    public ResponseEntity<AiAnalysisTriggerResponse> analyzeAiInsights(@PathVariable("id") UUID id) {
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(aiInsightService.triggerAnalysis(id));
+    }
+
+    @Operation(summary = "Get the latest saved AI analysis for an ADR")
+    @ApiResponse(responseCode = "200", description = "Latest analysis returned, including its current status")
+    @ApiResponse(responseCode = "404", description = "ADR not found", content = @Content)
+    @GetMapping("/{id}/ai-insights/latest")
+    public ResponseEntity<AiAnalysisResultDto> latestAiInsights(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(aiInsightService.getLatestAnalysis(id));
     }
 
     @Operation(summary = "Export an ADR as a MADR-format Markdown file")

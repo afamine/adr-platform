@@ -23,7 +23,6 @@ spring:
     database-change-log-lock-table: databasechangeloglock_adr
   cache:
     type: caffeine
-    cache-names: aiInsights
   jackson:
     default-property-inclusion: non_null
   ai:
@@ -79,6 +78,11 @@ app:
   frontend-url: ${APP_FRONTEND_URL:http://localhost:4200}
   token:
     email-verification-expiry-hours: 24
+
+ai:
+  assist:
+    provider-name: ${AI_ASSIST_PROVIDER_NAME:external LLM provider}
+    privacy-notice: ${AI_ASSIST_PRIVACY_NOTICE:ADR content is sent to an external AI provider for analysis. Do not include secrets or personal data.}
 
 logging:
   level:

@@ -97,3 +97,10 @@ databaseChangeLog:
         - sqlFile:
             path: db/changelog/V30__create_projects.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: "31"
+      author: adr-platform
+      changes:
+        - sqlFile:
+            path: db/changelog/V31__create_ai_analysis_tables.sql
+            relativeToChangelogFile: false

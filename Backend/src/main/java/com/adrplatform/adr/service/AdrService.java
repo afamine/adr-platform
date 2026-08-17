@@ -22,7 +22,6 @@ import com.adrplatform.auth.security.TenantContext;
 import com.adrplatform.auth.service.AuditService;
 import com.adrplatform.auth.exception.BadRequestException;
 import com.adrplatform.common.AuditActions;
-import org.springframework.cache.annotation.CacheEvict;
 import com.adrplatform.notification.service.NotificationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -188,7 +187,6 @@ public class AdrService {
         return AdrDto.fromEntity(saved);
     }
 
-    @CacheEvict(value = "ai-insights", key = "#id")
     @Transactional
     public AdrDto updateAdr(UUID id, UpdateAdrRequest request) {
         User actor = currentUser();
@@ -248,7 +246,6 @@ public class AdrService {
         return project;
     }
 
-    @CacheEvict(value = "ai-insights", key = "#id")
     @Transactional
     public AdrDto transitionStatus(UUID id, StatusTransitionRequest request) {
         AdrStatus newStatus = request.status();

@@ -61,6 +61,7 @@ public class AdrAuditService {
             case AuditActions.ADR_UPDATED        -> AuditActions.ADR_UPDATED;
             case AuditActions.VOTE_CAST          -> AuditActions.VOTE_CAST;
             case AuditActions.COMMENT_ADDED      -> AuditActions.COMMENT_ADDED;
+            case AuditActions.AI_ANALYSIS_TRIGGERED -> AuditActions.AI_ANALYSIS_TRIGGERED;
             default -> action;
         };
     }
@@ -80,6 +81,7 @@ public class AdrAuditService {
             case AuditActions.ADR_CREATED  -> "created this ADR";
             case AuditActions.ADR_UPDATED  -> "updated this ADR";
             case AuditActions.COMMENT_ADDED -> "added a comment";
+            case AuditActions.AI_ANALYSIS_TRIGGERED -> "triggered AI analysis";
             default -> type;
         };
     }

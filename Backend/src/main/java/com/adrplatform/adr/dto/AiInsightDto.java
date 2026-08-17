@@ -4,10 +4,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AiInsightDto(
+    java.util.UUID id,
     String title,
-    double confidence,
+    String summary,
     String impact,
-    String description,
+    int confidence,
     String rationale,
-    String source
+    String sourceReference,
+    String sourceQuote
 ) {}

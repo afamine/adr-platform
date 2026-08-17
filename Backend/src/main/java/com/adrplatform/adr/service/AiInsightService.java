@@ -1,86 +1,134 @@
 package com.adrplatform.adr.service;
 
+import com.adrplatform.adr.config.AiAssistProperties;
 import com.adrplatform.adr.domain.Adr;
+import com.adrplatform.adr.domain.AiAnalysisInsight;
+import com.adrplatform.adr.domain.AiAnalysisResult;
+import com.adrplatform.adr.domain.AiAnalysisStatus;
+import com.adrplatform.adr.dto.AiAnalysisResultDto;
+import com.adrplatform.adr.dto.AiAnalysisTriggerResponse;
 import com.adrplatform.adr.dto.AiInsightDto;
+import com.adrplatform.adr.exception.AdrNotFoundException;
+import com.adrplatform.adr.repository.AdrRepository;
+import com.adrplatform.adr.repository.AiAnalysisResultRepository;
+import com.adrplatform.auth.domain.User;
+import com.adrplatform.auth.security.TenantContext;
+import com.adrplatform.auth.service.AuditService;
+import com.adrplatform.common.AuditActions;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AiInsightService {
 
-    private final ChatClient.Builder chatClientBuilder;
+    private final AdrRepository adrRepository;
+    private final AiAnalysisResultRepository analysisRepository;
+    private final AiAnalysisProcessor analysisProcessor;
+    private final TenantContext tenantContext;
+    private final AuditService auditService;
     private final ObjectMapper objectMapper;
+    private final AiAssistProperties properties;
 
-    private ChatClient chatClient;
+    @Transactional
+    public AiAnalysisTriggerResponse triggerAnalysis(UUID adrId) {
+        Adr adr = findAdrInActiveWorkspace(adrId);
+        String versionHash = versionHash(adr);
 
-    @PostConstruct
-    public void init() {
-        this.chatClient = chatClientBuilder.build();
+        AiAnalysisResult reusable = analysisRepository
+                .findByAdrVersionAndStatusWithInsights(adrId, versionHash, AiAnalysisStatus.COMPLETED)
+                .stream().findFirst().orElse(null);
+        if (reusable != null) {
+            return new AiAnalysisTriggerResponse(reusable.getId(), reusable.getStatus());
+        }
+
+        AiAnalysisResult inProgress = analysisRepository
+                .findByAdrVersionAndStatusWithInsights(adrId, versionHash, AiAnalysisStatus.IN_PROGRESS)
+                .stream().findFirst().orElse(null);
+        if (inProgress != null) {
+            return new AiAnalysisTriggerResponse(inProgress.getId(), inProgress.getStatus());
+        }
+
+        AiAnalysisResult analysis = analysisRepository.save(AiAnalysisResult.builder()
+                .adr(adr)
+                .adrVersionHash(versionHash)
+                .status(AiAnalysisStatus.IN_PROGRESS)
+                .build());
+
+        User actor = currentUser();
+        auditService.record(actor, actor.getWorkspace(), AuditActions.AI_ANALYSIS_TRIGGERED, "ADR", adr.getId(), null,
+                toJson(Map.of("analysisId", analysis.getId().toString(), "adrVersion", versionHash,
+                        "provider", properties.providerNameOrDefault(), "externalDataSent", true)));
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                analysisProcessor.generateAsync(analysis.getId());
+            }
+        });
+        return new AiAnalysisTriggerResponse(analysis.getId(), analysis.getStatus());
     }
 
-    @Cacheable(value = "ai-insights", key = "#adr.id", unless = "#result.isEmpty()")
-    public List<AiInsightDto> generateInsights(Adr adr) {
+    @Transactional(readOnly = true)
+    public AiAnalysisResultDto getLatestAnalysis(UUID adrId) {
+        Adr adr = findAdrInActiveWorkspace(adrId);
+        String currentVersionHash = versionHash(adr);
+        AiAnalysisResult latest = analysisRepository.findLatestWithInsights(adrId).stream().findFirst().orElse(null);
+        if (latest == null) {
+            return new AiAnalysisResultDto(null, AiAnalysisStatus.STALE, null, currentVersionHash, null,
+                    properties.privacyNoticeOrDefault(), List.of());
+        }
+        return toDto(latest, currentVersionHash);
+    }
+
+    private AiAnalysisResultDto toDto(AiAnalysisResult analysis, String currentVersionHash) {
+        AiAnalysisStatus exposedStatus = analysis.getAdrVersionHash().equals(currentVersionHash)
+                ? analysis.getStatus() : AiAnalysisStatus.STALE;
+        List<AiInsightDto> insights = analysis.getInsights().stream().map(this::toInsightDto).toList();
+        return new AiAnalysisResultDto(analysis.getId(), exposedStatus, analysis.getGeneratedAt(),
+                analysis.getAdrVersionHash(), analysis.getErrorMessage(), properties.privacyNoticeOrDefault(), insights);
+    }
+
+    private AiInsightDto toInsightDto(AiAnalysisInsight insight) {
+        return new AiInsightDto(insight.getId(), insight.getTitle(), insight.getSummary(),
+                insight.getImpact().name(), insight.getConfidence(), insight.getRationale(),
+                insight.getSourceReference(), insight.getSourceQuote());
+    }
+
+    private Adr findAdrInActiveWorkspace(UUID adrId) {
+        return adrRepository.findByIdAndWorkspace_Id(adrId, tenantContext.getWorkspaceId())
+                .orElseThrow(() -> new AdrNotFoundException("ADR not found."));
+    }
+
+    private String versionHash(Adr adr) {
+        String content = String.join("\\u0000", safe(adr.getTitle()), safe(adr.getContext()), safe(adr.getDecision()),
+                safe(adr.getConsequences()), safe(adr.getAlternatives()), safe(adr.getTagsCsv()));
         try {
-            String prompt = """
-                    You are a senior software architect reviewing an Architecture Decision Record (ADR).
-                    Analyse the ADR below and return EXACTLY 3 to 4 architectural insights.
-
-                    ADR TITLE: %s
-                    CONTEXT: %s
-                    DECISION: %s
-                    CONSEQUENCES: %s
-                    ALTERNATIVES CONSIDERED: %s
-                    TAGS: %s
-
-                    Respond ONLY with a valid JSON array — no markdown, no preamble, no explanation outside the array.
-                    Each element must match:
-                    {
-                      "title":       "<short headline, max 8 words>",
-                      "confidence":  <float 0.0-1.0>,
-                      "impact":      "<high | medium | low>",
-                      "description": "<1–2 sentences>",
-                      "rationale":   "<1–2 sentences on why this matters architecturally>",
-                      "source":      "<which ADR section triggered this: context|decision|consequences|alternatives>"
-                    }
-                    """.formatted(
-                    safe(adr.getTitle()),
-                    safe(adr.getContext()),
-                    safe(adr.getDecision()),
-                    safe(adr.getConsequences()),
-                    safe(adr.getAlternatives()),
-                    safe(adr.getTagsCsv())
-            );
-
-            String raw = chatClient.prompt()
-                    .user(prompt)
-                    .call()
-                    .content();
-
-            String json = raw.replaceAll("(?s)```json\\s*|```\\s*", "").trim();
-
-            List<AiInsightDto> insights = objectMapper.readValue(
-                    json,
-                    objectMapper.getTypeFactory().constructCollectionType(List.class, AiInsightDto.class)
-            );
-
-            return insights;
-        } catch (Exception e) {
-            Throwable root = e.getCause() != null ? e.getCause() : e;
-            log.error("AI insight generation failed for ADR {} [{}]: {}", adr.getId(), root.getClass().getSimpleName(), root.getMessage());
-            return List.of();
+            byte[] bytes = MessageDigest.getInstance("SHA-256").digest(content.getBytes(StandardCharsets.UTF_8));
+            StringBuilder result = new StringBuilder(64);
+            for (byte value : bytes) result.append(String.format("%02x", value));
+            return result.toString();
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is unavailable", exception);
         }
     }
 
-    private String safe(String s) {
-        return s != null ? s : "Not provided";
+    private String safe(String value) { return value == null ? "" : value.trim(); }
+    private User currentUser() { return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(); }
+    private String toJson(Map<String, Object> payload) {
+        try { return objectMapper.writeValueAsString(payload); }
+        catch (Exception exception) { throw new IllegalStateException("Failed to serialize AI audit payload", exception); }
     }
 }
