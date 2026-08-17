@@ -1,14 +1,14 @@
 .wrapper {
   min-height: 100vh;
-  background: #fafafa;
+  background: #f8fafc;
   display: flex;
   flex-direction: column;
 }
 
 /* ── Global Header ── */
 .app-header {
-  height: 64px;
-  border-bottom: 1px solid #e5e7eb;
+  height: 56px;
+  border-bottom: 1px solid rgb(226 232 240 / 80%);
   background: white;
   display: flex;
   align-items: center;
@@ -24,20 +24,20 @@
 }
 
 .header-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #0f172a;
   color: white;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .header-title {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: #111827;
 }
@@ -68,10 +68,10 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #e0e7ff;
-  color: #4338ca;
-  font-size: 13px;
-  font-weight: 600;
+  background: #0f172a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -79,7 +79,7 @@
 
 /* ── Content ── */
 .content {
-  max-width: 680px;
+  max-width: 672px;
   margin: 0 auto;
   padding: 32px 24px;
   width: 100%;
@@ -88,7 +88,7 @@
 
 /* ── Page Header ── */
 .page-header {
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 
 .back-row {
@@ -128,10 +128,11 @@
 /* ── Card ── */
 .card {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #f1f5f9;
   border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+  padding: 20px 24px;
+  margin-bottom: 20px;
 }
 
 .card-header {
@@ -143,8 +144,8 @@
 
 .card-title {
   font-size: 14px;
-  font-weight: 500;
-  color: #111827;
+  font-weight: 600;
+  color: #1e293b;
 }
 
 .btn-outline {
@@ -168,19 +169,19 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px 0;
+  padding: 0 0 20px;
   border-bottom: 1px solid #f3f4f6;
   margin-bottom: 4px;
 }
 
 .avatar-lg {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   background: #0f172a;
   color: white;
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -266,9 +267,9 @@
 
 /* ── Role Box ── */
 .role-box {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
 }

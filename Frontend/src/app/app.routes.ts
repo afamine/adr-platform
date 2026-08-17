@@ -5,6 +5,7 @@ import { RegisterComponent } from './pages/register/register.component';
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
 import { analyticsGuard } from './guards/analytics.guard';
+import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -83,6 +84,7 @@ export const routes: Routes = [
     path: 'admin',
     title: 'Admin - Axiom ADR',
     canActivate: [adminGuard],
+    component: AdminLayoutComponent,
     children: [
       {
         path: 'dashboard',
@@ -112,6 +114,11 @@ export const routes: Routes = [
           import('./pages/admin/audit-log/audit-log.component')
             .then((m) => m.AuditLogComponent)
       },
+      {
+        path: 'email-templates-preview',
+        title: 'Email Templates - Axiom ADR',
+        loadComponent: () => import('./pages/admin/email-templates-preview/email-templates-preview.component').then((m) => m.EmailTemplatesPreviewComponent)
+      },
       { path: '', redirectTo: 'users', pathMatch: 'full' }
     ]
   },
@@ -122,6 +129,7 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: '/login'
+    title: 'Page not found - Axiom ADR',
+    loadComponent: () => import('./pages/not-found/not-found.component').then((m) => m.NotFoundComponent)
   }
 ];

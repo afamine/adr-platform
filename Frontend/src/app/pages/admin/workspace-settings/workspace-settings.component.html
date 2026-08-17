@@ -1,21 +1,11 @@
-<app-admin-layout>
-  <div class="content">
+<div class="content">
     <div class="page-title">Workspace Settings</div>
     <div class="page-subtitle">Configure your team workspace</div>
 
-      <!-- Tab Bar -->
-      <div class="tab-bar">
-        <button class="tab-btn" [class.active]="activeTab === 'general'" (click)="activeTab = 'general'">General</button>
-        <button class="tab-btn" [class.active]="activeTab === 'notifications'" (click)="activeTab = 'notifications'">Notifications</button>
-        <button class="tab-btn" [class.active]="activeTab === 'integrations'" (click)="activeTab = 'integrations'">Integrations</button>
-      </div>
-
-      <!-- General Tab -->
-      <div *ngIf="activeTab === 'general'">
-
-        <!-- Card 1: Workspace Information -->
+        <!-- General -->
         <div class="card">
-          <div class="card-title">Workspace Information</div>
+          <div class="card-title">General</div>
+          <div class="card-subtitle">Basic workspace information and access configuration</div>
 
           <div class="field-group">
             <label class="field-label">Workspace name</label>
@@ -77,7 +67,11 @@
           <div class="field-group">
             <label class="field-label">Approval quorum</label>
             <div class="quorum-row">
-              <input class="quorum-input" type="number" [(ngModel)]="quorum" name="quorum" min="1" />
+              <div class="quorum-stepper" aria-label="Approval quorum">
+                <button type="button" (click)="decrementQuorum()" aria-label="Decrease quorum">−</button>
+                <span>{{ quorum }}</span>
+                <button type="button" (click)="incrementQuorum()" aria-label="Increase quorum">+</button>
+              </div>
               <span class="quorum-helper">Minimum APPROVE votes needed for auto-acceptance</span>
             </div>
           </div>
@@ -128,23 +122,4 @@
           </div>
         </div>
 
-      </div>
-
-      <!-- Notifications Tab (placeholder) -->
-      <div *ngIf="activeTab === 'notifications'">
-        <div class="card">
-          <div class="card-title">Notifications</div>
-          <div class="card-subtitle">Notification settings coming soon.</div>
-        </div>
-      </div>
-
-      <!-- Integrations Tab (placeholder) -->
-      <div *ngIf="activeTab === 'integrations'">
-        <div class="card">
-          <div class="card-title">Integrations</div>
-          <div class="card-subtitle">Integration settings coming soon.</div>
-        </div>
-      </div>
-
-  </div>
-</app-admin-layout>
+</div>

@@ -6,11 +6,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../services/auth.service';
 import { ApiErrorBody, LoginRequest, AuthResponse } from '../../../models/auth.models';
 import { TotpService } from '../../../services/totp.service';
+import { AxiomLogoComponent } from '../../../shared/axiom-logo/axiom-logo.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, MatIconModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, MatIconModule, AxiomLogoComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })

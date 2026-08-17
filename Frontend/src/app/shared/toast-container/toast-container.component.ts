@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { NotificationService } from '../../services/notification.service';
+import { AxiomLogoComponent } from '../axiom-logo/axiom-logo.component';
 
 @Component({
   selector: 'app-toast-container',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AxiomLogoComponent],
   templateUrl: './toast-container.component.html',
   styleUrls: ['./toast-container.component.scss']
 })

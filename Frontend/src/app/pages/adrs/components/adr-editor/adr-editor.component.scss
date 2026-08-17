@@ -941,6 +941,11 @@ $hover-bg: #f9fafb;
 .adr-editor__input, .adr-editor__textarea--edit { border-color: #e5e7eb; border-radius: 6px; font-family: inherit; }
 .adr-editor__save-button { border-radius: 6px; background: #6366f1; }
 .adr-editor__save-button:hover { background: #4f46e5; }
+.adr-editor__content--ai-highlight { animation: ai-source-highlight 1.8s ease-out; }
+@keyframes ai-source-highlight {
+  0%, 45% { box-shadow: 0 0 0 4px rgba(99, 102, 241, .22); background: rgba(238, 242, 255, .72); }
+  100% { box-shadow: none; background: transparent; }
+}
 @media (max-width: 760px) {
   .adr-editor__detail-shell, .adr-editor__form, .adr-editor__relationship-stack { width: calc(100% - 24px); }
   .adr-editor__topbar { flex-direction: column; }

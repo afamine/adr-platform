@@ -1,13 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AxiomLogoComponent } from '../../shared/axiom-logo/axiom-logo.component';
 
 @Component({
   selector: 'app-unauthorized',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, AxiomLogoComponent],
   template: `
     <section class="unauthorized-page">
+      <app-axiom-logo state="idle" [size]="72" aria-label="Axiom" />
       <h1>Access Denied</h1>
       <p>You don't have permission to view this page.</p>
       <a routerLink="/adrs">Back to ADRs</a>

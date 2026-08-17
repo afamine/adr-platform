@@ -248,7 +248,11 @@
       </div>
 
       @if (showAIPanel) {
-        <app-ai-assistant-panel [selectedAdr]="selectedAdr()" (closePanel)="toggleAI()" />
+        <app-ai-assistant-panel
+          [selectedAdr]="selectedAdr()"
+          (closePanel)="toggleAI()"
+          (sourceNavigate)="onAiSourceNavigate($event)"
+        />
       }
 
       @if (showCollabPanel) {

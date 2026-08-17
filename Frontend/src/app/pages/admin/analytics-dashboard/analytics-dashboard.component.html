@@ -1,8 +1,14 @@
-<app-admin-layout>
   <div class="content">
+      <div class="brand-loading" *ngIf="isLoading" aria-live="polite">
+        <app-axiom-logo state="loading" [size]="38" aria-label="Loading analytics"></app-axiom-logo>
+        <span>Loading analytics…</span>
+      </div>
       <!-- Top row: title + period selector -->
       <div class="content-header">
-        <h1 class="page-title">Analytics Dashboard</h1>
+        <div>
+          <h1 class="page-title">Analytics Dashboard</h1>
+          <p class="page-subtitle">Workspace performance metrics and activity overview</p>
+        </div>
         <div class="period-tabs" role="group" aria-label="Analytics time range">
           <button
             class="period-tab"
@@ -89,7 +95,10 @@
         <!-- Line Chart: Weekly Activity -->
         <div class="chart-card chart-card--line">
           <div class="chart-card-header">
-            <div class="chart-title">ADR Activity</div>
+            <div>
+              <div class="chart-title">ADR Activity</div>
+              <div class="chart-subtitle">ADRs created over time</div>
+            </div>
           </div>
           <div class="line-chart-wrap">
             <canvas #lineChart></canvas>
@@ -132,4 +141,3 @@
         </table>
       </div>
   </div>
-</app-admin-layout>

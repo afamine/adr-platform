@@ -12,6 +12,7 @@ import { ChangePasswordModalComponent } from '../../components/change-password-m
 import { SecurityCardComponent } from '../../components/security-card/security-card.component';
 import { Enable2faModalComponent } from '../../components/enable-2fa-modal/enable-2fa-modal.component';
 import { Disable2faModalComponent } from '../../components/disable-2fa-modal/disable-2fa-modal.component';
+import { NotificationDropdownComponent } from '../../components/notification-dropdown/notification-dropdown.component';
 
 interface RoleConfig {
   bg: string;
@@ -24,7 +25,7 @@ interface RoleConfig {
 @Component({
   selector: 'app-user-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, ChangePasswordModalComponent, SecurityCardComponent, Enable2faModalComponent, Disable2faModalComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, ChangePasswordModalComponent, SecurityCardComponent, Enable2faModalComponent, Disable2faModalComponent, NotificationDropdownComponent],
   templateUrl: './user-profile.component.html',
   styleUrls: ['./user-profile.component.scss']
 })

@@ -21,7 +21,9 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-export type LogoStage = 'splash' | 'loading' | 'success' | 'error' | 'idle';
+export type LogoState = 'splash' | 'loading' | 'success' | 'error' | 'idle';
+/** @deprecated Use LogoState. */
+export type LogoStage = LogoState;
 
 @Component({
   selector: 'app-axiom-logo',
@@ -114,7 +116,7 @@ export type LogoStage = 'splash' | 'loading' | 'success' | 'error' | 'idle';
   `],
   template: `
     <!-- ── Stage 1: Splash ─────────────────────────────── -->
-    <ng-container *ngIf="stage === 'splash' && visible">
+    <ng-container *ngIf="state === 'splash' && visible">
       <div class="al-col-center">
         <svg [attr.width]="svgW" [attr.height]="size" viewBox="0 0 120 110" fill="none">
           <path class="splash-frame"
@@ -151,7 +153,7 @@ export type LogoStage = 'splash' | 'loading' | 'success' | 'error' | 'idle';
     </ng-container>
 
     <!-- ── Stage 2: Loading ────────────────────────────── -->
-    <svg *ngIf="stage === 'loading'"
+    <svg *ngIf="state === 'loading'"
       [attr.width]="svgW" [attr.height]="size" viewBox="0 0 120 110" fill="none">
       <path d="M60,4 L18,102 L102,102 Z"
         [attr.stroke]="iconColor" stroke-width="1.5" fill="none" opacity="0.15" />
@@ -173,7 +175,7 @@ export type LogoStage = 'splash' | 'loading' | 'success' | 'error' | 'idle';
     </svg>
 
     <!-- ── Stage 3: Success ────────────────────────────── -->
-    <ng-container *ngIf="stage === 'success' && visible">
+    <ng-container *ngIf="state === 'success' && visible">
       <div [style.width.px]="svgW" [style.height.px]="size" style="position:relative;">
         <svg class="success-icon"
           [attr.width]="svgW" [attr.height]="size" viewBox="0 0 120 110" fill="none"
@@ -198,7 +200,7 @@ export type LogoStage = 'splash' | 'loading' | 'success' | 'error' | 'idle';
     </ng-container>
 
     <!-- ── Stage 4: Error ──────────────────────────────── -->
-    <ng-container *ngIf="stage === 'error' && visible">
+    <ng-container *ngIf="state === 'error' && visible">
       <div class="error-shake al-row-center"
         (animationend)="onComplete()">
         <svg [attr.width]="svgW" [attr.height]="size" viewBox="0 0 120 110" fill="none">
@@ -219,7 +221,7 @@ export type LogoStage = 'splash' | 'loading' | 'success' | 'error' | 'idle';
     </ng-container>
 
     <!-- ── Stage 5: Idle ───────────────────────────────── -->
-    <div *ngIf="stage === 'idle'" class="idle-float al-col-center">
+    <div *ngIf="state === 'idle'" class="idle-float al-col-center">
       <svg [attr.width]="svgW" [attr.height]="size" viewBox="0 0 120 110" fill="none">
         <path class="idle-triangle"
           d="M60,4 L18,102 L102,102 Z"
@@ -237,7 +239,9 @@ export type LogoStage = 'splash' | 'loading' | 'success' | 'error' | 'idle';
   `,
 })
 export class AxiomLogoComponent implements OnInit, OnDestroy, OnChanges {
-  @Input() stage: LogoStage = 'splash';
+  @Input() state: LogoState = 'splash';
+  /** Compatibility alias for templates not yet migrated to [state]. */
+  @Input() set stage(value: LogoState) { this.state = value; }
   @Input() iconColor = '#6366F1';
   @Input() accentColor = '#818CF8';
   @Input() size = 80;
@@ -262,16 +266,16 @@ export class AxiomLogoComponent implements OnInit, OnDestroy, OnChanges {
   ngOnInit(): void {
     this.flashColor = this.iconColor;
     this.setupAutoReplay();
-    if (this.stage === 'success') this.triggerFlash();
+    if (this.state === 'success') this.triggerFlash();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['stage'] || changes['iconColor']) {
+    if (changes['state'] || changes['stage'] || changes['iconColor']) {
       this.flashColor = this.iconColor;
       this.clearTimers();
       this.completeEmitted = false;
       this.setupAutoReplay();
-      if (this.stage === 'success') this.triggerFlash();
+      if (this.state === 'success') this.triggerFlash();
     }
   }
 
@@ -286,7 +290,7 @@ export class AxiomLogoComponent implements OnInit, OnDestroy, OnChanges {
     this.cdr.markForCheck();
     setTimeout(() => {
       this.visible = true;
-      if (this.stage === 'success') this.triggerFlash();
+      if (this.state === 'success') this.triggerFlash();
       this.cdr.markForCheck();
     }, 30);
   }
@@ -307,7 +311,7 @@ export class AxiomLogoComponent implements OnInit, OnDestroy, OnChanges {
 
   private setupAutoReplay(): void {
     if (this.replayTimer) clearInterval(this.replayTimer);
-    if (!this.autoReplayMs || this.stage === 'loading' || this.stage === 'idle') return;
+    if (!this.autoReplayMs || this.state === 'loading' || this.state === 'idle') return;
     this.replayTimer = setInterval(() => this.replay(), this.autoReplayMs);
   }
 

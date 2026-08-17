@@ -3,7 +3,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout.component';
 import { UpdateWorkspaceRequest, WorkspaceJoinPolicy } from '../../../models/auth.models';
 import { NotificationService } from '../../../services/notification.service';
 import { WorkspaceService } from '../../../services/workspace.service';
@@ -11,15 +10,13 @@ import { WorkspaceService } from '../../../services/workspace.service';
 @Component({
   selector: 'app-workspace-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, AdminLayoutComponent],
+  imports: [CommonModule, FormsModule],
   templateUrl: './workspace-settings.component.html',
   styleUrls: ['./workspace-settings.component.scss']
 })
 export class WorkspaceSettingsComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   private readonly workspaceService = inject(WorkspaceService);
-
-  activeTab: 'general' | 'notifications' | 'integrations' = 'general';
 
   workspaceName = '';
   workspaceSlug = '';
@@ -103,6 +100,14 @@ export class WorkspaceSettingsComponent implements OnInit {
 
   setJoinPolicy(policy: WorkspaceJoinPolicy): void {
     this.joinPolicy = policy;
+  }
+
+  decrementQuorum(): void {
+    this.quorum = Math.max(1, this.quorum - 1);
+  }
+
+  incrementQuorum(): void {
+    this.quorum = Math.min(10, this.quorum + 1);
   }
 
   async copyWorkspaceSlug(): Promise<void> {

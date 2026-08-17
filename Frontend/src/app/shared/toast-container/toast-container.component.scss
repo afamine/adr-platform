@@ -23,6 +23,8 @@
   animation: slideIn 0.2s ease;
 }
 
+.toast-icon app-axiom-logo { display: inline-flex; width: 24px; height: 24px; }
+
 @keyframes slideIn {
   from {
     transform: translateX(110%);

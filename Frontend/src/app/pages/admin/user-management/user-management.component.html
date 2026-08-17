@@ -1,4 +1,3 @@
-<app-admin-layout>
   <main class="main">
       <div class="page-header">
         <div class="page-title-block">
@@ -39,7 +38,10 @@
           <div class="th">Actions</div>
         </div>
 
-        <div *ngIf="isLoading" class="loading-state">Loading users...</div>
+        <div *ngIf="isLoading" class="loading-state brand-loading" aria-live="polite">
+          <app-axiom-logo state="loading" [size]="32" aria-label="Loading users"></app-axiom-logo>
+          <span>Loading users...</span>
+        </div>
 
         <ng-container *ngIf="!isLoading && filteredUsers.length > 0">
           <div class="table-row" *ngFor="let user of filteredUsers; trackBy: trackByUserId">
@@ -219,4 +221,3 @@
       </div>
     </div>
   </div>
-</app-admin-layout>

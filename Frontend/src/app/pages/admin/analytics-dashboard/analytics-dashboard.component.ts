@@ -1,5 +1,4 @@
 import { CommonModule } from '@angular/common';
-import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { Router } from '@angular/router';
@@ -9,6 +8,7 @@ import { forkJoin } from 'rxjs';
 import { AnalyticsTimeRange, KpiResponse, RecentAdrDto, StatusCount, WeeklyActivity } from '../../../models/analytics.models';
 import { AnalyticsService } from '../../../services/analytics.service';
 import { NotificationService } from '../../../services/notification.service';
+import { AxiomLogoComponent } from '../../../shared/axiom-logo/axiom-logo.component';
 
 Chart.register(...registerables);
 
@@ -19,7 +19,7 @@ interface TimeRangeOption { label: string; value: AnalyticsTimeRange; }
 @Component({
   selector: 'app-analytics-dashboard',
   standalone: true,
-  imports: [CommonModule, AdminLayoutComponent],
+  imports: [CommonModule, AxiomLogoComponent],
   templateUrl: './analytics-dashboard.component.html',
   styleUrls: ['./analytics-dashboard.component.scss']
 })
@@ -162,9 +162,11 @@ export class AnalyticsDashboardComponent implements OnInit, AfterViewInit, OnDes
   }
 
   private applyDistribution(dist: StatusCount[]): void {
-    this.barData = dist
-      .filter(d => d.status !== 'SUPERSEDED')
-      .map(d => ({ status: d.status, count: d.count, color: this.statusColors[d.status] ?? '#9ca3af' }));
+    this.barData = dist.map(d => ({
+      status: d.status,
+      count: d.count,
+      color: this.statusColors[d.status] ?? '#9ca3af'
+    }));
     this.maxBarCount = Math.max(...this.barData.map(b => b.count), 1);
   }
 

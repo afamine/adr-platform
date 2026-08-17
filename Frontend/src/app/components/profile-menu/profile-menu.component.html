@@ -1,0 +1,12 @@
+<div class="profile-menu">
+  <button type="button" class="profile-menu__trigger" (click)="toggle()" aria-label="Open profile menu">
+    {{ initials }}
+  </button>
+
+  @if (isOpen()) {
+    <div class="profile-menu__panel" role="menu">
+      <button type="button" role="menuitem" (click)="openProfile()">Your Profile</button>
+      <button type="button" role="menuitem" class="profile-menu__sign-out" (click)="signOut()">Sign out</button>
+    </div>
+  }
+</div>

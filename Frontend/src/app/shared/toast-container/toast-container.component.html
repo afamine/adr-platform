@@ -1,21 +1,15 @@
 <div class="toast-container">
-  <div
-    class="toast"
-    *ngFor="let n of (notifs$ | async)"
-    [ngClass]="'toast-' + n.type"
-  >
+  <div class="toast" *ngFor="let n of (notifs$ | async)" [ngClass]="'toast-' + n.type">
     <div class="toast-icon">
-      <span *ngIf="n.type === 'success'">✓</span>
-      <span *ngIf="n.type === 'error'">✕</span>
-      <span *ngIf="n.type === 'warning'">⚠</span>
-      <span *ngIf="n.type === 'info'">ℹ</span>
+      <app-axiom-logo *ngIf="n.type === 'success'" state="success" [size]="24" aria-label="Success"></app-axiom-logo>
+      <app-axiom-logo *ngIf="n.type === 'error'" state="error" [size]="24" aria-label="Error"></app-axiom-logo>
+      <span *ngIf="n.type === 'warning'">Warning</span>
+      <span *ngIf="n.type === 'info'">Info</span>
     </div>
-
     <div class="toast-body">
       <div class="toast-title">{{ n.title }}</div>
       <div class="toast-msg" *ngIf="n.message">{{ n.message }}</div>
     </div>
-
-    <button class="toast-close" type="button" (click)="notifService.dismiss(n.id)">×</button>
+    <button class="toast-close" type="button" (click)="notifService.dismiss(n.id)" aria-label="Dismiss notification">×</button>
   </div>
 </div>

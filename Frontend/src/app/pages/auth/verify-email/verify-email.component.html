@@ -12,7 +12,7 @@
     <ng-container *ngIf="state() === 'LOADING'">
       <div class="state-block">
         <div class="spinner-wrapper">
-          <app-axiom-logo stage="loading" [size]="72" iconColor="#6366F1"></app-axiom-logo>
+          <app-axiom-logo state="loading" [size]="72" iconColor="#6366F1"></app-axiom-logo>
         </div>
         <p class="primary-text">Verifying your email address...</p>
         <p class="secondary-text">Please wait while we confirm your account.</p>
@@ -25,7 +25,7 @@
       <div class="state-block">
         <div class="axiom-logo-wrapper" aria-hidden="true">
           <app-axiom-logo
-            stage="success"
+            state="success"
             [size]="72"
             iconColor="#1d9e75"
             accentColor="#34d399">
@@ -47,7 +47,7 @@
       <div class="state-block">
         <div class="axiom-logo-wrapper" aria-hidden="true">
           <app-axiom-logo
-            stage="error"
+            state="error"
             [size]="72"
             iconColor="#ef4444"
             [autoReplayMs]="4000">
@@ -101,7 +101,7 @@
       <div class="state-block">
         <div class="axiom-logo-wrapper" aria-hidden="true">
           <app-axiom-logo
-            stage="error"
+            state="error"
             [size]="72"
             iconColor="#ef4444"
             [autoReplayMs]="4000">

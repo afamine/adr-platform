@@ -61,12 +61,31 @@ export interface AuditEventDto {
 }
 
 export interface AiInsight {
+  id: string;
   title: string;
+  summary: string;
+  impact: 'HIGH' | 'MEDIUM' | 'LOW';
   confidence: number;
-  impact: 'high' | 'medium' | 'low';
-  description: string;
   rationale: string;
-  source?: string;
+  sourceReference: AdrTabKey;
+  sourceQuote?: string | null;
+}
+
+export type AiAnalysisStatus = 'COMPLETED' | 'IN_PROGRESS' | 'FAILED' | 'STALE';
+
+export interface AiAnalysisResult {
+  analysisId: string | null;
+  status: AiAnalysisStatus;
+  generatedAt: string | null;
+  adrVersion: string;
+  errorMessage?: string | null;
+  privacyNotice: string;
+  insights: AiInsight[];
+}
+
+export interface AiAnalysisTriggerResponse {
+  analysisId: string;
+  status: Extract<AiAnalysisStatus, 'COMPLETED' | 'IN_PROGRESS'>;
 }
 
 export interface CreateAdrRequest {

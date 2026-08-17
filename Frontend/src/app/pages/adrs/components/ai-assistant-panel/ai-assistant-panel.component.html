@@ -1,91 +1,64 @@
-<section class="ai-panel">
+<section class="ai-panel" [class.ai-panel--collapsed]="isCollapsed" aria-label="AI Assistant">
   <header class="ai-panel__header">
     <div class="ai-panel__header-row">
-      <span class="ai-panel__header-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2l1.1 4.2 3.9-1.9-1.9 3.9L19 9.3l-4.2 1.1 1.9 3.9-3.9-1.9L12 22l-1.1-4.2-3.9 1.9 1.9-3.9L5 14.7l4.2-1.1-1.9-3.9 3.9 1.9L12 2Z" fill="#6366f1" opacity="0.15" />
-          <path d="M12 3.5l.8 3 2.8-1.4-1.4 2.8 3 .8-3 .8 1.4 2.8-2.8-1.4-.8 3-.8-3-2.8 1.4 1.4-2.8-3-.8 3-.8-1.4-2.8 2.8 1.4.8-3Z" stroke="#6366f1" stroke-width="1.4" stroke-linejoin="round" />
-        </svg>
-      </span>
+      <span class="ai-panel__header-icon" aria-hidden="true">✦</span>
       <div class="ai-panel__header-title">AI Assistant</div>
-      <button class="ai-panel__close" type="button" (click)="closePanel.emit()">Close</button>
+      <button class="ai-panel__icon-button" type="button" (click)="isCollapsed = !isCollapsed"
+        [attr.aria-expanded]="!isCollapsed" aria-controls="ai-assistant-content" [attr.aria-label]="isCollapsed ? 'Expand AI assistant' : 'Collapse AI assistant'">
+        {{ isCollapsed ? 'Expand' : 'Collapse' }}
+      </button>
+      <button class="ai-panel__close" type="button" (click)="closePanel.emit()" aria-label="Close AI assistant">Close</button>
     </div>
-    <div class="ai-panel__header-subtitle">AI-powered insights and recommendations for your architectural decision</div>
-    <div class="ai-disclaimer">
-      Les données de cet ADR sont envoyées à un fournisseur d'IA externe pour analyse. Aucune donnée n'est stockée par ce fournisseur. En utilisant cette fonctionnalité, vous acceptez ces conditions.
-    </div>
+
+    @if (!isCollapsed) {
+      <div class="ai-panel__header-subtitle">Focused AI insights for this architectural decision.</div>
+      <div class="ai-panel__meta">
+        <span>Last analyzed: {{ analysis?.generatedAt ? (analysis?.generatedAt | date:'medium') : 'Not yet analyzed' }}</span>
+        <button class="ai-panel__refresh" type="button" (click)="refreshAnalysis()" [disabled]="!selectedAdr || isRefreshing || analysis?.status === 'IN_PROGRESS'">
+          @if (isRefreshing || analysis?.status === 'IN_PROGRESS') { <span class="ai-panel__spinner" aria-hidden="true"></span> }
+          {{ analysis?.generatedAt ? 'Refresh analysis' : 'Run analysis' }}
+        </button>
+      </div>
+      <p class="ai-panel__disclaimer">{{ analysis?.privacyNotice || 'ADR content is sent to an external AI provider for analysis. Do not include secrets or personal data.' }}</p>
+    }
   </header>
 
-  @if (isLoadingInsights) {
-    <div class="ai-panel__summary">
-      <div class="ai-panel__summary-title">
-        <span class="ai-panel__summary-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2l1.1 4.2 3.9-1.9-1.9 3.9L19 9.3l-4.2 1.1 1.9 3.9-3.9-1.9L12 22l-1.1-4.2-3.9 1.9 1.9-3.9L5 14.7l4.2-1.1-1.9-3.9 3.9 1.9L12 2Z" stroke="#6366f1" stroke-width="1.4" stroke-linejoin="round" />
-          </svg>
-        </span>
-        <span>AI Analysis Loading</span>
-      </div>
-      <div class="ai-panel__summary-text">Generating AI-powered insights for this ADR.</div>
-    </div>
-  } @else if (insights.length) {
-    <div class="ai-panel__summary">
-      <div class="ai-panel__summary-title">
-        <span class="ai-panel__summary-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2l1.1 4.2 3.9-1.9-1.9 3.9L19 9.3l-4.2 1.1 1.9 3.9-3.9-1.9L12 22l-1.1-4.2-3.9 1.9 1.9-3.9L5 14.7l4.2-1.1-1.9-3.9 3.9 1.9L12 2Z" stroke="#6366f1" stroke-width="1.4" stroke-linejoin="round" />
-          </svg>
-        </span>
-        <span>AI Analysis Complete</span>
-      </div>
-      <div class="ai-panel__summary-text">Found {{ insights.length }} insights based on this ADR.</div>
+  @if (!isCollapsed) {
+    <div id="ai-assistant-content" class="ai-panel__content" aria-live="polite">
+      @if (isLoadingLatest) {
+        <div class="ai-panel__state"><span class="ai-panel__spinner" aria-hidden="true"></span> Loading AI analysis…</div>
+      } @else if (loadError) {
+        <div class="ai-panel__state ai-panel__state--error">{{ loadError }}</div>
+      } @else if (analysis?.status === 'IN_PROGRESS') {
+        <div class="ai-panel__state"><span class="ai-panel__spinner" aria-hidden="true"></span> AI analysis is in progress…</div>
+      } @else if (analysis?.status === 'FAILED') {
+        <div class="ai-panel__state ai-panel__state--error">{{ analysis?.errorMessage || 'AI service temporarily unavailable. Please try again.' }}</div>
+      } @else if (analysis?.status === 'STALE') {
+        <div class="ai-panel__state">This ADR has changed since its last analysis. Run a new analysis to refresh the insights.</div>
+      } @else if (analysis?.insights?.length) {
+        <div class="ai-panel__summary">{{ analysis?.insights?.length }} insights from the latest analysis</div>
+        @for (insight of analysis?.insights || []; track insight.id) {
+          <article class="ai-panel__card">
+            <button class="ai-panel__card-toggle" type="button" (click)="toggleInsight(insight)" [attr.aria-expanded]="isExpanded(insight)">
+              <span class="ai-panel__card-title">{{ insight.title }}</span>
+              <span class="ai-panel__impact">{{ impactLabel(insight.impact) }}</span>
+              <span class="ai-panel__confidence" [class]="'ai-panel__confidence ' + confidenceClass(insight.confidence)">{{ insight.confidence }}% confidence</span>
+              <span class="ai-panel__chevron" aria-hidden="true">{{ isExpanded(insight) ? '⌃' : '⌄' }}</span>
+            </button>
+            <p class="ai-panel__summary-text">{{ insight.summary }}</p>
+            @if (isExpanded(insight)) {
+              <div class="ai-panel__details">
+                <div><strong>Rationale</strong><p>{{ insight.rationale }}</p></div>
+                <div><strong>Confidence score</strong><p>{{ insight.confidence }}%</p></div>
+                <div><strong>Source</strong><button class="ai-panel__source" type="button" (click)="navigateToSource(insight.sourceReference)">{{ insight.sourceReference | titlecase }}</button></div>
+                @if (insight.sourceQuote) { <blockquote>{{ insight.sourceQuote }}</blockquote> }
+              </div>
+            }
+          </article>
+        }
+      } @else {
+        <div class="ai-panel__state">No saved analysis yet. Select Run analysis when this ADR has enough content.</div>
+      }
     </div>
   }
-
-  <div class="ai-panel__insights">
-    @if (isLoadingInsights) {
-      <div class="ai-panel__empty">Loading AI insights...</div>
-    } @else if (insights.length) {
-      @for (insight of insights; track insight.title) {
-      <article class="ai-panel__card">
-        <div class="ai-panel__card-row">
-          <span class="ai-panel__card-icon" aria-hidden="true">{{ getInsightIcon(insight.impact) }}</span>
-          <div class="ai-panel__card-title">{{ insight.title }}</div>
-          <span class="ai-panel__confidence" [class]="'ai-panel__confidence ' + getConfidenceBadgeClass(insight.impact)">
-            {{ insight.confidence | confidence }} confidence
-          </span>
-        </div>
-
-        <div class="ai-panel__impact" [class]="'ai-panel__impact ai-panel__impact--' + insight.impact">{{ getImpactLabel(insight.impact) }}</div>
-
-        <div class="ai-panel__description">{{ insight.description }}</div>
-
-        <div class="ai-panel__confidence-row">
-          <span class="ai-panel__confidence-label">Confidence Score</span>
-          <div class="ai-panel__progress">
-            <div class="ai-panel__progress-fill" [style.width.%]="insight.confidence * 100"></div>
-          </div>
-        </div>
-
-        <div class="ai-panel__rationale">
-          <div class="ai-panel__rationale-title">Rationale</div>
-          <div class="ai-panel__rationale-text">{{ insight.rationale }}</div>
-        </div>
-
-        @if (insight.source) {
-          <div class="ai-panel__source"><span>Source:</span> {{ insight.source }}</div>
-        }
-
-        <!-- Feedback feature reserved for future version -->
-      </article>
-      }
-    } @else if (insightsError) {
-      <div class="ai-panel__empty">AI analysis unavailable. Please try again.</div>
-    } @else {
-      <div class="ai-panel__empty">
-        AI analysis not yet available for this ADR.
-        AI insights are generated when the ADR has sufficient content.
-      </div>
-    }
-  </div>
 </section>

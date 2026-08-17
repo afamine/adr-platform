@@ -209,7 +209,7 @@
       }
     </div>
 
-    <div class="adr-editor__content">
+    <div class="adr-editor__content" [attr.data-adr-section]="activeTab">
       @if (activeTab === 'audit') {
         <div class="audit-tab">
           <div class="audit-meta-summary">

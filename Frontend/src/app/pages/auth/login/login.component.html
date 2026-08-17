@@ -1,109 +1,102 @@
-<div class="auth-layout">
-  <div class="left-panel">
-    <img src="assets/logos/svg/logo-horizontal-dark-accent.svg" alt="Axiom" class="left-logo" />
+<main class="auth-page" aria-labelledby="sign-in-title">
+  <aside class="auth-page__story" aria-label="About Axiom ADR Manager">
+    <div class="auth-page__glow auth-page__glow--top"></div>
+    <div class="auth-page__glow auth-page__glow--bottom"></div>
 
-    <div class="left-content">
-      <h1 class="headline">Govern your architecture decisions with confidence.</h1>
-      <p class="description">
-        Capture, validate, and search architectural decisions with AI assistance.
-      </p>
+    <div class="auth-page__story-content">
+      <a class="brand" routerLink="/login" aria-label="Axiom ADR Manager home">
+        <app-axiom-logo state="idle" [size]="28" iconColor="#ffffff" aria-hidden="true"></app-axiom-logo>
+        <span>Axiom</span>
+      </a>
 
-      <ul class="bullets">
-        <li>
-          <span class="dot"></span>
-          <span>Smart AI suggestions as you write your decisions</span>
-        </li>
-        <li>
-          <span class="dot"></span>
-          <span>Structured validation workflows for your team</span>
-        </li>
-        <li>
-          <span class="dot"></span>
-          <span>Semantic search across all architectural decisions</span>
-        </li>
-      </ul>
+      <div class="auth-page__message">
+        <span class="eyebrow"><i></i> Enterprise decision platform</span>
+        <h1>Clarity at the heart<br />of every decision.</h1>
+        <p>One platform for structured decisions, real-time collaboration, and traceable outcomes — built for teams that move fast.</p>
+
+        <ul class="feature-list">
+          <li><span>✓</span>SOC 2 Type II certified security &amp; compliance</li>
+          <li><span>✓</span>Real-time audit trails and decision analytics</li>
+          <li><span>✓</span>Workspace-based team collaboration</li>
+        </ul>
+      </div>
+
+      <p class="auth-page__copyright">© 2026 Axiom Technologies. All rights reserved.</p>
     </div>
+  </aside>
 
-    <div class="left-footer">
-      <div class="divider"></div>
-      <div class="footer-text">ADR Manager · Final Year Project 2026</div>
-    </div>
-  </div>
+  <section class="auth-page__form-panel">
+    <a class="mobile-brand" routerLink="/login" aria-label="Axiom ADR Manager home">
+      <app-axiom-logo state="idle" [size]="25" iconColor="#091629" aria-hidden="true"></app-axiom-logo>
+      <span>Axiom</span>
+    </a>
 
-  <div class="right-panel">
-    <div class="mobile-topbar">
-      <img src="assets/logos/svg/logo-horizontal-dark-accent.svg" alt="Axiom" />
-    </div>
-
-    <div class="form-wrapper">
-      <h2 class="title">Welcome back</h2>
-      <p class="subtitle">Sign in to your workspace to continue</p>
+    <div class="auth-form auth-form--sign-in">
+      <header class="auth-form__header">
+        <h2 id="sign-in-title">Welcome back</h2>
+        <p>Sign in to your Axiom workspace</p>
+      </header>
 
       <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
-        <div class="field-group">
+        <div class="field">
           <label for="email">Email address</label>
-          <div class="input-wrapper" [class.invalid]="hasError('email','required') || hasError('email','email')">
-            <mat-icon class="input-icon" fontIcon="mail_outline"></mat-icon>
-            <input id="email" type="email" placeholder="you@company.com" formControlName="email" />
-          </div>
-          <div class="error" *ngIf="hasError('email','required')">Email address is required</div>
-          <div class="error" *ngIf="!hasError('email','required') && hasError('email','email')">Please enter a valid email address</div>
+          <input
+            id="email"
+            type="email"
+            autocomplete="email"
+            placeholder="you@company.com"
+            formControlName="email"
+            [attr.aria-invalid]="hasError('email', 'required') || hasError('email', 'email')"
+            [class.field__input--invalid]="hasError('email', 'required') || hasError('email', 'email')"
+          />
+          <p class="field__error" *ngIf="hasError('email', 'required')">Email address is required</p>
+          <p class="field__error" *ngIf="!hasError('email', 'required') && hasError('email', 'email')">Enter a valid email address</p>
         </div>
 
-        <div class="field-group">
+        <div class="field">
           <label for="password">Password</label>
-          <div class="input-wrapper" [class.invalid]="hasError('password','required') || hasError('password','minlength')">
-            <mat-icon class="input-icon" fontIcon="lock_outline"></mat-icon>
-            <input id="password" [type]="passwordVisible() ? 'text' : 'password'" placeholder="••••••••" formControlName="password" />
-            <button type="button" class="eye-toggle" (click)="togglePasswordVisibility()" aria-label="Toggle password visibility">
-              <mat-icon>{{ passwordVisible() ? 'visibility' : 'visibility_off' }}</mat-icon>
+          <div class="field__password">
+            <input
+              id="password"
+              [type]="passwordVisible() ? 'text' : 'password'"
+              autocomplete="current-password"
+              placeholder="Enter your password"
+              formControlName="password"
+              [attr.aria-invalid]="hasError('password', 'required') || hasError('password', 'minlength')"
+              [class.field__input--invalid]="hasError('password', 'required') || hasError('password', 'minlength')"
+            />
+            <button type="button" class="visibility-button" (click)="togglePasswordVisibility()" [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'">
+              <mat-icon>{{ passwordVisible() ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
           </div>
-          <div class="error" *ngIf="hasError('password','required')">Password is required</div>
-          <div class="error" *ngIf="!hasError('password','required') && hasError('password','minlength')">Password must be at least 8 characters</div>
-
-          <a routerLink="/forgot-password" class="forgot">Forgot password?</a>
+          <p class="field__error" *ngIf="hasError('password', 'required')">Password is required</p>
+          <p class="field__error" *ngIf="!hasError('password', 'required') && hasError('password', 'minlength')">Password must be at least 8 characters</p>
         </div>
 
-        <button class="submit" type="submit" [disabled]="isLoading()">
-          {{ isLoading() ? 'Signing in...' : 'Sign in' }}
+        <div class="form-actions">
+          <a routerLink="/forgot-password">Forgot password?</a>
+        </div>
+
+        <button class="primary-button" type="submit" [disabled]="isLoading()">
+          <span class="button-spinner" *ngIf="isLoading()" aria-hidden="true"></span>
+          {{ isLoading() ? 'Signing in…' : 'Sign in' }}
         </button>
       </form>
 
-      <div class="or">
-        <span class="line"></span>
-        <span>or</span>
-        <span class="line"></span>
-      </div>
+      <p class="auth-form__switch">Don't have an account? <a routerLink="/register">Create one</a></p>
 
-      <div class="register">
-        Don't have an account? <a routerLink="/register">Create one</a>
-      </div>
-
-      <div class="error-alert" *ngIf="errorMessage() as msg">
-        <span class="red-dot"></span>
-        <span>{{ msg }}</span>
-      </div>
+      <div class="form-alert form-alert--error" *ngIf="errorMessage() as msg" role="alert">{{ msg }}</div>
 
       <div class="verify-banner" *ngIf="emailNotVerified()">
-        <div class="verify-banner__title">Your email isn't verified yet.</div>
-        <p class="verify-banner__text">
-          Please check your inbox for the verification link we sent when you registered.
-        </p>
-        <button
-          type="button"
-          class="verify-banner__btn"
-          (click)="resendVerification()"
-          [disabled]="resending()"
-        >
+        <strong>Your email isn't verified yet.</strong>
+        <p>Please check your inbox for the verification link we sent when you registered.</p>
+        <button type="button" (click)="resendVerification()" [disabled]="resending()">
           {{ resending() ? 'Sending…' : 'Resend verification email' }}
         </button>
-        <div class="verify-banner__notice" *ngIf="resendNotice() as notice">{{ notice }}</div>
+        <small *ngIf="resendNotice() as notice">{{ notice }}</small>
       </div>
 
-      <div class="info-alert" *ngIf="!emailNotVerified() && resendNotice() as notice">
-        {{ notice }}
-      </div>
+      <div class="form-alert form-alert--success" *ngIf="!emailNotVerified() && resendNotice() as notice" role="status">{{ notice }}</div>
     </div>
-  </div>
-</div>
+  </section>
+</main>

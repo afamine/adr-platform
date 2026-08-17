@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { catchError, map, Observable, of, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AdrDto, AdrStatus, AdrSummary, AiInsight, AuditEventDto, CastVoteRequest, CommentDto, CreateAdrRequest, HistoryEventDto, PageResponse, StatusTransitionRequest, TeamMemberDto, UpdateAdrRequest, VoteDto } from '../models/adr.model';
+import { AdrDto, AdrStatus, AdrSummary, AiAnalysisResult, AiAnalysisTriggerResponse, AuditEventDto, CastVoteRequest, CommentDto, CreateAdrRequest, HistoryEventDto, PageResponse, StatusTransitionRequest, TeamMemberDto, UpdateAdrRequest, VoteDto } from '../models/adr.model';
 
 @Injectable({ providedIn: 'root' })
 export class AdrService {
@@ -203,9 +203,15 @@ export class AdrService {
       .pipe(catchError((err) => this.handleError(err)));
   }
 
-  getAiInsights(adrId: string): Observable<AiInsight[]> {
+  analyzeAiInsights(adrId: string): Observable<AiAnalysisTriggerResponse> {
     return this.http
-      .get<AiInsight[]>(`${this.baseUrl}/api/adrs/${adrId}/ai-insights`)
+      .post<AiAnalysisTriggerResponse>(`${this.baseUrl}/api/adrs/${adrId}/ai-insights/analyze`, {})
+      .pipe(catchError((err) => this.handleError(err)));
+  }
+
+  getLatestAiAnalysis(adrId: string): Observable<AiAnalysisResult> {
+    return this.http
+      .get<AiAnalysisResult>(`${this.baseUrl}/api/adrs/${adrId}/ai-insights/latest`)
       .pipe(catchError((err) => this.handleError(err)));
   }
 

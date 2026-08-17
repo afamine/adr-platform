@@ -1,93 +1,106 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
-import { Adr, AiInsight } from '../../../../models/adr.model';
+import { Component, EventEmitter, HostListener, Input, OnChanges, OnDestroy, Output, SimpleChanges, inject } from '@angular/core';
+import { Adr, AdrTabKey, AiAnalysisResult, AiInsight } from '../../../../models/adr.model';
 import { AdrService } from '../../../../services/adr.service';
-import { ConfidencePipe } from '../../../../shared/pipes/confidence.pipe';
-
-type InsightImpact = AiInsight['impact'];
 
 @Component({
   selector: 'app-ai-assistant-panel',
   standalone: true,
-  imports: [CommonModule, ConfidencePipe],
+  imports: [CommonModule],
   templateUrl: './ai-assistant-panel.component.html',
   styleUrl: './ai-assistant-panel.component.scss'
 })
-export class AiAssistantPanelComponent implements OnChanges {
+export class AiAssistantPanelComponent implements OnChanges, OnDestroy {
   private readonly adrService = inject(AdrService);
-  private readonly cdr = inject(ChangeDetectorRef);
+  private pollTimer: ReturnType<typeof setTimeout> | null = null;
 
   @Input() selectedAdr: Adr | null = null;
   @Output() closePanel = new EventEmitter<void>();
+  @Output() sourceNavigate = new EventEmitter<AdrTabKey>();
 
-  insights: AiInsight[] = [];
-  isLoadingInsights = false;
-  insightsError = false;
+  analysis: AiAnalysisResult | null = null;
+  isLoadingLatest = false;
+  isRefreshing = false;
+  isCollapsed = false;
+  loadError: string | null = null;
+  readonly expandedInsightIds = new Set<string>();
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['selectedAdr']) {
-      this.insights = [];
-      this.insightsError = false;
-
-      if (this.selectedAdr?.id) {
-        this.loadAiInsights(this.selectedAdr.id);
-      }
+      this.cancelPolling();
+      this.analysis = null;
+      this.loadError = null;
+      this.expandedInsightIds.clear();
+      if (this.selectedAdr?.id) this.loadLatest(this.selectedAdr.id);
     }
   }
 
-  loadAiInsights(adrId: string): void {
-    if (!adrId) return;
-    this.isLoadingInsights = true;
-    this.insightsError = false;
+  ngOnDestroy(): void { this.cancelPolling(); }
 
-    this.adrService.getAiInsights(adrId).subscribe({
-      next: (insights: AiInsight[]) => {
-        this.insights = insights;
-        this.isLoadingInsights = false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.isLoadingInsights = false;
-        this.insightsError = true;
-        this.insights = [];
-        this.cdr.detectChanges();
+  @HostListener('document:keydown.escape')
+  onEscape(): void { this.closePanel.emit(); }
+
+  refreshAnalysis(): void {
+    const adrId = this.selectedAdr?.id;
+    if (!adrId || this.isRefreshing) return;
+    this.cancelPolling();
+    this.isRefreshing = true;
+    this.loadError = null;
+    this.adrService.analyzeAiInsights(adrId).subscribe({
+      next: () => this.loadLatest(adrId, true),
+      error: (error) => {
+        this.isRefreshing = false;
+        this.loadError = error?.message || 'AI service temporarily unavailable. Please try again.';
       }
     });
   }
 
-  getImpactLabel(impact: InsightImpact): string {
-    if (impact === 'high') {
-      return 'high impact';
-    }
-
-    if (impact === 'medium') {
-      return 'medium impact';
-    }
-
-    return 'low impact';
+  toggleInsight(insight: AiInsight): void {
+    if (this.expandedInsightIds.has(insight.id)) this.expandedInsightIds.delete(insight.id);
+    else this.expandedInsightIds.add(insight.id);
   }
 
-  getConfidenceBadgeClass(impact: InsightImpact): string {
-    if (impact === 'high') {
-      return 'ai-panel__confidence--high';
-    }
+  isExpanded(insight: AiInsight): boolean { return this.expandedInsightIds.has(insight.id); }
 
-    if (impact === 'medium') {
-      return 'ai-panel__confidence--medium';
-    }
+  navigateToSource(source: AdrTabKey): void { this.sourceNavigate.emit(source); }
 
+  confidenceClass(confidence: number): string {
+    if (confidence >= 80) return 'ai-panel__confidence--high';
+    if (confidence >= 60) return 'ai-panel__confidence--medium';
     return 'ai-panel__confidence--low';
   }
 
-  getInsightIcon(impact: InsightImpact): string {
-    if (impact === 'medium') {
-      return '⚠';
-    }
+  impactLabel(impact: AiInsight['impact']): string { return `${impact[0]}${impact.slice(1).toLowerCase()} impact`; }
 
-    if (impact === 'low') {
-      return '✓';
-    }
+  private loadLatest(adrId: string, afterRefresh = false): void {
+    if (!afterRefresh) this.isLoadingLatest = true;
+    this.adrService.getLatestAiAnalysis(adrId).subscribe({
+      next: (analysis) => {
+        if (this.selectedAdr?.id !== adrId) return;
+        this.analysis = analysis;
+        this.isLoadingLatest = false;
+        if (analysis.status === 'IN_PROGRESS') {
+          this.schedulePolling(adrId);
+        } else {
+          this.isRefreshing = false;
+        }
+      },
+      error: (error) => {
+        if (this.selectedAdr?.id !== adrId) return;
+        this.isLoadingLatest = false;
+        this.isRefreshing = false;
+        this.loadError = error?.message || 'Unable to load AI analysis.';
+      }
+    });
+  }
 
-    return '💡';
+  private schedulePolling(adrId: string): void {
+    this.cancelPolling();
+    this.pollTimer = setTimeout(() => this.loadLatest(adrId, true), 1200);
+  }
+
+  private cancelPolling(): void {
+    if (this.pollTimer) clearTimeout(this.pollTimer);
+    this.pollTimer = null;
   }
 }

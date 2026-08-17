@@ -1,233 +1,149 @@
-<div class="register-layout">
-  <section class="hero-panel">
-    <div class="brand-pill">
-      <img src="assets/logos/svg/logo-horizontal-dark-accent.svg" alt="Axiom" />
-    </div>
+<main class="auth-page registration-page" aria-labelledby="sign-up-title">
+  <aside class="auth-page__story" aria-label="About Axiom ADR Manager">
+    <div class="auth-page__glow auth-page__glow--top"></div>
+    <div class="auth-page__glow auth-page__glow--bottom"></div>
 
-    <div class="hero-content">
-      <h1>Your team's architectural memory, powered by AI.</h1>
-      <p>
-        Stop losing decisions in meeting notes. Capture, validate, and retrieve them instantly.
-      </p>
+    <div class="auth-page__story-content">
+      <a class="brand" routerLink="/login" aria-label="Axiom ADR Manager home">
+        <app-axiom-logo state="idle" [size]="28" iconColor="#ffffff" aria-hidden="true"></app-axiom-logo>
+        <span>Axiom</span>
+      </a>
 
-      <ul class="feature-list">
-        <li><span class="dot"></span><span>AI suggestions while writing decisions</span></li>
-        <li><span class="dot"></span><span>Structured validation workflows</span></li>
-        <li><span class="dot"></span><span>Semantic search across decisions</span></li>
-      </ul>
+      <div class="auth-page__message">
+        <h1>Start your journey<br />with Axiom.</h1>
+        <p>Get started in minutes. No credit card required.</p>
 
-      <div class="steps">
-        <div class="step-item active">
-          <span class="step-number">1</span>
-          <span class="step-label">Create account</span>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step-item">
-          <span class="step-number">2</span>
-          <span class="step-label">Choose workspace</span>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step-item">
-          <span class="step-number">3</span>
-          <span class="step-label">Start deciding</span>
-        </div>
+        <ul class="feature-list">
+          <li><span>✓</span>SOC 2 Type II certified security &amp; compliance</li>
+          <li><span>✓</span>Real-time audit trails and decision analytics</li>
+          <li><span>✓</span>Workspace-based team collaboration</li>
+        </ul>
+
+        <ol class="stepper" aria-label="Registration progress">
+          <li class="stepper__item stepper__item--active">
+            <span>1</span><div><strong>Create account</strong><small>Set up your credentials</small></div>
+          </li>
+          <li class="stepper__item">
+            <span>2</span><div><strong>Choose workspace</strong><small>Private or team setup</small></div>
+          </li>
+          <li class="stepper__item">
+            <span>3</span><div><strong>Start deciding</strong><small>Invite your team and go</small></div>
+          </li>
+        </ol>
       </div>
+
+      <p class="auth-page__copyright">© 2026 Axiom Technologies. All rights reserved.</p>
     </div>
+  </aside>
 
-    <div class="hero-footer">ADR Manager · Final Year Project 2026</div>
-  </section>
+  <section class="auth-page__form-panel">
+    <a class="mobile-brand" routerLink="/login" aria-label="Axiom ADR Manager home">
+      <app-axiom-logo state="idle" [size]="25" iconColor="#091629" aria-hidden="true"></app-axiom-logo>
+      <span>Axiom</span>
+    </a>
 
-  <section class="form-panel">
-    <div class="mobile-brand">
-      <img src="assets/logos/svg/logo-horizontal-light-accent.svg" alt="Axiom" />
-    </div>
-
-    <mat-card class="register-card">
-      <h2>Create your account</h2>
-      <p class="subtitle">Create a private workspace or join a team workspace</p>
+    <div class="auth-form auth-form--sign-up">
+      <header class="auth-form__header">
+        <h2 id="sign-up-title">Create account</h2>
+        <p>Join teams making better decisions.</p>
+      </header>
 
       <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" novalidate>
-        <div class="field-group">
-          <label>Full Name</label>
-          <mat-form-field appearance="outline" class="app-field">
-            <mat-icon matPrefix>person_outline</mat-icon>
-            <input matInput formControlName="fullName" placeholder="John Doe" />
-            <mat-error *ngIf="controlHasError('fullName', 'required')">Full name is required</mat-error>
-            <mat-error *ngIf="!controlHasError('fullName', 'required') && controlHasError('fullName', 'minlength')">
-              Full name must be at least 2 characters
-            </mat-error>
-          </mat-form-field>
+        <div class="field">
+          <label for="fullName">Full name</label>
+          <input id="fullName" type="text" autocomplete="name" placeholder="Alex Morgan" formControlName="fullName"
+            [class.field__input--invalid]="controlHasError('fullName', 'required') || controlHasError('fullName', 'minlength')" />
+          <p class="field__error" *ngIf="controlHasError('fullName', 'required')">Full name is required</p>
+          <p class="field__error" *ngIf="!controlHasError('fullName', 'required') && controlHasError('fullName', 'minlength')">Full name must be at least 2 characters</p>
         </div>
 
-        <div class="field-group">
-          <label>Email</label>
-          <mat-form-field appearance="outline" class="app-field">
-            <mat-icon matPrefix>mail_outline</mat-icon>
-            <input matInput formControlName="email" type="email" placeholder="you@company.com" />
-            <mat-error *ngIf="controlHasError('email', 'required')">Email is required</mat-error>
-            <mat-error *ngIf="!controlHasError('email', 'required') && controlHasError('email', 'email')">
-              Please enter a valid email address
-            </mat-error>
-          </mat-form-field>
+        <div class="field">
+          <label for="email">Work email</label>
+          <input id="email" type="email" autocomplete="email" placeholder="you@company.com" formControlName="email"
+            [class.field__input--invalid]="controlHasError('email', 'required') || controlHasError('email', 'email')" />
+          <p class="field__error" *ngIf="controlHasError('email', 'required')">Email is required</p>
+          <p class="field__error" *ngIf="!controlHasError('email', 'required') && controlHasError('email', 'email')">Enter a valid email address</p>
         </div>
 
-        <div class="field-group">
-          <label>Password</label>
-          <mat-form-field appearance="outline" class="app-field">
-            <mat-icon matPrefix>lock_outline</mat-icon>
-            <input
-              matInput
-              formControlName="password"
-              [type]="hidePassword() ? 'password' : 'text'"
-              placeholder="••••••••"
-            />
-            <button
-              mat-icon-button
-              matSuffix
-              type="button"
-              (click)="togglePassword()"
-              [attr.aria-label]="hidePassword() ? 'Show password' : 'Hide password'"
-            >
-              <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="field__password">
+            <input id="password" [type]="hidePassword() ? 'password' : 'text'" autocomplete="new-password" placeholder="Create a password" formControlName="password"
+              [class.field__input--invalid]="controlHasError('password', 'required') || controlHasError('password', 'minlength') || controlHasError('password', 'pattern')" />
+            <button type="button" class="visibility-button" (click)="togglePassword()" [attr.aria-label]="hidePassword() ? 'Show password' : 'Hide password'">
+              <mat-icon>{{ hidePassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
             </button>
-            <mat-hint>8+ chars with letter and number</mat-hint>
-            <mat-error *ngIf="controlHasError('password', 'required')">Password is required</mat-error>
-            <mat-error *ngIf="!controlHasError('password', 'required') && controlHasError('password', 'minlength')">
-              Password must be at least 8 characters
-            </mat-error>
-            <mat-error
-              *ngIf="
-                !controlHasError('password', 'required') &&
-                !controlHasError('password', 'minlength') &&
-                controlHasError('password', 'pattern')
-              "
-            >
-              Password must include at least one letter and one number
-            </mat-error>
-          </mat-form-field>
+          </div>
+          <div class="password-rules" aria-label="Password requirements">
+            <span [class.password-rules__met]="(registerForm.controls.password.value || '').length >= 8">At least 8 characters</span>
+            <span [class.password-rules__met]="passwordHasUppercase">One uppercase letter</span>
+            <span [class.password-rules__met]="passwordHasNumberOrSymbol">One number or symbol</span>
+          </div>
+          <p class="field__error" *ngIf="controlHasError('password', 'required')">Password is required</p>
+          <p class="field__error" *ngIf="!controlHasError('password', 'required') && controlHasError('password', 'minlength')">Password must be at least 8 characters</p>
+          <p class="field__error" *ngIf="!controlHasError('password', 'required') && !controlHasError('password', 'minlength') && controlHasError('password', 'pattern')">Include at least one letter and one number</p>
         </div>
 
-        <div class="field-group">
-          <label>Confirm Password</label>
-          <mat-form-field appearance="outline" class="app-field">
-            <mat-icon matPrefix>lock_outline</mat-icon>
-            <input
-              matInput
-              formControlName="confirmPassword"
-              [type]="hideConfirmPassword() ? 'password' : 'text'"
-              placeholder="••••••••"
-            />
-            <button
-              mat-icon-button
-              matSuffix
-              type="button"
-              (click)="toggleConfirmPassword()"
-              [attr.aria-label]="hideConfirmPassword() ? 'Show confirm password' : 'Hide confirm password'"
-            >
-              <mat-icon>{{ hideConfirmPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+        <div class="field">
+          <label for="confirmPassword">Confirm password</label>
+          <div class="field__password">
+            <input id="confirmPassword" [type]="hideConfirmPassword() ? 'password' : 'text'" autocomplete="new-password" placeholder="Confirm your password" formControlName="confirmPassword"
+              [class.field__input--invalid]="controlHasError('confirmPassword', 'required') || showPasswordMismatch" />
+            <button type="button" class="visibility-button" (click)="toggleConfirmPassword()" [attr.aria-label]="hideConfirmPassword() ? 'Show password' : 'Hide password'">
+              <mat-icon>{{ hideConfirmPassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
             </button>
-            <mat-error *ngIf="controlHasError('confirmPassword', 'required')">Confirm password is required</mat-error>
-            <mat-error *ngIf="!controlHasError('confirmPassword', 'required') && showPasswordMismatch">
-              Passwords do not match
-            </mat-error>
-          </mat-form-field>
-        </div>
-
-        <div class="workspace-choice" role="group" aria-label="Workspace choice">
-          <button
-            type="button"
-            class="choice-tile"
-            [class.selected]="workspaceMode() === 'PRIVATE'"
-            (click)="setWorkspaceMode('PRIVATE')"
-          >
-            <span class="choice-title">Create my own private workspace</span>
-            <span class="choice-desc">Best for a solo account or a new team space.</span>
-          </button>
-
-          <button
-            type="button"
-            class="choice-tile"
-            [class.selected]="workspaceMode() === 'JOIN_TEAM'"
-            (click)="setWorkspaceMode('JOIN_TEAM')"
-          >
-            <span class="choice-title">Join a team workspace</span>
-            <span class="choice-desc">Use a slug from your workspace admin.</span>
-          </button>
-        </div>
-
-        <div class="field-group">
-          <div class="label-row">
-            <label>{{ workspaceSlugLabel }}</label>
-            <span class="optional-pill" *ngIf="workspaceMode() === 'PRIVATE'">optional</span>
           </div>
-          <mat-form-field appearance="outline" class="app-field">
-            <mat-icon matPrefix>domain</mat-icon>
-            <input matInput formControlName="workspaceSlug" placeholder="your-workspace" />
-            <mat-hint>{{ workspaceSlugHint }}</mat-hint>
-            <mat-error *ngIf="controlHasError('workspaceSlug', 'required')">
-              Workspace slug is required to join a team
-            </mat-error>
-            <mat-error *ngIf="controlHasError('workspaceSlug', 'pattern')">
-              Workspace slug can only contain lowercase letters, numbers, and hyphens
-            </mat-error>
-          </mat-form-field>
-          <div
-            class="slug-feedback"
-            *ngIf="
-              registerForm.controls.workspaceSlug.value?.trim() &&
-              !controlHasError('workspaceSlug', 'pattern') &&
-              (isCheckingSlug() || slugStatus())
-            "
-            [class.ok]="
-              slugStatus() &&
-              ((workspaceMode() === 'JOIN_TEAM' && slugStatus()?.canJoinBySlug) ||
-                (workspaceMode() === 'PRIVATE' && !slugStatus()?.exists))
-            "
-            [class.warn]="
-              slugStatus() &&
-              ((workspaceMode() === 'JOIN_TEAM' && !slugStatus()?.canJoinBySlug) ||
-                (workspaceMode() === 'PRIVATE' && slugStatus()?.exists))
-            "
-          >
-            <mat-icon>{{ isCheckingSlug() ? 'hourglass_empty' : 'info' }}</mat-icon>
-            <span *ngIf="isCheckingSlug()">Checking workspace slug...</span>
-            <span *ngIf="!isCheckingSlug() && workspaceMode() === 'JOIN_TEAM'">
-              {{ slugStatus()?.message || 'Enter a workspace slug to check access.' }}
-            </span>
-            <span *ngIf="!isCheckingSlug() && workspaceMode() === 'PRIVATE'">
-              {{
-                slugStatus()?.exists
-                  ? 'This slug is already used by another workspace.'
-                  : 'This slug is available for your private workspace.'
-              }}
-            </span>
-          </div>
+          <p class="field__error" *ngIf="controlHasError('confirmPassword', 'required')">Please confirm your password</p>
+          <p class="field__error" *ngIf="!controlHasError('confirmPassword', 'required') && showPasswordMismatch">Passwords do not match</p>
         </div>
 
-        <button
-          mat-flat-button
-          color="primary"
-          type="submit"
-          class="submit-button"
-          [disabled]="registerForm.invalid || isLoading() || isWorkspaceSlugBlocking"
-        >
+        <fieldset class="workspace-choice">
+          <legend>Choose your workspace</legend>
+          <div class="workspace-choice__grid">
+            <button type="button" class="workspace-card" [class.workspace-card--selected]="workspaceMode() === 'PRIVATE'" (click)="setWorkspaceMode('PRIVATE')" [attr.aria-pressed]="workspaceMode() === 'PRIVATE'">
+              <span class="workspace-card__check">✓</span>
+              <mat-icon>business</mat-icon>
+              <strong>Create my own private workspace</strong>
+              <small>For a solo account or a new team space.</small>
+            </button>
+            <button type="button" class="workspace-card" [class.workspace-card--selected]="workspaceMode() === 'JOIN_TEAM'" (click)="setWorkspaceMode('JOIN_TEAM')" [attr.aria-pressed]="workspaceMode() === 'JOIN_TEAM'">
+              <span class="workspace-card__check">✓</span>
+              <mat-icon>groups</mat-icon>
+              <strong>Join a team workspace</strong>
+              <small>Use the slug shared by your workspace admin.</small>
+            </button>
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <div class="field__label-row">
+            <label for="workspaceSlug">{{ workspaceSlugLabel }}</label>
+            <span *ngIf="workspaceMode() === 'PRIVATE'">Optional</span>
+          </div>
+          <div class="slug-input">
+            <span>axiom.app/</span>
+            <input id="workspaceSlug" type="text" autocomplete="off" placeholder="your-workspace" formControlName="workspaceSlug"
+              [class.field__input--invalid]="controlHasError('workspaceSlug', 'required') || controlHasError('workspaceSlug', 'pattern')" />
+          </div>
+          <p class="field__hint">{{ workspaceSlugHint }}</p>
+          <p class="field__error" *ngIf="controlHasError('workspaceSlug', 'required')">Workspace slug is required to join a team</p>
+          <p class="field__error" *ngIf="controlHasError('workspaceSlug', 'pattern')">Use lowercase letters, numbers, and hyphens only</p>
+          <p class="slug-feedback" *ngIf="registerForm.controls.workspaceSlug.value?.trim() && !controlHasError('workspaceSlug', 'pattern') && (isCheckingSlug() || slugStatus())"
+            [class.slug-feedback--ok]="slugStatus() && ((workspaceMode() === 'JOIN_TEAM' && slugStatus()?.canJoinBySlug) || (workspaceMode() === 'PRIVATE' && !slugStatus()?.exists))"
+            [class.slug-feedback--warn]="slugStatus() && ((workspaceMode() === 'JOIN_TEAM' && !slugStatus()?.canJoinBySlug) || (workspaceMode() === 'PRIVATE' && slugStatus()?.exists))">
+            {{ isCheckingSlug() ? 'Checking workspace slug…' : (workspaceMode() === 'JOIN_TEAM' ? (slugStatus()?.message || 'Enter a workspace slug to check access.') : (slugStatus()?.exists ? 'This slug is already used by another workspace.' : 'This slug is available for your private workspace.')) }}
+          </p>
+        </div>
+
+        <button class="primary-button" type="submit" [disabled]="registerForm.invalid || isLoading() || isWorkspaceSlugBlocking">
+          <span class="button-spinner" *ngIf="isLoading()" aria-hidden="true"></span>
           {{ submitLabel }}
         </button>
       </form>
 
-      <div class="signin-link">
-        Already have an account? <a routerLink="/login">Sign in</a>
-      </div>
-
-      <div class="status-message success" *ngIf="successMessage() as success">
-        <mat-icon>check_circle</mat-icon>
-        <span>{{ success }}</span>
-      </div>
-
-      <div class="status-message error" *ngIf="errorMessage() as error">
-        <mat-icon>error</mat-icon>
-        <span>{{ error }}</span>
-      </div>
-    </mat-card>
+      <p class="auth-form__switch">Already have an account? <a routerLink="/login">Sign in</a></p>
+      <div class="form-alert form-alert--success" *ngIf="successMessage() as success" role="status">{{ success }}</div>
+      <div class="form-alert form-alert--error" *ngIf="errorMessage() as error" role="alert">{{ error }}</div>
+    </div>
   </section>
-</div>
+</main>

@@ -11,7 +11,7 @@ import { CollaborationPanelComponent } from './components/collaboration-panel/co
 import { VoteModalComponent } from './components/vote-modal/vote-modal.component';
 import { ChangePasswordModalComponent } from '../../components/change-password-modal/change-password-modal.component';
 import { WorkspaceSwitcherComponent } from '../../components/workspace-switcher/workspace-switcher.component';
-import { allowedTransitions, Adr, AdrStatus, CastVoteRequest, CreateAdrRequest, UpdateAdrRequest, VoteDto } from '../../models/adr.model';
+import { allowedTransitions, Adr, AdrStatus, AdrTabKey, CastVoteRequest, CreateAdrRequest, UpdateAdrRequest, VoteDto } from '../../models/adr.model';
 import { AuthService } from '../../services/auth.service';
 import { AdrService } from '../../services/adr.service';
 import { ConfirmService } from '../../services/confirm.service';
@@ -399,6 +399,17 @@ export class AdrDashboardComponent implements OnInit {
     if (this.showAIPanel) {
       this.showCollabPanel = false;
     }
+  }
+
+  onAiSourceNavigate(section: AdrTabKey): void {
+    this.activeTab = section;
+    setTimeout(() => {
+      const target = document.querySelector<HTMLElement>(`[data-adr-section="${section}"]`);
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.classList.add('adr-editor__content--ai-highlight');
+      setTimeout(() => target.classList.remove('adr-editor__content--ai-highlight'), 1800);
+    });
   }
 
   toggleCollab(): void {

@@ -5,14 +5,14 @@ import { FormsModule } from '@angular/forms';
 
 import { AuthUser, Role, WorkspaceInvitation } from '../../../models/auth.models';
 import { AuthService } from '../../../services/auth.service';
-import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout.component';
 import { ConfirmService } from '../../../services/confirm.service';
 import { NotificationService } from '../../../services/notification.service';
+import { AxiomLogoComponent } from '../../../shared/axiom-logo/axiom-logo.component';
 
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, AdminLayoutComponent],
+  imports: [CommonModule, FormsModule, AxiomLogoComponent],
   templateUrl: './user-management.component.html',
   styleUrls: ['./user-management.component.scss']
 })

@@ -1,20 +1,20 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout.component';
 import { AdminAuditEvent, AdminAuditService, AuditActorSummary } from '../../../services/admin-audit.service';
-import { Subject, switchMap, takeUntil, tap } from 'rxjs';
+import { BehaviorSubject, Subject, switchMap, takeUntil, tap } from 'rxjs';
 
 @Component({
   selector: 'app-audit-log',
   standalone: true,
-  imports: [CommonModule, FormsModule, AdminLayoutComponent],
+  imports: [CommonModule, FormsModule],
   templateUrl: './audit-log.component.html',
   styleUrls: ['./audit-log.component.scss']
 })
 export class AuditLogComponent implements OnInit, OnDestroy {
   private readonly adminAuditService = inject(AdminAuditService);
-  private readonly filterChange$ = new Subject<void>();
+  /** Emits the current filter state immediately and after each user change. */
+  private readonly filterChange$ = new BehaviorSubject<void>(undefined);
   private readonly destroy$ = new Subject<void>();
 
   events: AdminAuditEvent[] = [];
@@ -46,7 +46,8 @@ export class AuditLogComponent implements OnInit, OnDestroy {
   readonly dateRangeOptions = [
     { value: 'last-7-days', label: 'Last 7 days' },
     { value: 'last-30-days', label: 'Last 30 days' },
-    { value: 'last-90-days', label: 'Last 90 days' }
+    { value: 'last-90-days', label: 'Last 90 days' },
+    { value: 'all-time', label: 'All time' }
   ];
 
   readonly actionColors: Record<string, { bg: string; color: string }> = {
@@ -94,8 +95,6 @@ export class AuditLogComponent implements OnInit, OnDestroy {
           this.isLoading = false;
         }
       });
-
-    this.filterChange$.next();
   }
 
   ngOnDestroy(): void {

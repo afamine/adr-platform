@@ -1,0 +1,30 @@
+<section class="email-preview">
+  <header class="email-preview__header">
+    <div>
+      <p class="email-preview__eyebrow">Admin tools</p>
+      <h1>Email template preview</h1>
+      <p>Rendered on the backend with safe sample data. Edit and commit the source HTML under <code>Backend/src/main/resources/templates</code>.</p>
+    </div>
+    <button type="button" class="email-preview__refresh" (click)="loadPreview(selected)" [disabled]="isLoading">Refresh preview</button>
+  </header>
+
+  <div class="email-preview__layout">
+    <aside class="email-preview__sidebar" aria-label="Email templates">
+      @for (template of templates; track template.name) {
+        <button type="button" [class.active]="selected === template.name" (click)="loadPreview(template.name)">
+          <span>{{ template.label }}</span><small>{{ template.file }}</small>
+        </button>
+      }
+    </aside>
+
+    <div class="email-preview__canvas">
+      @if (isLoading) {
+        <div class="email-preview__state">Rendering template…</div>
+      } @else if (errorMessage) {
+        <div class="email-preview__state email-preview__state--error">{{ errorMessage }}</div>
+      } @else if (previewHtml) {
+        <iframe title="{{ selectedFile() }} preview" [srcdoc]="previewHtml" sandbox="allow-same-origin"></iframe>
+      }
+    </div>
+  </div>
+</section>

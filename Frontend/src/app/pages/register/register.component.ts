@@ -4,15 +4,12 @@ import { FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Valida
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { RegisterRequest, RegisterResponse, WorkspaceSlugStatus } from '../../models/auth.models';
 import { NotificationService } from '../../services/notification.service';
 import { WorkspaceService } from '../../services/workspace.service';
+import { AxiomLogoComponent } from '../../shared/axiom-logo/axiom-logo.component';
 
 const slugPattern = /^[a-z0-9-]+$/;
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d).+$/;
@@ -36,10 +33,7 @@ const matchPasswordsValidator: ValidatorFn = (group): ValidationErrors | null =>
     ReactiveFormsModule,
     RouterModule,
     MatIconModule,
-    MatButtonModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule
+    AxiomLogoComponent
   ],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
@@ -201,6 +195,14 @@ export class RegisterComponent {
       return this.workspaceMode() === 'JOIN_TEAM' ? 'Joining Workspace...' : 'Creating Account...';
     }
     return this.workspaceMode() === 'JOIN_TEAM' ? 'Join Workspace' : 'Create Account';
+  }
+
+  protected get passwordHasUppercase(): boolean {
+    return /[A-Z]/.test(this.registerForm.controls.password.value ?? '');
+  }
+
+  protected get passwordHasNumberOrSymbol(): boolean {
+    return /[0-9!@#$%^&*()\-_=+]/.test(this.registerForm.controls.password.value ?? '');
   }
 
   protected get isWorkspaceSlugBlocking(): boolean {

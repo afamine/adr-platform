@@ -1,15 +1,17 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, RouterOutlet } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
 import { NotificationDropdownComponent } from '../../components/notification-dropdown/notification-dropdown.component';
 import { WorkspaceSwitcherComponent } from '../../components/workspace-switcher/workspace-switcher.component';
+import { ProfileMenuComponent } from '../../components/profile-menu/profile-menu.component';
+import { AxiomLogoComponent } from '../../shared/axiom-logo/axiom-logo.component';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, WorkspaceSwitcherComponent, NotificationDropdownComponent],
+  imports: [CommonModule, RouterModule, RouterOutlet, WorkspaceSwitcherComponent, NotificationDropdownComponent, ProfileMenuComponent, AxiomLogoComponent],
   templateUrl: './admin-layout.component.html',
   styleUrls: ['./admin-layout.component.scss']
 })
@@ -18,17 +20,14 @@ export class AdminLayoutComponent {
   private readonly authService = inject(AuthService);
   readonly currentUser = this.authService.getCurrentUser();
 
-  get userInitials(): string {
-    return (this.currentUser?.fullName || 'AP')
-      .split(' ')
-      .filter(Boolean)
-      .map((n: string) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+  get workspaceName(): string {
+    return this.currentUser?.workspaceName || 'Default Workspace';
   }
 
-  isActive(section: 'users' | 'settings' | 'analytics' | 'audit-log'): boolean {
+  get workspaceSlug(): string {
+    return this.currentUser?.workspaceSlug || 'default';
+  }
+  isActive(section: 'users' | 'settings' | 'analytics' | 'audit-log' | 'email-templates-preview'): boolean {
     return this.router.url.includes(`/admin/${section}`);
   }
 
@@ -38,10 +37,6 @@ export class AdminLayoutComponent {
 
   goBackToAdrs(): void {
     void this.router.navigate(['/adrs']);
-  }
-
-  openProfile(): void {
-    void this.router.navigate(['/profile']);
   }
 
   logout(): void {
