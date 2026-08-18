@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { catchError, map, Observable, of, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AdrDto, AdrStatus, AdrSummary, AiAnalysisResult, AiAnalysisTriggerResponse, AuditEventDto, CastVoteRequest, CommentDto, CreateAdrRequest, HistoryEventDto, PageResponse, StatusTransitionRequest, TeamMemberDto, UpdateAdrRequest, VoteDto } from '../models/adr.model';
+import { AdrDto, AdrStatus, AdrSummary, AiAnalysisResult, AiAnalysisTriggerResponse, AuditEventDto, CastVoteRequest, CommentDto, CreateAdrRequest, GenerateAdrDraftRequest, GenerateAdrDraftResponse, HistoryEventDto, PageResponse, StatusTransitionRequest, TeamMemberDto, UpdateAdrRequest, VoteDto } from '../models/adr.model';
 
 @Injectable({ providedIn: 'root' })
 export class AdrService {
@@ -99,6 +99,12 @@ export class AdrService {
         map((adr) => this.normalizeTags(adr)),
         catchError((err) => this.handleError(err))
       );
+  }
+
+  generateAdrDraft(body: GenerateAdrDraftRequest): Observable<GenerateAdrDraftResponse> {
+    return this.http
+      .post<GenerateAdrDraftResponse>(`${this.baseUrl}/api/adrs/generate-draft`, body)
+      .pipe(catchError((err) => this.handleError(err)));
   }
 
   updateAdr(id: string, body: UpdateAdrRequest): Observable<AdrDto> {

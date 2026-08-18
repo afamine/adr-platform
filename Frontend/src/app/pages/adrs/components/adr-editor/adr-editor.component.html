@@ -1,6 +1,28 @@
 <section class="adr-editor">
   @if (isEditing) {
     <form class="adr-editor__form" [formGroup]="form" (ngSubmit)="onSubmit()">
+      @if (canGenerateAiDraft) {
+        <div class="adr-editor__ai-draft-callout">
+          <div class="adr-editor__ai-draft-copy">
+            <span class="adr-editor__ai-draft-icon" aria-hidden="true">✦</span>
+            <div>
+              <strong>Start with AI</strong>
+              <span>Describe your architectural problem and refine the generated draft.</span>
+            </div>
+          </div>
+          <button class="adr-editor__ai-draft-button" type="button" (click)="openAiDraftModal()">
+            Generate draft
+          </button>
+        </div>
+      }
+
+      @if (aiDraftApplied) {
+        <div class="adr-editor__ai-draft-note" role="status">
+          <span aria-hidden="true">✓</span>
+          AI draft applied. Review and edit it before saving.
+        </div>
+      }
+
       @if (shouldShowCompletenessBadge && completeness; as currentCompleteness) {
         <div class="adr-editor__completeness-badge adr-editor__completeness-badge--form">
           <span>{{ currentCompleteness.filledSections }}/{{ currentCompleteness.totalSections }} sections</span>
@@ -416,5 +438,13 @@
     </div>
   } @else {
     <div class="adr-editor__empty-state">Select an ADR to start editing.</div>
+  }
+
+  @if (showAiDraftModal) {
+    <app-generate-adr-draft-modal
+      [hasExistingContent]="hasDraftContent"
+      (closed)="closeAiDraftModal()"
+      (draftGenerated)="applyAiDraft($event)"
+    />
   }
 </section>

@@ -12,6 +12,7 @@ import {
   AuditEventType,
   CompletenessResult,
   CreateAdrRequest,
+  GenerateAdrDraftResponse,
   UpdateAdrRequest,
   completenessScore
 } from '../../../../models/adr.model';
@@ -22,6 +23,7 @@ import { SupersededBannerComponent } from '../superseded-banner/superseded-banne
 import { SupersedesBadgeComponent } from '../supersedes-badge/supersedes-badge.component';
 import { AdrStatusBadgeComponent } from '../adr-status-badge/adr-status-badge.component';
 import { AdrWorkflowBarComponent } from '../adr-workflow-bar/adr-workflow-bar.component';
+import { GenerateAdrDraftModalComponent } from '../generate-adr-draft-modal/generate-adr-draft-modal.component';
 
 @Component({
   selector: 'app-adr-editor',
@@ -35,7 +37,8 @@ import { AdrWorkflowBarComponent } from '../adr-workflow-bar/adr-workflow-bar.co
     SupersededBannerComponent,
     SupersedesBadgeComponent,
     AdrStatusBadgeComponent,
-    AdrWorkflowBarComponent
+    AdrWorkflowBarComponent,
+    GenerateAdrDraftModalComponent
   ],
   templateUrl: './adr-editor.component.html',
   styleUrl: './adr-editor.component.scss'
@@ -82,6 +85,8 @@ export class AdrEditorComponent implements OnChanges {
   showSupersedeModal = false;
   isSubmittingSupersede = false;
   showExportMenu = false;
+  showAiDraftModal = false;
+  aiDraftApplied = false;
   tagInput = '';
   readonly form = this.formBuilder.nonNullable.group({
     title: ['', [Validators.required, Validators.maxLength(255)]],
@@ -133,6 +138,22 @@ export class AdrEditorComponent implements OnChanges {
 
   get currentTags(): string[] {
     return this.form.controls.tags.value;
+  }
+
+  get canGenerateAiDraft(): boolean {
+    return this.isEditing && (!this.adr || this.adr.status === 'DRAFT');
+  }
+
+  get hasDraftContent(): boolean {
+    const value = this.form.getRawValue();
+    return Boolean(
+      value.title.trim()
+      || value.context.trim()
+      || value.decision.trim()
+      || value.consequences.trim()
+      || value.alternatives.trim()
+      || value.tags.length
+    );
   }
 
   get completeness(): CompletenessResult | null {
@@ -309,6 +330,31 @@ export class AdrEditorComponent implements OnChanges {
     this.tagInput = '';
   }
 
+  openAiDraftModal(): void {
+    if (!this.canGenerateAiDraft) return;
+    this.showAiDraftModal = true;
+  }
+
+  closeAiDraftModal(): void {
+    this.showAiDraftModal = false;
+  }
+
+  applyAiDraft(draft: GenerateAdrDraftResponse): void {
+    this.form.patchValue({
+      title: draft.title ?? '',
+      context: draft.context ?? '',
+      decision: draft.decision ?? '',
+      consequences: draft.consequences ?? '',
+      alternatives: draft.alternatives ?? ''
+    });
+    this.form.controls.tags.setValue(
+      [...new Set((draft.suggestedTags ?? []).map((tag) => tag.trim()).filter(Boolean))]
+    );
+    this.form.markAsDirty();
+    this.aiDraftApplied = true;
+    this.showAiDraftModal = false;
+  }
+
   onRemoveTag(tag: string): void {
     this.form.controls.tags.setValue(this.currentTags.filter((item) => item !== tag));
   }
@@ -392,6 +438,7 @@ export class AdrEditorComponent implements OnChanges {
 
   private syncFormFromInput(): void {
     this.tagInput = '';
+    this.aiDraftApplied = false;
     this.form.reset({
       title: this.editingAdr?.title ?? '',
       context: this.editingAdr?.context ?? '',

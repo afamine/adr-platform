@@ -36,6 +36,73 @@ $hover-bg: #f9fafb;
   gap: 8px;
 }
 
+.adr-editor__ai-draft-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+  background: #f5f3ff;
+}
+
+.adr-editor__ai-draft-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  color: #4b5563;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.adr-editor__ai-draft-copy strong,
+.adr-editor__ai-draft-copy span {
+  display: block;
+}
+
+.adr-editor__ai-draft-copy strong {
+  margin-bottom: 2px;
+  color: #3730a3;
+  font-size: 12px;
+}
+
+.adr-editor__ai-draft-icon {
+  color: #6366f1;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.adr-editor__ai-draft-button {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #4338ca;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.adr-editor__ai-draft-button:hover {
+  background: #eef2ff;
+}
+
+.adr-editor__ai-draft-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 11px;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 12px;
+}
+
 .adr-editor__label {
   color: $text-primary;
   font-size: 13px;
@@ -900,6 +967,11 @@ $hover-bg: #f9fafb;
 }
 
 @media (max-width: 720px) {
+  .adr-editor__ai-draft-callout {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .adr-editor__tabs {
     gap: 16px;
     overflow-x: auto;

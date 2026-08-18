@@ -1,0 +1,54 @@
+<div class="adr-draft-backdrop" (click)="close()">
+  <section class="adr-draft-card" role="dialog" aria-modal="true" aria-labelledby="adr-draft-title" (click)="$event.stopPropagation()">
+    <header class="adr-draft-header">
+      <div class="adr-draft-title-row">
+        <span class="adr-draft-icon" aria-hidden="true">✦</span>
+        <div>
+          <h2 id="adr-draft-title">Generate ADR draft</h2>
+          <p>Start with a clear problem. You will review and edit the result before saving.</p>
+        </div>
+      </div>
+      <button class="adr-draft-close" type="button" (click)="close()" [disabled]="isGenerating" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+        </svg>
+      </button>
+    </header>
+
+    <div class="adr-draft-divider"></div>
+
+    @if (hasExistingContent) {
+      <div class="adr-draft-warning">
+        <span aria-hidden="true">!</span>
+        Generating a draft will replace the content currently in this editor.
+      </div>
+    }
+
+    @if (errorMessage) {
+      <div class="adr-draft-error"><span class="adr-draft-error-dot"></span>{{ errorMessage }}</div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <label class="adr-draft-label" for="adr-problem">Architectural problem</label>
+      <textarea
+        id="adr-problem"
+        class="adr-draft-textarea"
+        formControlName="problemDescription"
+        maxlength="2000"
+        placeholder="Example: We need to support offline order creation in the mobile application while keeping data synchronized when the user reconnects."
+      ></textarea>
+      <div class="adr-draft-helper">Describe the context, constraints, and goal in at least 20 characters.</div>
+      @if (form.controls.problemDescription.touched && form.controls.problemDescription.invalid) {
+        <div class="adr-draft-field-error">Please provide a description between 20 and 2,000 characters.</div>
+      }
+
+      <div class="adr-draft-actions">
+        <button class="adr-draft-cancel" type="button" (click)="close()" [disabled]="isGenerating">Cancel</button>
+        <button class="adr-draft-submit" type="submit" [disabled]="isGenerating">
+          <span aria-hidden="true">✦</span>
+          {{ isGenerating ? 'Generating draft...' : 'Generate draft' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</div>

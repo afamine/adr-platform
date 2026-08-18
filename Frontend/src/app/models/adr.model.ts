@@ -108,6 +108,20 @@ export interface UpdateAdrRequest {
   projectId?: string | null;
 }
 
+/** Generated content is only applied to the editor; it is never auto-saved. */
+export interface GenerateAdrDraftRequest {
+  problemDescription: string;
+}
+
+export interface GenerateAdrDraftResponse {
+  title: string;
+  context: string;
+  decision: string;
+  consequences: string;
+  alternatives: string;
+  suggestedTags?: string[];
+}
+
 export interface StatusTransitionRequest {
   status: AdrStatus;
   supersededByAdrId?: string | null;
