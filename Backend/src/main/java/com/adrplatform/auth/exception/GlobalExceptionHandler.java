@@ -5,6 +5,8 @@ import com.adrplatform.auth.dto.FieldError;
 import com.adrplatform.auth.dto.ValidationErrorResponse;
 import com.adrplatform.adr.exception.AdrAccessDeniedException;
 import com.adrplatform.adr.exception.AdrNotFoundException;
+import com.adrplatform.adr.exception.AiDraftGenerationException;
+import com.adrplatform.adr.exception.AiDraftRateLimitException;
 import com.adrplatform.adr.exception.InvalidTransitionException;
 import com.adrplatform.vote.exception.AlreadyVotedException;
 import com.adrplatform.vote.exception.InvalidVoteException;
@@ -49,6 +51,20 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AdrAccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAdrAccessDenied(AdrAccessDeniedException ex, HttpServletRequest request) {
         return buildErrorWithType(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI(), "ACCESS_DENIED");
+    }
+
+    @ExceptionHandler(AiDraftRateLimitException.class)
+    public ResponseEntity<ErrorResponse> handleAiDraftRateLimit(
+            AiDraftRateLimitException ex, HttpServletRequest request) {
+        return buildErrorWithType(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request.getRequestURI(),
+                "AI_DRAFT_RATE_LIMITED");
+    }
+
+    @ExceptionHandler(AiDraftGenerationException.class)
+    public ResponseEntity<ErrorResponse> handleAiDraftGeneration(
+            AiDraftGenerationException ex, HttpServletRequest request) {
+        return buildErrorWithType(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request.getRequestURI(),
+                "AI_DRAFT_UNAVAILABLE");
     }
 
     @ExceptionHandler(ConflictException.class)

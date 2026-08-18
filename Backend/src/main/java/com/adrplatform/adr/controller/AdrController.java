@@ -8,11 +8,14 @@ import com.adrplatform.adr.dto.AiAnalysisResultDto;
 import com.adrplatform.adr.dto.AiAnalysisTriggerResponse;
 import com.adrplatform.adr.dto.AuditEventDto;
 import com.adrplatform.adr.dto.CreateAdrRequest;
+import com.adrplatform.adr.dto.GenerateAdrDraftRequest;
+import com.adrplatform.adr.dto.GenerateAdrDraftResponse;
 import com.adrplatform.adr.dto.StatusTransitionRequest;
 import com.adrplatform.adr.dto.UpdateAdrRequest;
 import com.adrplatform.adr.service.AdrAuditService;
 import com.adrplatform.adr.service.AdrService;
 import com.adrplatform.adr.service.AiInsightService;
+import com.adrplatform.adr.service.AiDraftGeneratorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.data.domain.Page;
@@ -45,6 +48,7 @@ public class AdrController {
     private final AdrService adrService;
     private final AdrAuditService adrAuditService;
     private final AiInsightService aiInsightService;
+    private final AiDraftGeneratorService aiDraftGeneratorService;
     private static final Map<String, String> SORT_COLUMNS = Map.of(
             "adrNumber", "adr_number",
             "title", "title",
@@ -115,6 +119,19 @@ public class AdrController {
     @PutMapping("/{id}")
     public ResponseEntity<AdrDto> update(@PathVariable("id") UUID id, @Valid @RequestBody UpdateAdrRequest request) {
         return ResponseEntity.ok(adrService.updateAdr(id, request));
+    }
+
+    @Operation(summary = "Generate an unsaved ADR draft from an architectural problem")
+    @ApiResponse(responseCode = "200", description = "ADR draft generated")
+    @ApiResponse(responseCode = "400", description = "Invalid problem description")
+    @ApiResponse(responseCode = "403", description = "Only authors and administrators can generate ADR drafts")
+    @ApiResponse(responseCode = "429", description = "AI draft request limit reached")
+    @ApiResponse(responseCode = "503", description = "AI provider unavailable")
+    @PostMapping("/generate-draft")
+    @PreAuthorize("hasAnyRole('AUTHOR', 'ADMIN')")
+    public ResponseEntity<GenerateAdrDraftResponse> generateDraft(
+            @Valid @RequestBody GenerateAdrDraftRequest request) {
+        return ResponseEntity.ok(aiDraftGeneratorService.generateDraft(request));
     }
 
     @Operation(summary = "Move an ADR to a project in the active workspace")

@@ -23,6 +23,7 @@ public final class AuditActions {
 
     // --- AI assist ---
     public static final String AI_ANALYSIS_TRIGGERED = "AI_ANALYSIS_TRIGGERED";
+    public static final String AI_DRAFT_GENERATED    = "AI_DRAFT_GENERATED";
 
     // --- User ---
     public static final String USER_REGISTERED      = "USER_REGISTERED";
