@@ -3,6 +3,7 @@ package com.adrplatform.auth.config;
 import com.adrplatform.auth.security.CustomUserDetailsService;
 import com.adrplatform.adr.config.AiAssistProperties;
 import com.adrplatform.auth.security.JwtAuthenticationFilter;
+import com.adrplatform.auth.security.RefreshCsrfFilter;
 import com.adrplatform.auth.security.JwtProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -28,10 +29,11 @@ import java.util.List;
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
-@EnableConfigurationProperties({JwtProperties.class, CorsProperties.class, PasswordResetProperties.class, AppProperties.class, AiAssistProperties.class})
+@EnableConfigurationProperties({JwtProperties.class, CorsProperties.class, PasswordResetProperties.class, AppProperties.class, AiAssistProperties.class, AuthCookieProperties.class})
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RefreshCsrfFilter refreshCsrfFilter;
     private final CustomUserDetailsService userDetailsService;
     private final CorsProperties corsProperties;
 
@@ -82,7 +84,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(refreshCsrfFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }
@@ -110,7 +113,8 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(corsProperties.getAllowedOrigins());
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        config.setAllowCredentials(true);
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-CSRF-Token"));
         config.setExposedHeaders(List.of("Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

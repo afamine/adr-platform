@@ -104,3 +104,17 @@ databaseChangeLog:
         - sqlFile:
             path: db/changelog/V31__create_ai_analysis_tables.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: "32"
+      author: adr-platform
+      changes:
+        - sqlFile:
+            path: db/changelog/V32__add_workspace_membership_suspension.sql
+            relativeToChangelogFile: false
+  - changeSet:
+      id: "33"
+      author: adr-platform
+      changes:
+        - sqlFile:
+            path: db/changelog/V33__add_auth_invalid_before.sql
+            relativeToChangelogFile: false

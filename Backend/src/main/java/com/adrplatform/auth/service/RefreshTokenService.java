@@ -67,6 +67,7 @@ public class RefreshTokenService {
      */
     @Transactional
     public void revokeAllForUser(User user) {
+        user.setAuthInvalidBefore(Instant.now());
         List<RefreshToken> tokens = refreshTokenRepository.findAllByUserIdAndRevokedFalse(user.getId());
         tokens.forEach(token -> token.setRevoked(true));
         refreshTokenRepository.saveAll(tokens);

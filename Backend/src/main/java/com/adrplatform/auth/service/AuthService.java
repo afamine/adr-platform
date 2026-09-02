@@ -87,6 +87,7 @@ public class AuthService {
                 ? request.getWorkspaceName().trim()
                 : request.getFullName().trim() + "'s Workspace";
         String slug = resolveSlug(request.getWorkspaceSlug(), workspaceName);
+        Role initialRole = "PRIVATE".equals(workspaceMode) ? Role.ADMIN : Role.AUTHOR;
 
         Workspace workspace;
         if ("JOIN_TEAM".equals(workspaceMode)) {
@@ -116,7 +117,7 @@ public class AuthService {
                 .email(request.getEmail().trim().toLowerCase())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName().trim())
-                .role(Role.AUTHOR)
+                .role(initialRole)
                 .emailVerified(false)
                 .isActive(false)
                 .totpSetupRequired(true)

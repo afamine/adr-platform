@@ -7,11 +7,14 @@ import com.adrplatform.auth.dto.WorkspaceDto;
 import com.adrplatform.auth.dto.WorkspaceMembershipDto;
 import com.adrplatform.auth.dto.WorkspaceSlugStatus;
 import com.adrplatform.auth.service.WorkspaceService;
+import com.adrplatform.auth.security.AuthCookieService;
+import com.adrplatform.auth.security.JwtProperties;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +36,8 @@ import java.util.UUID;
 public class WorkspaceController {
 
     private final WorkspaceService workspaceService;
+    private final AuthCookieService authCookieService;
+    private final JwtProperties jwtProperties;
 
     @Operation(summary = "Check whether a workspace slug can be joined")
     @ApiResponse(responseCode = "200", description = "Slug status retrieved")
@@ -61,8 +66,10 @@ public class WorkspaceController {
     @ApiResponse(responseCode = "200", description = "Workspace switched")
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @PostMapping("/switch/{workspaceId}")
-    public ResponseEntity<AuthResponse> switchWorkspace(@PathVariable UUID workspaceId) {
-        return ResponseEntity.ok(workspaceService.switchWorkspace(workspaceId));
+    public ResponseEntity<AuthResponse> switchWorkspace(@PathVariable UUID workspaceId,
+                                                        HttpServletResponse response) {
+        return ResponseEntity.ok(authCookieService.writeSession(response, workspaceService.switchWorkspace(workspaceId),
+                jwtProperties.getRefreshTokenTtlMs()));
     }
 
     @Operation(summary = "Update workspace settings (ADMIN only)")

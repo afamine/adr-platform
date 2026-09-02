@@ -1,6 +1,8 @@
 package com.adrplatform.auth.security;
 
 import com.adrplatform.auth.repository.UserRepository;
+import com.adrplatform.auth.domain.User;
+import com.adrplatform.auth.domain.WorkspaceMembership;
 import com.adrplatform.auth.domain.WorkspaceMembershipStatus;
 import com.adrplatform.auth.repository.WorkspaceMembershipRepository;
 import io.jsonwebtoken.Claims;
@@ -61,23 +63,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         UUID userId = UUID.fromString(claims.getSubject());
         UUID workspaceId = UUID.fromString(claims.get("workspaceId", String.class));
-        userRepository.findById(userId).ifPresent(user -> {
-            if (!user.isActive()) {
-                return;
-            }
-            workspaceMembershipRepository.findByUser_IdAndWorkspace_Id(user.getId(), workspaceId)
-                    .filter(membership -> membership.getStatus() == WorkspaceMembershipStatus.ACTIVE)
-                    .ifPresent(membership -> {
-                        user.setWorkspace(membership.getWorkspace());
-                        user.setRole(membership.getRole());
-                    });
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            tenantContextProvider.getObject().setWorkspaceId(workspaceId);
-            userContextProvider.getObject().set(user);
-        });
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null && user.getAuthInvalidBefore() != null
+                && claims.getIssuedAt().toInstant().isBefore(user.getAuthInvalidBefore())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        if (user == null || !user.isActive()) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        WorkspaceMembership membership = workspaceMembershipRepository
+                .findByUser_IdAndWorkspace_Id(user.getId(), workspaceId)
+                .filter(item -> item.getStatus() == WorkspaceMembershipStatus.ACTIVE)
+                .orElse(null);
+        if (membership == null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        user.setWorkspace(membership.getWorkspace());
+        user.setRole(membership.getRole());
+        if (user.isTotpSetupRequired() && !user.isTotpEnabled()
+                && !isTotpEnrollmentOrLogoutEndpoint(request.getServletPath())) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"errorType\":\"TOTP_SETUP_REQUIRED\",\"message\":\"Two-factor authentication setup is required.\"}");
+            return;
+        }
+
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        tenantContextProvider.getObject().setWorkspaceId(workspaceId);
+        userContextProvider.getObject().set(user);
 
         filterChain.doFilter(request, response);
     }
@@ -91,4 +111,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs");
     }
+    private boolean isTotpEnrollmentOrLogoutEndpoint(String path) {
+        return path.equals("/api/auth/2fa/status")
+                || path.equals("/api/auth/2fa/setup")
+                || path.equals("/api/auth/2fa/enable")
+                || path.equals("/api/auth/2fa/verify")
+                || path.equals("/api/auth/logout")
+                || path.equals("/api/auth/logout-all");
+    }
+
 }

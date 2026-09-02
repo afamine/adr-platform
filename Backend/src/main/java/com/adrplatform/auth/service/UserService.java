@@ -142,8 +142,7 @@ public class UserService {
      */
     @Transactional(readOnly = true)
     public List<UserDto> listUsersInCurrentWorkspace() {
-        return workspaceMembershipRepository.findAllByWorkspace_IdAndStatusOrderByCreatedAtAsc(
-                        tenantContext.getWorkspaceId(), WorkspaceMembershipStatus.ACTIVE)
+        return workspaceMembershipRepository.findAllByWorkspace_IdOrderByCreatedAtAsc(tenantContext.getWorkspaceId())
                 .stream()
                 .map(UserDto::fromMembership)
                 .toList();
@@ -192,22 +191,20 @@ public class UserService {
         }
 
         WorkspaceMembership membership = workspaceMembershipRepository.findByUser_IdAndWorkspace_Id(userId, tenantContext.getWorkspaceId())
-                .filter(m -> m.getStatus() == WorkspaceMembershipStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found."));
-        User user = membership.getUser();
-
-        boolean oldValue = user.isActive();
-        user.setActive(isActive);
-        User saved = userRepository.save(user);
-        if (!isActive) {
-            refreshTokenService.revokeAllForUser(saved);
+        if (membership.getStatus() == WorkspaceMembershipStatus.PENDING) {
+            throw new BadRequestException("Cannot change the status of a pending invitation.");
         }
 
-        auditService.record(actor, actor.getWorkspace(), AuditActions.USER_STATUS_CHANGED, "USER", saved.getId(),
-                "{\"isActive\":" + oldValue + "}",
-                "{\"isActive\":" + saved.isActive() + "}");
+        boolean oldValue = membership.getStatus() == WorkspaceMembershipStatus.ACTIVE;
+        membership.setStatus(isActive ? WorkspaceMembershipStatus.ACTIVE : WorkspaceMembershipStatus.SUSPENDED);
+        workspaceMembershipRepository.save(membership);
 
-        log.info("Status updated for user {} from {} to {} by {}", saved.getEmail(), oldValue, saved.isActive(), actor.getEmail());
+        auditService.record(actor, actor.getWorkspace(), AuditActions.USER_STATUS_CHANGED, "WORKSPACE_MEMBERSHIP",
+                membership.getId(), "{\"isActive\":" + oldValue + "}", "{\"isActive\":" + isActive + "}");
+
+        log.info("Workspace membership status updated for user {} from {} to {} by {}",
+                membership.getUser().getEmail(), oldValue, isActive, actor.getEmail());
         return UserDto.fromMembership(membership);
     }
 

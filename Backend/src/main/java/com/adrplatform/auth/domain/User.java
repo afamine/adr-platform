@@ -82,6 +82,9 @@ public class User implements UserDetails {
     @Builder.Default
     @Column(name = "totp_setup_required", nullable = false)
     private boolean totpSetupRequired = false;
+    @Column(name = "auth_invalid_before")
+    private Instant authInvalidBefore;
+
 
     @PrePersist
     void prePersist() {

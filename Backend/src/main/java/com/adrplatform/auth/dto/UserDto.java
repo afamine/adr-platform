@@ -55,7 +55,7 @@ public class UserDto {
                 .fullName(user.getFullName())
                 .role(membership.getRole())
                 .emailVerified(user.isEmailVerified())
-                .isActive(user.isActive())
+                .isActive(user.isActive() && membership.getStatus() == com.adrplatform.auth.domain.WorkspaceMembershipStatus.ACTIVE)
                 .totpSetupRequired(user.isTotpSetupRequired())
                 .createdAt(user.getCreatedAt())
                 .avatarColor(user.getAvatarColor())

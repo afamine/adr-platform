@@ -16,6 +16,9 @@ public interface WorkspaceMembershipRepository extends JpaRepository<WorkspaceMe
 
     @EntityGraph(attributePaths = {"workspace"})
     List<WorkspaceMembership> findAllByUser_IdAndStatusOrderByCreatedAtAsc(UUID userId, WorkspaceMembershipStatus status);
+    @EntityGraph(attributePaths = {"workspace", "user"})
+    List<WorkspaceMembership> findAllByWorkspace_IdOrderByCreatedAtAsc(UUID workspaceId);
+
 
     @EntityGraph(attributePaths = {"workspace", "user"})
     List<WorkspaceMembership> findAllByWorkspace_IdAndStatusOrderByCreatedAtAsc(UUID workspaceId, WorkspaceMembershipStatus status);

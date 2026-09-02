@@ -10,11 +10,17 @@ import com.adrplatform.auth.security.JwtService;
 import com.adrplatform.auth.service.AuthService;
 import com.adrplatform.auth.service.SecretEncryptionService;
 import com.adrplatform.auth.service.TotpService;
+import com.adrplatform.auth.security.AuthCookieService;
+import com.adrplatform.auth.security.JwtProperties;
+import com.adrplatform.auth.security.RedisRateLimiter;
+import com.adrplatform.auth.security.RequestIpResolver;
 import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 
@@ -40,6 +47,10 @@ public class TotpController {
     private final UserRepository userRepository;
     private final AuthService authService;
     private final SecretEncryptionService secretEncryptionService;
+    private final AuthCookieService authCookieService;
+    private final JwtProperties jwtProperties;
+    private final RedisRateLimiter rateLimiter;
+    private final RequestIpResolver requestIpResolver;
 
     @GetMapping("/status")
     public ResponseEntity<Map<String, Boolean>> getStatus(Authentication auth) {
@@ -131,7 +142,9 @@ public class TotpController {
     }
 
     @PostMapping("/validate")
-    public ResponseEntity<?> validate(@RequestBody @Valid TotpValidateRequest request) {
+    public ResponseEntity<?> validate(@RequestBody @Valid TotpValidateRequest request,
+                                       HttpServletRequest servletRequest,
+                                       HttpServletResponse response) {
         try {
             Claims claims = jwtService.parseToken(request.pendingToken());
             if (!jwtService.isPending2faToken(claims)) {
@@ -139,6 +152,8 @@ public class TotpController {
                     .body(Map.of("message", "Invalid session token."));
             }
             UUID userId = UUID.fromString(claims.getSubject());
+            rateLimiter.check("totp-validate", requestIpResolver.resolve(servletRequest), userId.toString(),
+                    20, 5, Duration.ofMinutes(10));
             User user = userRepository.findByIdWithWorkspace(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -153,7 +168,8 @@ public class TotpController {
                     .body(Map.of("message", "Invalid code. Please try again."));
             }
             AuthResponse fullResponse = authService.buildAuthResponse(user);
-            return ResponseEntity.ok(fullResponse);
+            return ResponseEntity.ok(authCookieService.writeSession(response, fullResponse,
+                    jwtProperties.getRefreshTokenTtlMs()));
         } catch (Exception e) {
             log.error("2FA validation failed: {}", e.getMessage());
             return ResponseEntity.status(401)

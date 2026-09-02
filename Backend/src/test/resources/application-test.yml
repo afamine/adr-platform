@@ -1,3 +1,8 @@
+auth:
+  rate-limit:
+    fail-open: true
+  cookies:
+    secure: false
 spring:
   datasource:
     url: jdbc:h2:mem:adr_project_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE

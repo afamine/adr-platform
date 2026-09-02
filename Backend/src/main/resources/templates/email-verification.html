@@ -3,120 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Verify your ADR Manager account</title>
+  <title>Verify your Axiom account</title>
 </head>
-<body style="margin:0;padding:0;background:#f4f4f7;font-family:Arial,Helvetica,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f4f4f7;padding:24px 0;">
+<body style="margin:0;padding:0;background:#f7f9fc;font-family:Inter,Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;background:#f7f9fc;border-collapse:collapse;">
     <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;background:#ffffff;border-radius:8px;overflow:hidden;">
-
-          <!-- Header with logo + Account Verification pill -->
+      <td align="center" style="padding:32px 16px;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;max-width:560px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;border-collapse:separate;overflow:hidden;">
+          <tr><td style="padding:20px 32px;background:#091629;background-image:linear-gradient(135deg,#091629 0%,#0e2549 100%);"><img src="cid:logo_header" alt="Axiom" width="132" style="display:block;width:132px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>
           <tr>
-            <td style="background:#0f1e2c;padding:18px 24px;">
-              <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-                <tr>
-                  <td valign="middle" style="line-height:0;">
-                    <img src="cid:logo_header" alt="ADR Manager" width="180" style="display:block;height:auto;max-width:220px;border:0;outline:none;text-decoration:none;" />
-                  </td>
-                  <td align="right" valign="middle" style="font-size:0;">
-                    <span style="display:inline-block;border:1px solid #2a3a4a;color:#f9fafb;background:#0f1e2c;padding:5px 12px;border-radius:6px;font-size:12px;white-space:nowrap;">
-                      Account Verification
-                    </span>
-                  </td>
-                </tr>
-              </table>
+            <td style="padding:36px 32px 0 32px;">
+              <p style="margin:0 0 14px 0;color:#6366f1;font-size:10px;font-weight:700;letter-spacing:1.3px;line-height:14px;text-transform:uppercase;">Account verification</p>
+              <table cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;margin:0 0 20px 0;"><tr><td align="center" valign="middle" style="width:56px;height:56px;border:1px solid #c7d2fe;border-radius:28px;background:#eef2ff;color:#6366f1;font-size:25px;line-height:56px;">&#9993;</td></tr></table>
+              <h1 style="margin:0 0 16px 0;color:#0f172a;font-family:'Plus Jakarta Sans',Inter,Arial,Helvetica,sans-serif;font-size:26px;font-weight:700;letter-spacing:-0.5px;line-height:1.25;">Verify your email address</h1>
+              <p style="margin:0 0 10px 0;color:#475569;font-size:16px;line-height:1.65;">Hello <strong style="color:#0f172a;font-weight:600;">{{fullName}}</strong>,</p>
+              <p style="margin:0;color:#475569;font-size:16px;line-height:1.65;">Thanks for creating an Axiom account. Verify your email to activate your workspace and start collaborating on architecture decisions.</p>
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;border-collapse:collapse;margin:28px 0 24px 0;"><tr><td align="center" style="border-radius:8px;background:#091629;"><a href="{{link}}" style="display:block;padding:14px 24px;border-radius:8px;color:#ffffff;font-size:15px;font-weight:600;letter-spacing:-0.1px;line-height:20px;text-align:center;text-decoration:none;">Verify email address</a></td></tr></table>
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;border-collapse:separate;border:1px solid #e2e8f0;border-left:3px solid #6366f1;border-radius:0 6px 6px 0;background:#f8fafc;margin:0 0 24px 0;"><tr><td style="padding:14px 16px;"><p style="margin:0 0 6px 0;color:#475569;font-size:11px;font-weight:600;letter-spacing:.9px;line-height:16px;text-transform:uppercase;">Can't use the button?</p><p style="margin:0 0 6px 0;color:#475569;font-size:12px;line-height:18px;">Copy and paste this URL into your browser:</p><p style="margin:0;padding:8px 10px;border-radius:4px;background:#f1f5f9;color:#6366f1;font-family:Consolas,'Courier New',monospace;font-size:12px;line-height:1.6;word-break:break-all;"><a href="{{link}}" style="color:#6366f1;text-decoration:none;">{{link}}</a></p></td></tr></table>
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;border-collapse:separate;border:1px solid #c7d2fe;border-left:3px solid #6366f1;border-radius:0 6px 6px 0;background:#eef2ff;"><tr><td style="padding:14px 16px;"><p style="margin:0 0 8px 0;color:#3730a3;font-size:13px;line-height:1.55;"><span style="color:#818cf8;">&#8226;</span>&nbsp; This link expires in {{expiryHours}} hours.</p><p style="margin:0;color:#3730a3;font-size:13px;line-height:1.55;"><span style="color:#818cf8;">&#8226;</span>&nbsp; If you didn't create an Axiom account, you can safely ignore this email.</p></td></tr></table>
             </td>
           </tr>
-
-          <!-- Action required banner -->
-          <tr>
-            <td style="background:#ecfdf5;padding:10px 24px;border-bottom:1px solid #d1fae5;">
-              <table cellpadding="0" cellspacing="0" role="presentation">
-                <tr>
-                  <td valign="middle" style="padding-right:8px;font-size:0;line-height:0;">
-                    <span style="display:inline-block;width:8px;height:8px;background:#10b981;border-radius:50%;"></span>
-                  </td>
-                  <td valign="middle" style="color:#065f46;font-size:13px;">
-                    Action required &mdash; verify your email to activate your account
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Email-icon circle + label -->
-          <tr>
-            <td align="center" style="padding:32px 0 4px 0;">
-              <table role="presentation" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" valign="middle" style="background:#d1fae5;border:1px solid #a7f3d0;border-radius:50%;width:64px;height:64px;color:#10b981;font-size:28px;line-height:64px;">
-                    &#9993;
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr>
-            <td align="center" style="padding:6px 32px 8px 32px;">
-              <p style="margin:0;color:#6b7280;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;">Email Verification</p>
-            </td>
-          </tr>
-
-          <!-- Main content -->
-          <tr>
-            <td style="padding:14px 32px 24px 32px;">
-              <h1 style="margin:0 0 14px 0;font-size:22px;color:#111827;font-weight:700;">Hello {{fullName}},</h1>
-              <p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 24px 0;">
-                Thank you for creating your ADR Manager account. Click the button below to verify your email.
-              </p>
-
-              <!-- Primary button -->
-              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:14px;">
-                <tr>
-                  <td align="center">
-                    <a href="{{link}}" style="background:#0f1e2c;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:6px;font-size:16px;font-weight:bold;display:inline-block;">
-                      Verify Email Address
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Fallback link -->
-              <p style="color:#9ca3af;font-size:13px;text-align:center;margin:0 0 10px 0;">Button not working? Copy the link below.</p>
-              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:24px;">
-                <tr>
-                  <td style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:12px 14px;word-break:break-all;">
-                    <p style="margin:0 0 4px 0;color:#6b7280;font-size:12px;">Verification link:</p>
-                    <a href="{{link}}" style="color:#1d4ed8;font-size:13px;text-decoration:none;">{{link}}</a>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Account information box (green left border) -->
-              <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-                <tr>
-                  <td style="background:#f0fdf4;border:1px solid #d1fae5;border-left:4px solid #10b981;border-radius:6px;padding:14px 16px;">
-                    <p style="margin:0 0 8px 0;font-weight:700;color:#065f46;font-size:14px;">Account information</p>
-                    <ul style="margin:0;padding-left:18px;color:#065f46;font-size:13px;line-height:1.7;">
-                      <li>Link expires in {{expiryHours}} hours</li>
-                      <li>If you didn&apos;t create an account, ignore this email</li>
-                    </ul>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:18px 32px 20px 32px;">
-              <p style="color:#374151;font-size:13px;margin:0 0 4px 0;">Sent by <strong>ADR Manager</strong> via Brevo</p>
-              <p style="color:#9ca3af;font-size:12px;margin:0;">You received this because you created an ADR Manager account.</p>
-              <p style="color:#9ca3af;font-size:12px;margin:4px 0 0 0;">&copy; 2026 ADR Manager &middot; Final Year Project &middot; Do not reply</p>
-            </td>
-          </tr>
-
+          <tr><td style="height:24px;font-size:1px;line-height:1px;">&nbsp;</td></tr>
+          <tr><td style="padding:20px 32px;border-top:1px solid #e2e8f0;background:#fafbfd;"><p style="margin:0 0 10px 0;color:#475569;font-size:13px;font-weight:600;line-height:18px;">Axiom</p><p style="margin:0 0 6px 0;color:#94a3b8;font-size:12px;line-height:1.6;">You're receiving this because someone created an Axiom account using this email address.</p><p style="margin:0;color:#94a3b8;font-size:11px;line-height:1.5;">&copy; 2026 Axiom. All rights reserved. &nbsp;&middot;&nbsp; Do not reply to this email.</p></td></tr>
         </table>
       </td>
     </tr>

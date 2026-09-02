@@ -38,6 +38,10 @@ public class AiAnalysisProcessor {
                     .user(buildPrompt(analysis))
                     .call()
                     .content();
+            if (raw == null || raw.isBlank()) {
+                throw new IllegalStateException("AI provider returned an empty completion. "
+                        + "The configured model may have exhausted its completion-token budget before producing content.");
+            }
             List<GeneratedInsight> generated = objectMapper.readValue(
                     raw.replaceAll("(?s)```json\\s*|```\\s*", "").trim(),
                     objectMapper.getTypeFactory().constructCollectionType(List.class, GeneratedInsight.class)
