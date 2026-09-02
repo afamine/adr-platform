@@ -81,8 +81,9 @@ export class AdrStateService {
         this.adrs$.set([]);
         this.totalElements$.set(0);
         this.totalPages$.set(0);
-        this.selectedAdr$.set(null);
-        this.notificationService.error('Loading failed', 'Unable to load ADRs.');
+        this.selectedAdr$.set(null);        if (err?.status !== 403) {
+          this.notificationService.error('Loading failed', 'Unable to load ADRs.');
+        }
       }
     });
   }

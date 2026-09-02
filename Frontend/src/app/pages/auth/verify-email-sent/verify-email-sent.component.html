@@ -32,7 +32,8 @@
         <span>{{ resendSuccess() ? 'Sent!' : (resending() ? 'Sending…' : 'Resend verification email') }}</span>
       </button>
 
-      <a routerLink="/login" class="back-link">Back to sign in</a>
+      <p class="verification-help">Already verified your email in another tab or session?</p>
+      <a routerLink="/login" class="btn btn--primary">I've verified my email — Sign in</a>
     </div>
   </div>
 </div>

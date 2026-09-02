@@ -2,8 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../services/auth.service';
+import { AxiomLogoComponent } from '../../../shared/axiom-logo/axiom-logo.component';
 import { ValidateInviteResponse, Role } from '../../../models/auth.models';
 
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d).+$/;
@@ -24,7 +24,7 @@ type InviteState = 'LOADING' | 'FORM' | 'SUCCESS' | 'ERROR_INVALID' | 'ERROR_EXP
 @Component({
   selector: 'app-accept-invite',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatIconModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, AxiomLogoComponent],
   templateUrl: './accept-invite.component.html',
   styleUrls: ['./accept-invite.component.scss']
 })

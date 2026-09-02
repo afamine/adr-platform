@@ -66,7 +66,6 @@ export class AdrDashboardComponent implements OnInit {
   showCollabPanel = false;
   isSaving = false;
   isEditing = false;
-  showSettings = false;
   showProfile = false;
   showNotifications = false;
   showChangePassword = false;
@@ -82,7 +81,6 @@ export class AdrDashboardComponent implements OnInit {
   isVoteModalLoading = false;
   isVoteSubmitting = false;
   auditRefreshToken = 0;
-  emailNotifications = true;
   currentUser = this.authService.getCurrentUser();
   projects: ProjectDto[] = [];
 
@@ -432,18 +430,9 @@ export class AdrDashboardComponent implements OnInit {
       ? this.notifications.filter((n) => n.unread)
       : this.notifications;
   }
-
-  toggleSettings(event?: Event): void {
-    event?.stopPropagation();
-    this.showSettings = !this.showSettings;
-    this.showProfile = false;
-    this.showNotifications = false;
-  }
-
   toggleNotifications(event?: Event): void {
     event?.stopPropagation();
     this.showNotifications = !this.showNotifications;
-    this.showSettings = false;
     this.showProfile = false;
     if (this.showNotifications) this.loadNotifications();
   }
@@ -518,7 +507,6 @@ export class AdrDashboardComponent implements OnInit {
   toggleProfile(event?: Event): void {
     event?.stopPropagation();
     this.showProfile = !this.showProfile;
-    this.showSettings = false;
     this.showNotifications = false;
   }
 
@@ -585,11 +573,10 @@ export class AdrDashboardComponent implements OnInit {
     this.authService.logout();
   }
 
-  onBackToAdminDashboard(): void {
+  goToAdminDashboard(): void {
     void this.router.navigate(['/admin/dashboard']);
   }
-
-  get userInitials(): string {
+get userInitials(): string {
     if (!this.currentUser?.fullName) {
       return '?';
     }
@@ -635,8 +622,6 @@ export class AdrDashboardComponent implements OnInit {
     if (target?.closest('.adr-dashboard__dropdown-anchor')) {
       return;
     }
-
-    this.showSettings = false;
     this.showProfile = false;
     this.showNotifications = false;
   }
@@ -662,9 +647,8 @@ export class AdrDashboardComponent implements OnInit {
       this.notificationService.warning(err.message || 'An error occurred');
       return;
     }
-
     if (err.status === 403) {
-      this.notificationService.error("You don't have permission to modify this ADR.");
+      // The global interceptor shows one deduplicated access-denied notice.
       return;
     }
 

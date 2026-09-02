@@ -16,62 +16,17 @@
 
     <div class="adr-dashboard__header-actions">
       <app-workspace-switcher />
-
-      <div class="adr-dashboard__dropdown-anchor">
-        <button class="adr-dashboard__icon-button" type="button" aria-label="Settings" (click)="toggleSettings($event)">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5z" stroke="currentColor" stroke-width="1.5"></path>
-            <path d="M19.4 13.5a1.5 1.5 0 0 0 .3 1.65l.05.05a1.8 1.8 0 0 1 0 2.54 1.8 1.8 0 0 1-2.54 0l-.05-.05a1.5 1.5 0 0 0-1.65-.3 1.5 1.5 0 0 0-.9 1.37V19a1.8 1.8 0 0 1-1.8 1.8 1.8 1.8 0 0 1-1.8-1.8v-.08a1.5 1.5 0 0 0-.97-1.4 1.5 1.5 0 0 0-1.58.33l-.05.05a1.8 1.8 0 0 1-2.54 0 1.8 1.8 0 0 1 0-2.54l.05-.05a1.5 1.5 0 0 0 .33-1.58 1.5 1.5 0 0 0-1.4-.97H5a1.8 1.8 0 0 1-1.8-1.8A1.8 1.8 0 0 1 5 10.2h.08a1.5 1.5 0 0 0 1.4-.97 1.5 1.5 0 0 0-.33-1.58L6.1 7.6a1.8 1.8 0 0 1 0-2.54 1.8 1.8 0 0 1 2.54 0l.05.05a1.5 1.5 0 0 0 1.58.33 1.5 1.5 0 0 0 .97-1.4V4A1.8 1.8 0 0 1 13.04 2.2 1.8 1.8 0 0 1 14.84 4v.08a1.5 1.5 0 0 0 .9 1.37 1.5 1.5 0 0 0 1.65-.3l.05-.05a1.8 1.8 0 0 1 2.54 0 1.8 1.8 0 0 1 0 2.54l-.05.05a1.5 1.5 0 0 0-.3 1.65 1.5 1.5 0 0 0 1.37.9H20A1.8 1.8 0 0 1 21.8 12 1.8 1.8 0 0 1 20 13.8h-.08a1.5 1.5 0 0 0-1.37.9z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+      @if (currentUser?.role === 'ADMIN') {
+        <button class="adr-dashboard__admin-button" type="button" (click)="goToAdminDashboard()">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="4" y="4" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.6"></rect>
+            <rect x="14" y="4" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.6"></rect>
+            <rect x="4" y="14" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.6"></rect>
+            <rect x="14" y="14" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.6"></rect>
           </svg>
+          <span>Admin</span>
         </button>
-
-        @if (showSettings) {
-          <div class="dropdown-panel dropdown-panel--settings">
-            <div class="dropdown-header">
-              <div class="dropdown-title">Settings</div>
-            </div>
-
-            <div class="dropdown-section">
-              <div class="section-label">Workspace</div>
-              <div class="setting-row">
-                <div>
-                  <div class="setting-name">Workspace name</div>
-                  <div class="setting-value">Default Workspace</div>
-                </div>
-              </div>
-              <div class="setting-row">
-                <div class="setting-name">Email notifications</div>
-                <label class="toggle">
-                  <input type="checkbox" [(ngModel)]="emailNotifications" [ngModelOptions]="{ standalone: true }">
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-              <div class="setting-row">
-                <div>
-                  <div class="setting-name">Slack webhook</div>
-                  <div class="setting-value setting-link">Configure</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="dropdown-section">
-              <div class="section-label">About</div>
-              <div class="setting-row">
-                <div>
-                  <div class="setting-name">Version</div>
-                  <div class="setting-value">1.0.0 — Final Year Project</div>
-                </div>
-              </div>
-              <div class="setting-row">
-                <div>
-                  <div class="setting-name">Platform</div>
-                  <div class="setting-value">Axiom ADR Manager</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        }
-      </div>
+      }
 
       <!-- Bell / Notifications -->
       <div class="adr-dashboard__dropdown-anchor">
@@ -228,7 +183,6 @@
           [isSaving]="isSaving"
           [canEdit]="canEdit()"
           [canDelete]="currentUser?.role === 'ADMIN'"
-          [showAdminDashboardLink]="currentUser?.role === 'ADMIN'"
           [transitions]="getAllowedTransitions()"
           [auditRefreshToken]="auditRefreshToken"
           (tabChanged)="onTabChange($event)"
@@ -243,7 +197,6 @@
           (showCollab)="toggleCollab()"
           (linkedAdrNavigate)="onLinkedAdrNavigate($event)"
           (adrUpdated)="onEditorAdrUpdated($event)"
-          (adminDashboardRequested)="onBackToAdminDashboard()"
         />
       </div>
 

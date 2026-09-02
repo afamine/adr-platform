@@ -1,166 +1,94 @@
-<div class="auth-layout">
-  <div class="left-panel">
-    <a class="brand" routerLink="/login" aria-label="Back to home">
-      <img src="assets/logos/svg/logo-horizontal-dark-accent.svg" alt="Axiom" />
+<main class="auth-page" aria-labelledby="invite-title">
+  <aside class="auth-page__story" aria-label="About Axiom">
+    <div class="auth-page__glow auth-page__glow--top"></div>
+    <div class="auth-page__glow auth-page__glow--bottom"></div>
+    <div class="auth-page__story-content">
+      <a class="brand" routerLink="/login" aria-label="Axiom home">
+        <app-axiom-logo state="idle" [size]="28" iconColor="#ffffff" aria-hidden="true"></app-axiom-logo>
+        <span>Axiom</span>
+      </a>
+      <div class="auth-page__message">
+        <span class="eyebrow"><i></i> Architecture decision governance</span>
+        <h1>From trade-offs<br />to clarity.</h1>
+        <p>Join your team's workspace to review, govern, and preserve the reasoning behind every architectural decision.</p>
+        <ul class="feature-list">
+          <li><span>✓</span>Secure, role-based workspace access</li>
+          <li><span>✓</span>Auditable decision history and review analytics</li>
+          <li><span>✓</span>Collaborative review and approval workflows</li>
+        </ul>
+      </div>
+      <p class="auth-page__copyright">© 2026 Axiom Technologies. All rights reserved.</p>
+    </div>
+  </aside>
+
+  <section class="auth-page__form-panel">
+    <a class="mobile-brand" routerLink="/login" aria-label="Axiom home">
+      <app-axiom-logo state="idle" [size]="25" iconColor="#091629" aria-hidden="true"></app-axiom-logo>
+      <span>Axiom</span>
     </a>
 
-    <div class="left-content">
-      <h1 class="headline">Join your team's workspace.</h1>
-      <p class="description">
-        You're invited to collaborate on architectural decisions with your team on ADR Manager.
-      </p>
-
-      <ul class="bullets">
-        <li>
-          <span class="dot"></span>
-          <span>Smart AI suggestions as you write your decisions</span>
-        </li>
-        <li>
-          <span class="dot"></span>
-          <span>Structured validation workflows for your team</span>
-        </li>
-        <li>
-          <span class="dot"></span>
-          <span>Semantic search across all architectural decisions</span>
-        </li>
-      </ul>
-    </div>
-
-    <div class="left-footer">
-      <div class="divider"></div>
-      <div class="footer-text">ADR Manager &middot; Final Year Project 2026</div>
-    </div>
-  </div>
-
-  <div class="right-panel">
-    <div class="form-wrapper">
-      <!-- LOADING STATE -->
+    <div class="auth-form">
       <ng-container *ngIf="state() === 'LOADING'">
-        <div class="form-heading">
-          <h2>Validating your invite...</h2>
+        <header class="auth-form__header">
+          <h2 id="invite-title">Validating invitation</h2>
           <p>Please wait while we verify your invitation link.</p>
-        </div>
-        <div class="spinner" style="margin: 32px auto; width: 32px; height: 32px; border-width: 3px; border-top-color: #0f172a;"></div>
+        </header>
+        <div class="auth-form__loading" aria-label="Validating invitation"></div>
       </ng-container>
 
-      <!-- FORM STATE -->
       <ng-container *ngIf="state() === 'FORM'">
-        <div class="form-heading">
-          <h2>Accept your invitation</h2>
-          <p>
-            You've been invited to <strong>{{ inviteDetails()?.workspaceName }}</strong>
-            as a <strong>{{ roleLabel(inviteDetails()!.role) }}</strong>.
-            {{ isExistingAccountInvite ? 'Enter your existing password to add this workspace to your account.' : 'Set up your account below.' }}
-          </p>
-        </div>
+        <header class="auth-form__header">
+          <h2 id="invite-title">Accept your invitation</h2>
+          <p>You've been invited to <strong>{{ inviteDetails()?.workspaceName }}</strong> as a <strong>{{ roleLabel(inviteDetails()!.role) }}</strong>. {{ isExistingAccountInvite ? 'Enter your existing password to join this workspace.' : 'Set up your account to join the workspace.' }}</p>
+        </header>
 
         <form [formGroup]="inviteForm" (ngSubmit)="onSubmit()" novalidate>
-          <div class="field-group">
+          <div class="field">
             <label for="fullName">Full name</label>
-            <div class="input-wrapper" [class.invalid]="hasError('fullName', 'required') || hasError('fullName', 'minlength')">
-              <mat-icon class="input-icon" fontIcon="person_outline"></mat-icon>
-              <input id="fullName" type="text" placeholder="Jane Doe" formControlName="fullName" />
-            </div>
-            <div class="error" *ngIf="hasError('fullName', 'required')">Full name is required</div>
-            <div class="error" *ngIf="!hasError('fullName', 'required') && hasError('fullName', 'minlength')">Name must be at least 2 characters</div>
+            <input id="fullName" type="text" autocomplete="name" placeholder="Jane Doe" formControlName="fullName" [class.field__input--invalid]="hasError('fullName', 'required') || hasError('fullName', 'minlength')" />
+            <p class="field__error" *ngIf="hasError('fullName', 'required')">Full name is required</p>
+            <p class="field__error" *ngIf="!hasError('fullName', 'required') && hasError('fullName', 'minlength')">Name must be at least 2 characters</p>
           </div>
 
-          <div class="field-group">
+          <div class="field">
             <label for="password">{{ passwordLabel }}</label>
-            <div
-              class="input-wrapper"
-              [class.invalid]="
-                hasError('password', 'required') ||
-                hasError('password', 'minlength') ||
-                hasError('password', 'pattern')
-              "
-            >
-              <mat-icon class="input-icon" fontIcon="lock_outline"></mat-icon>
-              <input id="password" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" formControlName="password" />
-            </div>
-            <div class="error" *ngIf="hasError('password', 'required')">Password is required</div>
-            <div class="error" *ngIf="!hasError('password', 'required') && hasError('password', 'minlength')">
-              Password must be at least 8 characters
-            </div>
-            <div class="error" *ngIf="hasError('password', 'pattern')">
-              Use at least one letter and one number
-            </div>
+            <input id="password" type="password" autocomplete="new-password" placeholder="Enter your password" formControlName="password" [class.field__input--invalid]="hasError('password', 'required') || hasError('password', 'minlength') || hasError('password', 'pattern')" />
+            <p class="field__error" *ngIf="hasError('password', 'required')">Password is required</p>
+            <p class="field__error" *ngIf="!hasError('password', 'required') && hasError('password', 'minlength')">Password must be at least 8 characters</p>
+            <p class="field__error" *ngIf="hasError('password', 'pattern')">Use at least one letter and one number</p>
           </div>
 
-          <div class="field-group">
+          <div class="field">
             <label for="confirmPassword">Confirm password</label>
-            <div
-              class="input-wrapper"
-              [class.invalid]="
-                hasError('confirmPassword', 'required') ||
-                hasError('confirmPassword', 'passwordMismatch')
-              "
-            >
-              <mat-icon class="input-icon" fontIcon="lock_outline"></mat-icon>
-              <input
-                id="confirmPassword"
-                type="password"
-                placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
-                formControlName="confirmPassword"
-              />
-            </div>
-            <div class="error" *ngIf="hasError('confirmPassword', 'required')">Please confirm your password</div>
-            <div
-              class="error"
-              *ngIf="!hasError('confirmPassword', 'required') && hasError('confirmPassword', 'passwordMismatch')"
-            >
-              Passwords do not match
-            </div>
+            <input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Confirm your password" formControlName="confirmPassword" [class.field__input--invalid]="hasError('confirmPassword', 'required') || hasError('confirmPassword', 'passwordMismatch')" />
+            <p class="field__error" *ngIf="hasError('confirmPassword', 'required')">Please confirm your password</p>
+            <p class="field__error" *ngIf="!hasError('confirmPassword', 'required') && hasError('confirmPassword', 'passwordMismatch')">Passwords do not match</p>
           </div>
 
-          <button class="submit" type="submit" [disabled]="isSubmitting()">
-            <span class="spinner" *ngIf="isSubmitting()"></span>
-            <span>{{ submitLabel }}</span>
+          <button class="primary-button" type="submit" [disabled]="isSubmitting()">
+            <span class="button-spinner" *ngIf="isSubmitting()" aria-hidden="true"></span>
+            {{ submitLabel }}
           </button>
         </form>
-
-        <div class="error-banner" *ngIf="errorMessage()">
-          {{ errorMessage() }}
-        </div>
+        <div class="form-alert form-alert--error" *ngIf="errorMessage()" role="alert">{{ errorMessage() }}</div>
       </ng-container>
 
-      <!-- SUCCESS STATE -->
       <ng-container *ngIf="state() === 'SUCCESS'">
-        <div class="form-heading">
-          <h2>Welcome aboard!</h2>
-          <p>
-            Your workspace access is ready. You'll be redirected to the dashboard in a moment.
-          </p>
-        </div>
-        <div class="success">
-          Invitation accepted successfully. Redirecting...
-        </div>
-        <a routerLink="/adrs" class="back-link">Go to dashboard</a>
+        <header class="auth-form__header">
+          <h2 id="invite-title">Welcome to Axiom</h2>
+          <p>Your workspace access is ready. You'll be redirected to the ADR workspace shortly.</p>
+        </header>
+        <div class="form-alert form-alert--success" role="status">Invitation accepted successfully. Redirecting…</div>
+        <p class="auth-form__switch"><a routerLink="/adrs">Go to workspace now</a></p>
       </ng-container>
 
-      <!-- ERROR: EXPIRED -->
-      <ng-container *ngIf="state() === 'ERROR_EXPIRED'">
-        <div class="form-heading">
-          <h2>Invite link expired</h2>
-          <p>
-            This invitation link has expired. For security, invite links are valid for a limited time.
-            Please ask your workspace administrator to send a new invitation.
-          </p>
-        </div>
-        <a routerLink="/login" class="back-link">Back to sign in</a>
-      </ng-container>
-
-      <!-- ERROR: INVALID -->
-      <ng-container *ngIf="state() === 'ERROR_INVALID'">
-        <div class="form-heading">
-          <h2>Invite link invalid</h2>
-          <p>
-            This invitation link is invalid or has already been used.
-            Please ask your workspace administrator to send a new invitation.
-          </p>
-        </div>
-        <a routerLink="/login" class="back-link">Back to sign in</a>
+      <ng-container *ngIf="state() === 'ERROR_EXPIRED' || state() === 'ERROR_INVALID'">
+        <header class="auth-form__header">
+          <h2 id="invite-title">{{ state() === 'ERROR_EXPIRED' ? 'Invite link expired' : 'Invite link invalid' }}</h2>
+          <p>{{ state() === 'ERROR_EXPIRED' ? 'For security, invitation links are valid for a limited time. Ask your workspace administrator to send a new invitation.' : 'This invitation link is invalid or has already been used. Ask your workspace administrator to send a new invitation.' }}</p>
+        </header>
+        <p class="auth-form__switch"><a routerLink="/login">Back to sign in</a></p>
       </ng-container>
     </div>
-  </div>
-</div>
+  </section>
+</main>

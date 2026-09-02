@@ -69,6 +69,33 @@ $brand: #6366f1;
   position: relative;
 }
 
+.adr-dashboard__admin-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.adr-dashboard__admin-button:hover {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.adr-dashboard__admin-button svg {
+  width: 15px;
+  height: 15px;
+}
+
 .adr-dashboard__dropdown-anchor {
   position: relative;
 }

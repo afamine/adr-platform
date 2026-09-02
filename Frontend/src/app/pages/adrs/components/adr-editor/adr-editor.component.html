@@ -100,11 +100,6 @@
       </div>
 
       <div class="adr-editor__actions">
-        @if (showAdminDashboardLink) {
-          <button class="adr-editor__ghost-button" type="button" (click)="adminDashboardRequested.emit()">
-            Back to Admin
-          </button>
-        }
 
         @if (shouldShowCompletenessBadge && completeness) {
           <span class="adr-editor__completeness-badge">{{ completenessBadgeText }}</span>

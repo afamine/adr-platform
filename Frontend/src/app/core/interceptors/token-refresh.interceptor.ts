@@ -6,6 +6,8 @@ import { catchError, finalize, shareReplay, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 
+let accessDeniedNoticeActive = false;
+
 export const tokenRefreshInterceptor: HttpInterceptorFn = (
   req: HttpRequest<unknown>,
   next: HttpHandlerFn
@@ -63,12 +65,16 @@ export const tokenRefreshInterceptor: HttpInterceptorFn = (
         || errorCode === 'ACCOUNT_DISABLED'
         || errorCode === 'ACCOUNT_DEACTIVATED'
         || errorCode === 'EMAIL_NOT_VERIFIED';
-
       if (error.status === 403 && !isLoginHandledError) {
-        notificationService.error(
-          'Access denied',
-          'You do not have permission to perform this action.'
-        );
+        console.warn('[Axiom] Access denied', { method: req.method, url: req.url });
+        if (!accessDeniedNoticeActive) {
+          accessDeniedNoticeActive = true;
+          notificationService.error(
+            'Access denied',
+            'You do not have permission to perform this action.'
+          );
+          setTimeout(() => { accessDeniedNoticeActive = false; }, 6000);
+        }
       }
 
       return throwError(() => error);

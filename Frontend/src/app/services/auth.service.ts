@@ -1,3 +1,5 @@
+
+
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -67,11 +69,10 @@ export class AuthService {
     return this.http.post<MessageResponse>(`${this.API_URL}/api/auth/resend-verification`, { email });
   }
 
-  refreshToken(refreshToken = this.getRefreshToken() ?? ''): Observable<AuthResponse> {
-    const payload: RefreshTokenRequest = { refreshToken };
-    return this.http.post<AuthResponse>(`${this.API_URL}/api/auth/refresh`, payload).pipe(
-      tap((response) => this.saveTokens(response))
-    );
+  refreshToken(): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.API_URL}/api/auth/refresh`, {}, {
+      headers: new HttpHeaders({ 'X-CSRF-Token': this.getCsrfToken() })
+    }).pipe(tap((response) => this.saveTokens(response)));
   }
 
   refreshTokenOnce(): Observable<AuthResponse> {
@@ -97,11 +98,10 @@ export class AuthService {
   }
 
   saveTokens(response: AuthResponse): void {
-    if (!response.token || !response.refreshToken || !response.user) {
+    if (!response.token || !response.user) {
       throw new Error('Cannot save incomplete authentication response.');
     }
     sessionStorage.setItem(this.TOKEN_KEY, this.encodeToken(response.token));
-    sessionStorage.setItem(this.REFRESH_KEY, this.encodeToken(response.refreshToken));
     this.saveUser(response.user);
   }
 
@@ -114,10 +114,6 @@ export class AuthService {
     return raw ? this.decodeToken(raw) : null;
   }
 
-  getRefreshToken(): string | null {
-    const raw = sessionStorage.getItem(this.REFRESH_KEY);
-    return raw ? this.decodeToken(raw) : null;
-  }
 
   private encodeToken(token: string): string {
     return btoa(encodeURIComponent(token));
@@ -277,11 +273,15 @@ export class AuthService {
     }
   }
 
+  private getCsrfToken(): string {
+    const prefix = 'adr_csrf=';
+    return document.cookie.split('; ').find((entry) => entry.startsWith(prefix))?.slice(prefix.length) ?? '';
+  }
+
   private finishLogout(): void {
     this.isRefreshing$.next(false);
     this.refreshToken$ = null;
     sessionStorage.removeItem(this.TOKEN_KEY);
-    sessionStorage.removeItem(this.REFRESH_KEY);
     sessionStorage.removeItem(this.USER_KEY);
     this.router.navigateByUrl('/login');
     this.isLoggingOut = false;

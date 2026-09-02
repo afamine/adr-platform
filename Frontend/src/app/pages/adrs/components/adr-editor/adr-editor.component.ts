@@ -58,7 +58,6 @@ export class AdrEditorComponent implements OnChanges {
   @Input() isSaving = false;
   @Input() canEdit = false;
   @Input() canDelete = false;
-  @Input() showAdminDashboardLink = false;
   @Input() transitions: AdrStatus[] = [];
   @Input() auditRefreshToken = 0;
 
@@ -74,7 +73,6 @@ export class AdrEditorComponent implements OnChanges {
   @Output() showCollab = new EventEmitter<void>();
   @Output() linkedAdrNavigate = new EventEmitter<string>();
   @Output() adrUpdated = new EventEmitter<Adr>();
-  @Output() adminDashboardRequested = new EventEmitter<void>();
 
   readonly tabs = [...ADR_TAB_ORDER, { key: 'audit' as const, label: 'Audit Log' }];
   readonly statusOptions = ADR_STATUS_OPTIONS;

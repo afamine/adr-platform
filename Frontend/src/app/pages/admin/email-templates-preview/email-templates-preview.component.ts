@@ -33,7 +33,7 @@ export class EmailTemplatesPreviewComponent implements OnInit {
     this.errorMessage = '';
     this.previews.getPreview(templateName).subscribe({
       next: (html) => {
-        this.previewHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+        this.previewHtml = this.sanitizer.bypassSecurityTrustHtml(this.withPreviewAssetBase(html));
         this.isLoading = false;
       },
       error: (error) => {
@@ -42,6 +42,10 @@ export class EmailTemplatesPreviewComponent implements OnInit {
         this.errorMessage = error?.error?.message || 'Unable to render this email preview.';
       }
     });
+  }
+
+  private withPreviewAssetBase(html: string): string {
+    return html.replace(/<head(\s[^>]*)?>/i, '$&<base href="/" />');
   }
 
   selectedFile(): string { return this.templates.find((template) => template.name === this.selected)?.file ?? ''; }
