@@ -42,6 +42,13 @@ public class VerificationToken {
     @Column(name = "token", nullable = false, unique = true, length = 128)
     private String token;
 
+    /**
+     * The normalized target address for an EMAIL_CHANGE token. It remains null
+     * for registration verification and workspace invitation tokens.
+     */
+    @Column(name = "pending_email", length = 255)
+    private String pendingEmail;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "token_type", nullable = false, length = 30)
     private TokenType tokenType;

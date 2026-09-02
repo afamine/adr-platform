@@ -6,6 +6,7 @@ import com.adrplatform.analytics.dto.KpiDto;
 import com.adrplatform.analytics.dto.StatusCountDto;
 import com.adrplatform.analytics.dto.WeeklyActivityDto;
 import com.adrplatform.auth.exception.BadRequestException;
+import com.adrplatform.auth.repository.WorkspaceRepository;
 import com.adrplatform.auth.security.TenantContext;
 import com.adrplatform.vote.repository.VoteRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class AnalyticsService {
 
     private final AdrRepository adrRepository;
     private final VoteRepository voteRepository;
+    private final WorkspaceRepository workspaceRepository;
     private final TenantContext tenantContext;
 
     @Transactional(readOnly = true)
@@ -87,6 +89,9 @@ public class AnalyticsService {
         }
         if ("7d".equals(range.key())) {
             return getDailyActivity(range, 7);
+        }
+        if ("all".equals(range.key())) {
+            return getMonthlyActivity(range);
         }
         return getWeeklyActivity(range);
     }
@@ -147,15 +152,42 @@ public class AnalyticsService {
         return result;
     }
 
+    private List<WeeklyActivityDto> getMonthlyActivity(ResolvedRange range) {
+        UUID wsId = tenantContext.getWorkspaceId();
+        List<WeeklyActivityDto> result = new ArrayList<>();
+        DateTimeFormatter labelFormatter = DateTimeFormatter.ofPattern("MMM yyyy");
+        Instant cursor = range.from();
+
+        while (cursor.isBefore(range.to())) {
+            LocalDate bucketDate = cursor.atZone(ZoneOffset.UTC).toLocalDate();
+            Instant nextMonth = bucketDate.withDayOfMonth(1)
+                    .plusMonths(1)
+                    .atStartOfDay()
+                    .toInstant(ZoneOffset.UTC);
+            Instant next = minInstant(nextMonth, range.to());
+            long count = nullSafe(adrRepository.countCreatedBetween(wsId, cursor, next));
+            String label = labelFormatter.format(cursor.atZone(ZoneOffset.UTC));
+            result.add(new WeeklyActivityDto(label, label, count));
+            cursor = next;
+        }
+        return result;
+    }
+
     private ResolvedRange resolveRange(String rawRange) {
         String key = rawRange == null || rawRange.isBlank() ? "30d" : rawRange.trim().toLowerCase();
         Instant to = Instant.now();
+        if ("all".equals(key)) {
+            Instant from = workspaceRepository.findById(tenantContext.getWorkspaceId())
+                    .orElseThrow(() -> new BadRequestException("Workspace not found."))
+                    .getCreatedAt();
+            return new ResolvedRange(key, from, to, Duration.between(from, to));
+        }
         Duration duration = switch (key) {
             case "24h" -> Duration.ofHours(24);
             case "7d" -> Duration.ofDays(7);
             case "30d" -> Duration.ofDays(30);
             case "90d" -> Duration.ofDays(90);
-            default -> throw new BadRequestException("Unsupported analytics timeRange. Use 24h, 7d, 30d, or 90d.");
+            default -> throw new BadRequestException("Unsupported analytics timeRange. Use 24h, 7d, 30d, 90d, or all.");
         };
         return new ResolvedRange(key, to.minus(duration), to, duration);
     }

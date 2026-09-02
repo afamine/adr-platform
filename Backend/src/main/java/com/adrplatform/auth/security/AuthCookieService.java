@@ -27,7 +27,7 @@ public class AuthCookieService {
         addCookie(response, properties.getRefreshName(), authResponse.getRefreshToken(), true,
                 "/api/auth", Duration.ofMillis(refreshTtlMs));
         addCookie(response, properties.getCsrfName(), newCsrfToken(), false,
-                "/api/auth", Duration.ofMillis(refreshTtlMs));
+                "/", Duration.ofMillis(refreshTtlMs));
         return AuthResponse.builder()
                 .token(authResponse.getToken())
                 .user(authResponse.getUser())
@@ -39,7 +39,7 @@ public class AuthCookieService {
 
     public void clearSession(HttpServletResponse response) {
         addCookie(response, properties.getRefreshName(), "", true, "/api/auth", Duration.ZERO);
-        addCookie(response, properties.getCsrfName(), "", false, "/api/auth", Duration.ZERO);
+        addCookie(response, properties.getCsrfName(), "", false, "/", Duration.ZERO);
     }
 
     private void addCookie(HttpServletResponse response, String name, String value, boolean httpOnly,

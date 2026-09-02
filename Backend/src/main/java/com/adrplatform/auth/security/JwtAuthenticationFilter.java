@@ -6,6 +6,7 @@ import com.adrplatform.auth.domain.WorkspaceMembership;
 import com.adrplatform.auth.domain.WorkspaceMembershipStatus;
 import com.adrplatform.auth.repository.WorkspaceMembershipRepository;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -44,12 +45,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = header.substring(7);
-        if (tokenBlacklistService.isBlacklisted(token) || !jwtService.isValidToken(token)) {
-            filterChain.doFilter(request, response);
+        if (tokenBlacklistService.isBlacklisted(token)) {
+            writeUnauthorized(response, "TOKEN_REVOKED", "Your session is no longer valid.");
             return;
         }
 
-        Claims claims = jwtService.parseToken(token);
+        Claims claims;
+        try {
+            claims = jwtService.parseToken(token);
+        } catch (ExpiredJwtException ex) {
+            writeUnauthorized(response, "TOKEN_EXPIRED", "Your access token has expired.");
+            return;
+        } catch (Exception ex) {
+            writeUnauthorized(response, "TOKEN_INVALID", "Your access token is invalid.");
+            return;
+        }
         if (jwtService.isPending2faToken(claims)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
@@ -102,6 +112,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    private void writeUnauthorized(HttpServletResponse response, String errorType, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.getWriter().write("{\"errorType\":\"" + errorType + "\",\"message\":\"" + message + "\"}");
+    }
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();

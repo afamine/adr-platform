@@ -1,6 +1,7 @@
 package com.adrplatform.auth.controller;
 
 import com.adrplatform.auth.dto.AcceptInviteRequest;
+import com.adrplatform.auth.dto.EmailVerificationStatusResponse;
 import com.adrplatform.auth.dto.AuthResponse;
 import com.adrplatform.auth.dto.ChangePasswordRequest;
 import com.adrplatform.auth.dto.ForgotPasswordRequest;
@@ -13,6 +14,7 @@ import com.adrplatform.auth.dto.ResendVerificationRequest;
 import com.adrplatform.auth.dto.ResetPasswordRequest;
 import com.adrplatform.auth.dto.ValidateInviteResponse;
 import com.adrplatform.auth.domain.User;
+import com.adrplatform.auth.service.UserService;
 import com.adrplatform.auth.service.AuthService;
 import com.adrplatform.auth.service.PasswordResetService;
 import com.adrplatform.auth.security.AuthCookieService;
@@ -50,6 +52,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
+    private final UserService userService;
     private final AuthCookieService authCookieService;
     private final JwtProperties jwtProperties;
     private final RedisRateLimiter rateLimiter;
@@ -133,6 +136,18 @@ public class AuthController {
         return ResponseEntity.ok(authService.verifyEmail(token));
     }
 
+
+    @Operation(summary = "Confirm a pending email-address change")
+    @GetMapping("/confirm-email-change")
+    public ResponseEntity<MessageResponse> confirmEmailChange(@RequestParam("token") String token) {
+        return ResponseEntity.ok(userService.confirmEmailChange(token));
+    }
+
+    @Operation(summary = "Check whether a registration email has been verified")
+    @GetMapping("/verification-status")
+    public ResponseEntity<EmailVerificationStatusResponse> verificationStatus(@RequestParam("token") String token) {
+        return ResponseEntity.ok(authService.getEmailVerificationStatus(token));
+    }
     @Operation(summary = "Re-send the email verification link")
     @ApiResponse(responseCode = "200", description = "Verification link dispatched (or silently ignored for unknown emails)")
     @ApiResponse(responseCode = "400", description = "Email is already verified")

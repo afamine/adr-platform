@@ -9,6 +9,7 @@ import com.adrplatform.auth.domain.Workspace;
 import com.adrplatform.auth.domain.WorkspaceMembership;
 import com.adrplatform.auth.domain.WorkspaceMembershipStatus;
 import com.adrplatform.auth.dto.AcceptInviteRequest;
+import com.adrplatform.auth.dto.EmailVerificationStatusResponse;
 import com.adrplatform.auth.dto.AuthResponse;
 import com.adrplatform.auth.dto.LoginRequest;
 import com.adrplatform.auth.dto.MessageResponse;
@@ -129,6 +130,7 @@ public class AuthService {
 
         int expiryHours = appProperties.getToken().getEmailVerificationExpiryHours();
         String token = verificationTokenService.createToken(saved, TokenType.EMAIL_VERIFICATION, expiryHours);
+          String statusToken = verificationTokenService.createToken(saved, TokenType.EMAIL_VERIFICATION_STATUS, expiryHours);
         String verificationUrl = appProperties.getFrontendUrl() + "/verify-email?token=" + token;
         mailService.sendVerificationEmail(saved.getEmail(), saved.getFullName(), verificationUrl, expiryHours);
 
@@ -142,7 +144,8 @@ public class AuthService {
                 .email(maskEmail(saved.getEmail()))
                 .workspaceName(workspace.getName())
                 .workspaceSlug(workspace.getSlug())
-                .build();
+                  .verificationStatusToken(statusToken)
+                  .build();
     }
 
     private String resolveSlug(String requestedSlug, String workspaceName) {
@@ -300,6 +303,14 @@ public class AuthService {
                 .build();
     }
 
+    /**
+     * Returns verification state for the opaque, short-lived token issued at registration.
+     */
+    @Transactional(readOnly = true)
+    public EmailVerificationStatusResponse getEmailVerificationStatus(String statusToken) {
+        VerificationToken token = verificationTokenService.peekToken(statusToken, TokenType.EMAIL_VERIFICATION_STATUS);
+        return new EmailVerificationStatusResponse(token.getUser().isEmailVerified());
+    }
     /**
      * Re-sends a verification email. Silently succeeds for unknown emails to avoid leaking existence.
      */

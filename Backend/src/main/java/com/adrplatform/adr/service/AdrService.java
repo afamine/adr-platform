@@ -23,6 +23,7 @@ import com.adrplatform.auth.service.AuditService;
 import com.adrplatform.auth.exception.BadRequestException;
 import com.adrplatform.common.AuditActions;
 import com.adrplatform.notification.service.NotificationService;
+import com.adrplatform.realtime.WorkspaceEventService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
@@ -57,6 +58,7 @@ public class AdrService {
     private final TenantContext tenantContext;
     private final AuditService auditService;
     private final NotificationService notificationService;
+    private final WorkspaceEventService workspaceEventService;
     private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
@@ -115,12 +117,17 @@ public class AdrService {
 
     private Instant resolveAnalyticsRangeStart(String rawRange) {
         String key = rawRange == null || rawRange.isBlank() ? "30d" : rawRange.trim().toLowerCase();
+        if ("all".equals(key)) {
+            return workspaceRepository.findById(tenantContext.getWorkspaceId())
+                    .orElseThrow(() -> new BadRequestException("Workspace not found."))
+                    .getCreatedAt();
+        }
         Duration duration = switch (key) {
             case "24h" -> Duration.ofHours(24);
             case "7d" -> Duration.ofDays(7);
             case "30d" -> Duration.ofDays(30);
             case "90d" -> Duration.ofDays(90);
-            default -> throw new BadRequestException("Unsupported analytics timeRange. Use 24h, 7d, 30d, or 90d.");
+            default -> throw new BadRequestException("Unsupported analytics timeRange. Use 24h, 7d, 30d, 90d, or all.");
         };
         return Instant.now().minus(duration);
     }
@@ -184,6 +191,8 @@ public class AdrService {
                         saved.getTitle() == null ? "" : saved.getTitle(), "status", saved.getStatus().name())));
 
         log.info("ADR created id={} number={} by {}", saved.getId(), saved.getAdrNumber(), actor.getEmail());
+        workspaceEventService.publishToWorkspace(workspaceId, "ADR_CREATED", saved.getId());
+        workspaceEventService.publishToWorkspace(workspaceId, "ADR_UPDATED", saved.getId());
         return AdrDto.fromEntity(saved);
     }
 
@@ -215,6 +224,7 @@ public class AdrService {
         Adr saved = adrRepository.save(adr);
         auditService.record(actor, actor.getWorkspace(), AuditActions.ADR_UPDATED, "ADR", saved.getId(), null,
                 toJson(Map.of("title", saved.getTitle() == null ? "" : saved.getTitle())));
+        workspaceEventService.publishToWorkspace(workspaceId, "ADR_UPDATED", saved.getId());
         return AdrDto.fromEntity(saved);
     }
 
@@ -236,6 +246,7 @@ public class AdrService {
         auditService.record(actor, actor.getWorkspace(), AuditActions.ADR_UPDATED, "ADR", saved.getId(), null,
                 toJson(Map.of("projectId", project == null ? "" : project.getId().toString(),
                         "projectName", project == null ? "" : project.getName())));
+        workspaceEventService.publishToWorkspace(workspaceId, "ADR_UPDATED", saved.getId());
         return AdrDto.fromEntity(saved);
     }
 
@@ -286,6 +297,7 @@ public class AdrService {
                                 ? request.supersededByAdrId().toString() : "")));
         notificationService.notifyStatusChanged(saved.getId(), saved.getAdrNumber(), saved.getTitle(),
                 workspaceId, saved.getAuthor().getId(), actor.getId(), newStatus.name());
+        workspaceEventService.publishToWorkspace(workspaceId, "ADR_UPDATED", saved.getId());
         return AdrDto.fromEntity(saved);
     }
 
@@ -301,6 +313,7 @@ public class AdrService {
 
         auditService.record(actor, actor.getWorkspace(), AuditActions.ADR_DELETED, "ADR", adr.getId(), null, null);
         adrRepository.delete(adr);
+        workspaceEventService.publishToWorkspace(workspaceId, "ADR_DELETED", id);
     }
 
     private void enforceTransition(User actor, Adr adr, AdrStatus target) {

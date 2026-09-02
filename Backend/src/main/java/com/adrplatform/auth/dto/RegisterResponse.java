@@ -10,4 +10,5 @@ public class RegisterResponse {
     private String email;
     private String workspaceName;
     private String workspaceSlug;
+    private String verificationStatusToken;
 }

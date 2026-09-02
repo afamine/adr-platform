@@ -31,6 +31,7 @@ public final class AuditActions {
     public static final String USER_LOGGED_OUT      = "USER_LOGGED_OUT";
     public static final String USER_EMAIL_VERIFIED  = "USER_EMAIL_VERIFIED";
     public static final String USER_INVITE_ACCEPTED = "USER_INVITE_ACCEPTED";
+    public static final String EMAIL_CHANGED        = "EMAIL_CHANGED";
     public static final String USER_INVITED         = "USER_INVITED";
     public static final String USER_STATUS_CHANGED  = "USER_STATUS_CHANGED";
     public static final String PROFILE_UPDATED      = "PROFILE_UPDATED";

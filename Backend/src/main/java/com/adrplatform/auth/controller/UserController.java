@@ -5,15 +5,20 @@ import com.adrplatform.auth.dto.InviteUserResponse;
 import com.adrplatform.auth.dto.NotificationPreferencesDto;
 import com.adrplatform.auth.dto.UpdatePreferencesRequest;
 import com.adrplatform.auth.dto.UpdateProfileRequest;
+import com.adrplatform.auth.dto.EmailChangeRequest;
+import com.adrplatform.auth.dto.MessageResponse;
 import com.adrplatform.auth.dto.UpdateRoleRequest;
 import com.adrplatform.auth.dto.UpdateRoleResponse;
 import com.adrplatform.auth.dto.UpdateStatusRequest;
 import com.adrplatform.auth.dto.UpdateStatusResponse;
 import com.adrplatform.auth.dto.UserDto;
 import com.adrplatform.auth.dto.WorkspaceInvitationDto;
+import com.adrplatform.auth.security.RedisRateLimiter;
+import com.adrplatform.auth.security.RequestIpResolver;
 import com.adrplatform.auth.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,6 +41,8 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final RedisRateLimiter rateLimiter;
+    private final RequestIpResolver requestIpResolver;
 
     @Operation(summary = "Get current user profile")
     @ApiResponse(responseCode = "200", description = "Profile retrieved")
@@ -51,6 +59,18 @@ public class UserController {
     @PutMapping("/me")
     public ResponseEntity<UserDto> updateMyProfile(@Valid @RequestBody UpdateProfileRequest request) {
         return ResponseEntity.ok(userService.updateMyProfile(request));
+    }
+
+
+    @Operation(summary = "Request a verified email-address change for the current account")
+    @ApiResponse(responseCode = "200", description = "Confirmation link dispatched")
+    @ApiResponse(responseCode = "400", description = "Invalid credentials or request")
+    @ApiResponse(responseCode = "409", description = "Email already exists")
+    @PostMapping("/me/email-change")
+    public ResponseEntity<MessageResponse> requestEmailChange(@Valid @RequestBody EmailChangeRequest request,
+                                                               HttpServletRequest servletRequest) {
+        rateLimiter.check("email-change", requestIpResolver.resolve(servletRequest), request.newEmail(), 5, 3, Duration.ofMinutes(10));
+        return ResponseEntity.ok(userService.requestEmailChange(request));
     }
 
     @Operation(summary = "Get notification preferences for current user")

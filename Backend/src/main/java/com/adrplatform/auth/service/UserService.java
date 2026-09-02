@@ -11,6 +11,8 @@ import com.adrplatform.auth.domain.WorkspaceMembershipStatus;
 import com.adrplatform.auth.domain.VerificationToken;
 import com.adrplatform.auth.dto.InviteUserResponse;
 import com.adrplatform.auth.dto.NotificationPreferencesDto;
+import com.adrplatform.auth.dto.EmailChangeRequest;
+import com.adrplatform.auth.dto.MessageResponse;
 import com.adrplatform.auth.dto.UpdatePreferencesRequest;
 import com.adrplatform.auth.dto.UpdateProfileRequest;
 import com.adrplatform.auth.dto.UserDto;
@@ -25,10 +27,12 @@ import com.adrplatform.auth.repository.VerificationTokenRepository;
 import com.adrplatform.auth.repository.WorkspaceMembershipRepository;
 import com.adrplatform.auth.repository.WorkspaceRepository;
 import com.adrplatform.auth.security.TenantContext;
+import com.adrplatform.realtime.WorkspaceEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -52,7 +56,11 @@ public class UserService {
     private final RefreshTokenService refreshTokenService;
     private final MailService mailService;
     private final AppProperties appProperties;
+    private final WorkspaceEventService workspaceEventService;
 
+    private final PasswordEncoder passwordEncoder;
+    private final TotpService totpService;
+    private final SecretEncryptionService secretEncryptionService;
     /**
      * Returns current authenticated user profile.
      */
@@ -88,9 +96,75 @@ public class UserService {
                 "{\"fullName\":\"" + saved.getFullName() + "\"}");
 
         log.info("Profile updated for user {}", saved.getEmail());
+        workspaceEventService.publishToWorkspace(tenantContext.getWorkspaceId(), "MEMBER_UPDATED", null);
         membership.setUser(saved);
         return UserDto.fromMembership(membership);
     }
+
+    /** Starts a verified email-address change without changing the account yet. */
+    @Transactional
+    public MessageResponse requestEmailChange(EmailChangeRequest request) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String newEmail = request.newEmail().trim().toLowerCase();
+
+        if (newEmail.equals(user.getEmail())) {
+            throw new BadRequestException("This is already your current email address.");
+        }
+        if (userRepository.findByEmail(newEmail).isPresent()) {
+            throw new ConflictException("An account already uses this email address.");
+        }
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("Current password is incorrect.");
+        }
+        if (user.isTotpEnabled()) {
+            String secret = user.getTotpSecret() == null ? null : secretEncryptionService.decrypt(user.getTotpSecret());
+            if (!totpService.verifyCode(secret, request.totpCode())) {
+                throw new BadRequestException("A valid two-factor verification code is required.");
+            }
+        }
+
+        int expiryHours = appProperties.getToken().getEmailVerificationExpiryHours();
+        String token = verificationTokenService.createEmailChangeToken(user, newEmail, expiryHours);
+        String confirmationUrl = appProperties.getFrontendUrl() + "/confirm-email-change?token=" + token;
+        mailService.sendEmailChangeConfirmationEmail(newEmail, user.getFullName(), confirmationUrl, expiryHours);
+
+        return MessageResponse.builder()
+                .message("A confirmation link has been sent to your new email address.")
+                .build();
+    }
+
+    /** Completes a token-confirmed email change and invalidates every current session. */
+    @Transactional
+    public MessageResponse confirmEmailChange(String rawToken) {
+        VerificationToken token = verificationTokenService.validateAndConsume(rawToken, TokenType.EMAIL_CHANGE);
+        String newEmail = token.getPendingEmail();
+        if (newEmail == null || newEmail.isBlank()) {
+            throw new BadRequestException("This email-change request is invalid.");
+        }
+
+        User user = token.getUser();
+        userRepository.findByEmail(newEmail)
+                .filter(existing -> !existing.getId().equals(user.getId()))
+                .ifPresent(existing -> {
+                    throw new ConflictException("An account already uses this email address.");
+                });
+
+        String oldEmail = user.getEmail();
+        user.setEmail(newEmail);
+        user.setEmailVerified(true);
+        refreshTokenService.revokeAllForUser(user);
+        userRepository.save(user);
+
+        auditService.record(user, user.getWorkspace(), AuditActions.EMAIL_CHANGED, "USER", user.getId(),
+                "{\"email\":\"" + oldEmail + "\"}", "{\"email\":\"" + newEmail + "\"}");
+        mailService.sendEmailChangedAlert(oldEmail, newEmail, user.getFullName());
+        log.info("Email changed for user {}", user.getId());
+
+        return MessageResponse.builder()
+                .message("Email address changed successfully. Please sign in again.")
+                .build();
+    }
+
 
     /**
      * Returns notification preferences for the current user, creating defaults on first access.
@@ -176,6 +250,7 @@ public class UserService {
                 "{\"role\":\"" + newRole.name() + "\"}");
 
         log.info("Role updated for user {} from {} to {} by {}", saved.getEmail(), oldValue, saved.getRole(), actor.getEmail());
+        workspaceEventService.publishToWorkspace(tenantContext.getWorkspaceId(), "MEMBER_UPDATED", null);
         return UserDto.fromMembership(membership);
     }
 
@@ -259,6 +334,7 @@ public class UserService {
                 "{\"email\":\"" + normalizedEmail + "\",\"role\":\"" + role.name() + "\"}");
 
         log.info("Invitation sent to {} as {} by {}", normalizedEmail, role, actor.getEmail());
+        workspaceEventService.publishToWorkspace(workspace.getId(), "INVITATION_CREATED", null);
         VerificationToken latestToken = verificationTokenRepository.findAllWorkspaceTokens(workspace.getId(), TokenType.WORKSPACE_INVITE)
                 .stream()
                 .filter(v -> v.getUser().getId().equals(invitedUser.getId()))

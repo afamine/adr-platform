@@ -7,6 +7,7 @@ import com.adrplatform.auth.exception.BadRequestException;
 import com.adrplatform.auth.security.TenantContext;
 import com.adrplatform.auth.service.AuditService;
 import com.adrplatform.common.AuditActions;
+import com.adrplatform.realtime.WorkspaceEventService;
 import com.adrplatform.project.domain.Project;
 import com.adrplatform.project.dto.CreateProjectRequest;
 import com.adrplatform.project.dto.ProjectDto;
@@ -28,6 +29,7 @@ public class ProjectService {
     private final AdrRepository adrRepository;
     private final TenantContext tenantContext;
     private final AuditService auditService;
+    private final WorkspaceEventService workspaceEventService;
 
     @Transactional(readOnly = true)
     public List<ProjectDto> listProjects() {
@@ -45,6 +47,7 @@ public class ProjectService {
         Project project = projectRepository.save(Project.builder().workspace(actor.getWorkspace())
                 .name(name).description(blankToNull(request.description())).build());
         auditService.record(actor, actor.getWorkspace(), AuditActions.PROJECT_CREATED, "PROJECT", project.getId(), null, null);
+        workspaceEventService.publishToWorkspace(workspaceId(), "PROJECT_UPDATED", null);
         return ProjectDto.fromEntity(project);
     }
 
@@ -61,6 +64,7 @@ public class ProjectService {
         project.setDescription(blankToNull(request.description()));
         Project saved = projectRepository.save(project);
         auditService.record(actor, actor.getWorkspace(), AuditActions.PROJECT_UPDATED, "PROJECT", saved.getId(), null, null);
+        workspaceEventService.publishToWorkspace(workspaceId(), "PROJECT_UPDATED", null);
         return ProjectDto.fromEntity(saved);
     }
 
@@ -74,6 +78,7 @@ public class ProjectService {
             projectRepository.save(project);
             auditService.record(actor, actor.getWorkspace(), AuditActions.PROJECT_ARCHIVED, "PROJECT", project.getId(), null, null);
         }
+        workspaceEventService.publishToWorkspace(workspaceId(), "PROJECT_UPDATED", null);
         return ProjectDto.fromEntity(project);
     }
 

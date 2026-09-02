@@ -8,6 +8,7 @@ import com.adrplatform.auth.repository.UserRepository;
 import com.adrplatform.notification.domain.Notification;
 import com.adrplatform.notification.dto.NotificationDto;
 import com.adrplatform.notification.repository.NotificationRepository;
+import com.adrplatform.realtime.WorkspaceEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +31,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final NotificationPreferencesRepository notificationPreferencesRepository;
+    private final WorkspaceEventService workspaceEventService;
 
     // ── Query methods (called by NotificationController) ─────────────────────
 
@@ -74,6 +76,7 @@ public class NotificationService {
     @Transactional
     public void notifyStatusChanged(UUID adrId, int adrNumber, String adrTitle,
             UUID workspaceId, UUID authorId, UUID actorId, String newStatus) {
+        workspaceEventService.publishToWorkspace(workspaceId, "ADR_STATUS_CHANGED", adrId);
         try {
             String adrRef = "ADR-" + adrNumber;
             switch (newStatus) {
@@ -123,6 +126,7 @@ public class NotificationService {
     @Transactional
     public void notifyVoteCast(UUID adrId, int adrNumber, String adrTitle,
             UUID workspaceId, UUID authorId, UUID voterId) {
+        workspaceEventService.publishToWorkspace(workspaceId, "VOTE_CAST", adrId);
         try {
             if (authorId.equals(voterId)) return;
             if (!shouldNotify(authorId, "VOTE")) return;
@@ -146,6 +150,7 @@ public class NotificationService {
     @Transactional
     public void notifyCommentAdded(UUID adrId, int adrNumber, String adrTitle,
             UUID workspaceId, UUID authorId, UUID commenterId) {
+        workspaceEventService.publishToWorkspace(workspaceId, "COMMENT_ADDED", adrId);
         try {
             if (authorId.equals(commenterId)) return;
             if (!shouldNotify(authorId, "COMMENT_ADDED")) return;
@@ -167,6 +172,7 @@ public class NotificationService {
     @Async
     @Transactional
     public void notifyNewTeamMember(UUID newUserId, UUID workspaceId) {
+        workspaceEventService.publishToWorkspace(workspaceId, "INVITATION_ACCEPTED", null);
         try {
             User newUser = userRepository.findById(newUserId).orElse(null);
             if (newUser == null) return;

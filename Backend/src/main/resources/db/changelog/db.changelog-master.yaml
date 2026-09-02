@@ -118,3 +118,10 @@ databaseChangeLog:
         - sqlFile:
             path: db/changelog/V33__add_auth_invalid_before.sql
             relativeToChangelogFile: false
+  - changeSet:
+      id: "34"
+      author: adr-platform
+      changes:
+        - sqlFile:
+            path: db/changelog/V34__add_email_change_token.sql
+            relativeToChangelogFile: false

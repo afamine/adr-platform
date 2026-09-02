@@ -33,6 +33,16 @@ public class VerificationTokenService {
         return createTokenValue(user, null, type, expiryHours);
     }
 
+    /**
+     * Issues a one-time token that keeps the prospective email outside the user
+     * account until the recipient proves ownership of that inbox.
+     */
+    @Transactional
+    public String createEmailChangeToken(User user, String pendingEmail, int expiryHours) {
+        verificationTokenRepository.deleteUnusedByUserAndType(user.getId(), TokenType.EMAIL_CHANGE);
+        return createTokenValue(user, null, TokenType.EMAIL_CHANGE, expiryHours, pendingEmail);
+    }
+
     @Transactional
     public String createWorkspaceToken(User user, Workspace workspace, TokenType type, int expiryHours) {
         verificationTokenRepository.deleteUnusedByUserAndWorkspaceAndType(user.getId(), workspace.getId(), type);
@@ -40,6 +50,11 @@ public class VerificationTokenService {
     }
 
     private String createTokenValue(User user, Workspace workspace, TokenType type, int expiryHours) {
+        return createTokenValue(user, workspace, type, expiryHours, null);
+    }
+
+    private String createTokenValue(User user, Workspace workspace, TokenType type, int expiryHours,
+                                    String pendingEmail) {
         String tokenValue = UUID.randomUUID().toString().replace("-", "")
                 + UUID.randomUUID().toString().replace("-", "");
 
@@ -47,6 +62,7 @@ public class VerificationTokenService {
                 .user(user)
                 .workspace(workspace)
                 .token(tokenHashService.hash(tokenValue))
+                .pendingEmail(pendingEmail)
                 .tokenType(type)
                 .expiresAt(LocalDateTime.now().plusHours(expiryHours))
                 .used(false)

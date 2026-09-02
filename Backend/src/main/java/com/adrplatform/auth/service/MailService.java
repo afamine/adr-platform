@@ -85,6 +85,31 @@ public class MailService {
                 inlines
         );
     }
+    @org.springframework.scheduling.annotation.Async
+    public void sendEmailChangeConfirmationEmail(String toEmail, String fullName, String confirmationUrl,
+                                                  int expiryHours) {
+        String safeName = escapeHtml(fullName == null ? "" : fullName);
+        String html = "<html><body><h1>Confirm your new email address</h1>"
+                + "<p>Hello " + safeName + ",</p>"
+                + "<p>Confirm this address to finish changing the email for your ADR Manager account.</p>"
+                + "<p><a href=\"" + confirmationUrl + "\">Confirm email change</a></p>"
+                + "<p>This link expires in " + expiryHours + " hours. If you did not request this, ignore this email.</p>"
+                + "</body></html>";
+        sendHtml(passwordResetProperties.getEmailFrom(), toEmail, "Confirm your ADR Manager email change", html);
+    }
+
+    @org.springframework.scheduling.annotation.Async
+    public void sendEmailChangedAlert(String oldEmail, String newEmail, String fullName) {
+        String safeName = escapeHtml(fullName == null ? "" : fullName);
+        String safeNewEmail = escapeHtml(newEmail);
+        String html = "<html><body><h1>Your email address changed</h1>"
+                + "<p>Hello " + safeName + ",</p>"
+                + "<p>Your ADR Manager sign-in email was changed to <strong>" + safeNewEmail + "</strong>.</p>"
+                + "<p>If you did not make this change, contact your workspace administrator immediately.</p>"
+                + "</body></html>";
+        sendHtml(passwordResetProperties.getEmailFrom(), oldEmail, "Your ADR Manager email address changed", html);
+    }
+
 
     @org.springframework.scheduling.annotation.Async
     public void sendInvitationEmail(String toEmail, String workspaceName, String role, String inviteUrl) {
