@@ -1,0 +1,62 @@
+<div class="cp-backdrop" (click)="onClose()">
+  <div class="cp-card" (click)="$event.stopPropagation()">
+    <div class="cp-header">
+      <div class="cp-title-row">
+        <svg class="cp-key-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 7h16v10H4z" stroke="#374151" stroke-width="1.5" stroke-linejoin="round"></path>
+          <path d="M7 4v3m10-3v3" stroke="#374151" stroke-width="1.5" stroke-linecap="round"></path>
+        </svg>
+        <div class="cp-title">Change email address</div>
+      </div>
+      <button class="cp-close" type="button" (click)="onClose()" aria-label="Close">×</button>
+    </div>
+
+    <p class="cp-subtitle">Confirm your password{{ totpEnabled ? ' and two-factor code' : '' }}. We will send a verification link to your new email address.</p>
+    <hr class="cp-divider" />
+
+    @if (successMessage) {
+      <div class="cp-success">{{ successMessage }}</div>
+      <button class="cp-submit" type="button" (click)="onClose()">Done</button>
+    } @else {
+      @if (errorMessage) {
+        <div class="cp-error-banner"><span class="cp-error-dot"></span><span>{{ errorMessage }}</span></div>
+      }
+
+      <form (ngSubmit)="onSubmit()" [formGroup]="form" novalidate>
+        <div class="cp-field">
+          <label class="cp-label" for="email-change-new-email">New email address</label>
+          <div class="cp-input-wrap">
+            <input id="email-change-new-email" class="cp-input cp-input-no-icon" type="email" formControlName="newEmail" autocomplete="email" placeholder="you@example.com" />
+          </div>
+          @if (form.get('newEmail')?.touched && form.get('newEmail')?.invalid) {
+            <span class="cp-field-err">Enter a valid email address</span>
+          }
+        </div>
+
+        <div class="cp-field">
+          <label class="cp-label" for="email-change-password">Current password</label>
+          <div class="cp-input-wrap">
+            <input id="email-change-password" class="cp-input cp-input-no-icon" [type]="showPassword ? 'text' : 'password'" formControlName="currentPassword" autocomplete="current-password" placeholder="Enter your current password" />
+            <button class="cp-eye" type="button" (click)="showPassword = !showPassword" aria-label="Toggle password visibility">Show</button>
+          </div>
+          @if (form.get('currentPassword')?.touched && form.get('currentPassword')?.invalid) {
+            <span class="cp-field-err">Current password is required</span>
+          }
+        </div>
+
+        @if (totpEnabled) {
+          <div class="cp-field">
+            <label class="cp-label" for="email-change-totp">Two-factor code</label>
+            <div class="cp-input-wrap">
+              <input id="email-change-totp" class="cp-input cp-input-no-icon" type="text" inputmode="numeric" maxlength="6" formControlName="totpCode" autocomplete="one-time-code" placeholder="123456" />
+            </div>
+          </div>
+        }
+
+        <button class="cp-submit" type="submit" [disabled]="isLoading">
+          {{ isLoading ? 'Sending…' : 'Send confirmation link' }}
+        </button>
+      </form>
+    }
+  </div>
+</div>

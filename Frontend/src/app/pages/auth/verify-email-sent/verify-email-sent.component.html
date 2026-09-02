@@ -20,7 +20,8 @@
       <p class="state-message">
         We sent a verification link to <strong>{{ email }}</strong>. Click it to activate your account.
       </p>
-      <p class="tertiary-text">Didn't receive it? Check your spam folder.</p>
+      <p class="tertiary-text" *ngIf="!verifiedElsewhere()">Didn't receive it? Check your spam folder.</p>
+      <p class="verification-status" *ngIf="verifiedElsewhere()">Email verified. Redirecting you to Sign in…</p>
 
       <button
         type="button"

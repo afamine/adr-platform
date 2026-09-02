@@ -3,10 +3,12 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { BehaviorSubject, catchError, finalize, Observable, of, shareReplay, take, tap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, map, Observable, of, shareReplay, take, tap, throwError } from 'rxjs';
 import {
   AuthResponse,
+  EmailVerificationStatusResponse,
   ChangePasswordRequest,
+  EmailChangeRequest,
   AuthUser,
   MessageResponse,
   LoginRequest,
@@ -65,10 +67,28 @@ export class AuthService {
     return this.http.get<MessageResponse>(`${this.API_URL}/api/auth/verify-email?${params}`);
   }
 
+  confirmEmailChange(token: string): Observable<MessageResponse> {
+    return this.http.get<MessageResponse>(`${this.API_URL}/api/auth/confirm-email-change`, { params: { token } });
+  }
+
+  requestEmailChange(payload: EmailChangeRequest): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.API_URL}/api/users/me/email-change`, payload);
+  }
+
   resendVerification(email: string): Observable<MessageResponse> {
     return this.http.post<MessageResponse>(`${this.API_URL}/api/auth/resend-verification`, { email });
   }
 
+  getEmailVerificationStatus(token: string): Observable<EmailVerificationStatusResponse> {
+    return this.http.get<EmailVerificationStatusResponse>(`${this.API_URL}/api/auth/verification-status`, { params: { token } });
+  }
+
+  restoreSession(): Observable<boolean> {
+    return this.refreshToken().pipe(
+      map(() => true),
+      catchError(() => of(false))
+    );
+  }
   refreshToken(): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.API_URL}/api/auth/refresh`, {}, {
       headers: new HttpHeaders({ 'X-CSRF-Token': this.getCsrfToken() })

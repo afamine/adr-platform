@@ -58,6 +58,12 @@ export interface ChangePasswordRequest {
   confirmPassword: string;
 }
 
+export interface EmailChangeRequest {
+  newEmail: string;
+  currentPassword: string;
+  totpCode?: string;
+}
+
 export interface ErrorResponse {
   timestamp: string;
   status: number;
@@ -69,6 +75,11 @@ export interface ErrorResponse {
 export interface RegisterResponse {
   message: string;
   email: string;
+  verificationStatusToken?: string;
+}
+
+export interface EmailVerificationStatusResponse {
+  verified: boolean;
 }
 
 export interface MessageResponse {

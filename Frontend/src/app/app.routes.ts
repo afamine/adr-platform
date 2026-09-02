@@ -26,6 +26,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/auth/verify-email/verify-email.component').then((m) => m.VerifyEmailComponent)
   },
   {
+    path: 'confirm-email-change',
+    title: 'Confirm Email Change - Axiom ADR',
+    loadComponent: () => import('./pages/auth/confirm-email-change/confirm-email-change.component').then((m) => m.ConfirmEmailChangeComponent)
+  },
+  {
     path: 'verify-email-pending',
     title: 'Verify Email - Axiom ADR',
     loadComponent: () => import('./pages/auth/verify-email-pending/verify-email-pending.component').then((m) => m.VerifyEmailPendingComponent)

@@ -87,6 +87,7 @@
             <span class="verified-badge" *ngIf="!currentUser?.emailVerified" style="background:#faeeda;color:#854f0b">
               Unverified
             </span>
+            <button class="link-btn" type="button" (click)="showChangeEmailModal = true">Change</button>
           </div>
         </div>
 
@@ -185,57 +186,42 @@
     <!-- Card 4: Notifications -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Notifications</span>
+        <span class="card-title">In-app alerts</span>
       </div>
 
       <div class="toggle-row">
-        <span class="toggle-label">Email when ADR submitted for review</span>
+        <span class="toggle-label">Alert when an ADR is submitted for review</span>
         <button
           class="toggle"
           [class.on]="emailNotifications"
           [class.off]="!emailNotifications"
           (click)="emailNotifications = !emailNotifications"
           [attr.aria-pressed]="emailNotifications"
-          aria-label="Toggle email notifications for review"
+          aria-label="Toggle review alerts"
         ></button>
       </div>
 
       <div class="toggle-row">
-        <span class="toggle-label">Email when vote cast on my ADR</span>
+        <span class="toggle-label">Alert when a vote is cast on my ADR</span>
         <button
           class="toggle"
           [class.on]="voteNotifications"
           [class.off]="!voteNotifications"
           (click)="voteNotifications = !voteNotifications"
           [attr.aria-pressed]="voteNotifications"
-          aria-label="Toggle vote notification emails"
+          aria-label="Toggle vote alerts"
         ></button>
       </div>
 
       <div class="toggle-row">
-        <span class="toggle-label">Email when ADR status changes</span>
+        <span class="toggle-label">Alert when my ADR status changes</span>
         <button
           class="toggle"
           [class.on]="statusNotifications"
           [class.off]="!statusNotifications"
           (click)="statusNotifications = !statusNotifications"
           [attr.aria-pressed]="statusNotifications"
-          aria-label="Toggle status change notification emails"
-        ></button>
-      </div>
-
-      <div class="toggle-row" style="border-bottom:none">
-        <span class="toggle-label">
-          Slack notifications
-          <button class="link-btn" style="margin-left:8px;font-size:12px">Configure webhook</button>
-        </span>
-        <button
-          class="toggle"
-          [class.on]="slackNotifications"
-          [class.off]="!slackNotifications"
-          (click)="slackNotifications = !slackNotifications"
-          [attr.aria-pressed]="slackNotifications"
-          aria-label="Toggle Slack notifications"
+          aria-label="Toggle status change alerts"
         ></button>
       </div>
 
@@ -257,6 +243,13 @@
   (closed)="showDisable2faModal = false"
   (disabled2fa)="on2faDisabled()">
 </app-disable-2fa-modal>
+
+@if (showChangeEmailModal) {
+  <app-change-email-modal
+    [totpEnabled]="totpEnabled"
+    (closed)="onCloseChangeEmail()"
+    (requested)="onEmailChangeRequested()" />
+}
 
 @if (showChangePasswordModal) {
   <app-change-password-modal (closed)="onCloseChangePassword()" />

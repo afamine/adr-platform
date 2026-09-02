@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, DestroyRef, ElementRef, NgZone, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
 import { forkJoin } from 'rxjs';
@@ -8,6 +9,7 @@ import { forkJoin } from 'rxjs';
 import { AnalyticsTimeRange, KpiResponse, RecentAdrDto, StatusCount, WeeklyActivity } from '../../../models/analytics.models';
 import { AnalyticsService } from '../../../services/analytics.service';
 import { NotificationService } from '../../../services/notification.service';
+import { WorkspaceEventsService } from '../../../services/workspace-events.service';
 import { AxiomLogoComponent } from '../../../shared/axiom-logo/axiom-logo.component';
 
 Chart.register(...registerables);
@@ -29,6 +31,8 @@ export class AnalyticsDashboardComponent implements OnInit, AfterViewInit, OnDes
   private readonly notificationService = inject(NotificationService);
   private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly workspaceEvents = inject(WorkspaceEventsService);
   private lineChart: Chart | null = null;
   private chartReady = false;
   private pendingWeekly: WeeklyActivity[] | null = null;
@@ -41,7 +45,8 @@ export class AnalyticsDashboardComponent implements OnInit, AfterViewInit, OnDes
     { label: 'Last 24 hours', value: '24h' },
     { label: 'Last 7 days', value: '7d' },
     { label: 'Last 30 days', value: '30d' },
-    { label: 'Last 90 days', value: '90d' }
+    { label: 'Last 90 days', value: '90d' },
+    { label: 'All time', value: 'all' }
   ];
 
   kpis = {
@@ -71,6 +76,7 @@ export class AnalyticsDashboardComponent implements OnInit, AfterViewInit, OnDes
 
   ngOnInit(): void {
     this.loadDashboard();
+    this.workspaceEvents.events$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.loadDashboard());
   }
 
   loadDashboard(): void {

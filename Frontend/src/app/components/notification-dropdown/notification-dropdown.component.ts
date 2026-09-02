@@ -1,9 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, ElementRef, HostListener, NgZone, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 
 import { BellNotification, NotificationApiDto } from '../../models/notification.models';
 import { NotificationCenterService } from '../../services/notification-center.service';
+import { WorkspaceEventsService } from '../../services/workspace-events.service';
 
 @Component({
   selector: 'app-notification-dropdown',
@@ -18,6 +20,7 @@ export class NotificationDropdownComponent implements OnInit {
   private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly ngZone = inject(NgZone);
   private readonly router = inject(Router);
+  private readonly workspaceEvents = inject(WorkspaceEventsService);
 
   readonly liveUnreadCount$ = this.notifService.unreadCount$;
 
@@ -46,6 +49,11 @@ export class NotificationDropdownComponent implements OnInit {
 
   ngOnInit(): void {
     this.notifService.startPolling(this.destroyRef);
+    this.workspaceEvents.connect();
+    this.workspaceEvents.events$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.notifService.fetchUnreadCount();
+      if (this.isOpen) this.loadNotifications();
+    });
   }
 
   @HostListener('document:click', ['$event'])

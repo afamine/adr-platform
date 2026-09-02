@@ -7,8 +7,10 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthUser, NotificationPreferences, Role, TotpStatusResponse } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
+import { ConfirmService } from '../../services/confirm.service';
 import { TotpService } from '../../services/totp.service';
 import { ChangePasswordModalComponent } from '../../components/change-password-modal/change-password-modal.component';
+import { ChangeEmailModalComponent } from '../../components/change-email-modal/change-email-modal.component';
 import { SecurityCardComponent } from '../../components/security-card/security-card.component';
 import { Enable2faModalComponent } from '../../components/enable-2fa-modal/enable-2fa-modal.component';
 import { Disable2faModalComponent } from '../../components/disable-2fa-modal/disable-2fa-modal.component';
@@ -25,13 +27,14 @@ interface RoleConfig {
 @Component({
   selector: 'app-user-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, ChangePasswordModalComponent, SecurityCardComponent, Enable2faModalComponent, Disable2faModalComponent, NotificationDropdownComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, ChangePasswordModalComponent, ChangeEmailModalComponent, SecurityCardComponent, Enable2faModalComponent, Disable2faModalComponent, NotificationDropdownComponent],
   templateUrl: './user-profile.component.html',
   styleUrls: ['./user-profile.component.scss']
 })
 export class UserProfileComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
+  private readonly confirmService = inject(ConfirmService);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly fb = inject(FormBuilder);
@@ -59,6 +62,7 @@ export class UserProfileComponent implements OnInit {
   isLoading = false;
   isSaving = false;
   showChangePasswordModal = false;
+  showChangeEmailModal = false;
   totpEnabled = false;
   showEnable2faModal = false;
   showDisable2faModal = false;
@@ -262,6 +266,14 @@ export class UserProfileComponent implements OnInit {
 
   onCloseChangePassword(): void {
     this.showChangePasswordModal = false;
+  }
+
+  onCloseChangeEmail(): void {
+    this.showChangeEmailModal = false;
+  }
+
+  onEmailChangeRequested(): void {
+    this.notificationService.success('Check your new inbox', 'Open the confirmation link to finish changing your email address.');
   }
 
   load2faStatus(): void {

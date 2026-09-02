@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdrEditorComponent } from './components/adr-editor/adr-editor.component';
 import { AdrSidebarComponent } from './components/adr-sidebar/adr-sidebar.component';
 import { AiAssistantPanelComponent } from './components/ai-assistant-panel/ai-assistant-panel.component';
@@ -21,6 +22,7 @@ import { BellNotification, NotificationApiDto } from '../../models/notification.
 import { AdrStateService } from './services/adr-state.service';
 import { ProjectDto, ProjectRequest } from '../../models/project.model';
 import { ProjectService } from '../../services/project.service';
+import { WorkspaceEventsService } from '../../services/workspace-events.service';
 
 @Component({
   selector: 'app-adr-dashboard',
@@ -42,6 +44,7 @@ export class AdrDashboardComponent implements OnInit {
   private readonly notifCenterService = inject(NotificationCenterService);
   private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly workspaceEvents = inject(WorkspaceEventsService);
   private searchDebounceTimer: any = null;
 
   readonly liveUnreadCount$ = this.notifCenterService.unreadCount$;
@@ -97,6 +100,12 @@ export class AdrDashboardComponent implements OnInit {
     this.loadProjects();
     this.loadNotifications();
     this.notifCenterService.startPolling(this.destroyRef);
+    this.workspaceEvents.connect();
+    this.workspaceEvents.events$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(event => {
+      this.notifCenterService.fetchUnreadCount();
+      if (this.showNotifications) this.loadNotifications();
+      if (event.type !== 'MEMBER_UPDATED') { this.loadAdrs(this.selectedAdr()?.id); this.loadProjects(); }
+    });
   }
 
   onSearch(query: string): void {

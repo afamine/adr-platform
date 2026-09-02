@@ -115,11 +115,11 @@ export class RegisterComponent {
       .register(request)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (_response: RegisterResponse) => {
+        next: (response: RegisterResponse) => {
           this.isLoading.set(false);
           // Navigate to "check your inbox" page, passing the email
           this.router.navigate(['/verify-email-sent'], {
-            state: { email: request.email }
+            state: { email: request.email, verificationStatusToken: response.verificationStatusToken }
           });
         },
         error: (err) => {

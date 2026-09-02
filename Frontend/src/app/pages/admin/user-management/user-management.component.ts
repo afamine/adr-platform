@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectorRef, Component, HostListener, NgZone, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, HostListener, NgZone, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
 import { AuthUser, Role, WorkspaceInvitation } from '../../../models/auth.models';
@@ -8,6 +9,7 @@ import { AuthService } from '../../../services/auth.service';
 import { ConfirmService } from '../../../services/confirm.service';
 import { NotificationService } from '../../../services/notification.service';
 import { AxiomLogoComponent } from '../../../shared/axiom-logo/axiom-logo.component';
+import { WorkspaceEventsService } from '../../../services/workspace-events.service';
 
 @Component({
   selector: 'app-user-management',
@@ -22,6 +24,8 @@ export class UserManagementComponent implements OnInit {
   private readonly confirmService = inject(ConfirmService);
   private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly workspaceEvents = inject(WorkspaceEventsService);
 
   users: AuthUser[] = [];
   filteredUsers: AuthUser[] = [];
@@ -57,6 +61,12 @@ export class UserManagementComponent implements OnInit {
   ngOnInit(): void {
     this.loadUsers();
     this.loadInvitations();
+    this.workspaceEvents.events$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(event => {
+      if (['INVITATION_ACCEPTED', 'INVITATION_CREATED', 'MEMBER_UPDATED'].includes(event.type)) {
+        this.loadUsers();
+        this.loadInvitations();
+      }
+    });
   }
 
   @HostListener('document:click', ['$event'])
@@ -201,6 +211,12 @@ export class UserManagementComponent implements OnInit {
         );
         this.loadUsers();
         this.loadInvitations();
+    this.workspaceEvents.events$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(event => {
+      if (['INVITATION_ACCEPTED', 'INVITATION_CREATED', 'MEMBER_UPDATED'].includes(event.type)) {
+        this.loadUsers();
+        this.loadInvitations();
+      }
+    });
       },
       error: (error) => {
         this.isInviting = false;

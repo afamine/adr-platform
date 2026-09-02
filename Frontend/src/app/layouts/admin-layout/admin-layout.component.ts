@@ -7,6 +7,7 @@ import { NotificationDropdownComponent } from '../../components/notification-dro
 import { WorkspaceSwitcherComponent } from '../../components/workspace-switcher/workspace-switcher.component';
 import { ProfileMenuComponent } from '../../components/profile-menu/profile-menu.component';
 import { AxiomLogoComponent } from '../../shared/axiom-logo/axiom-logo.component';
+import { WorkspaceEventsService } from '../../services/workspace-events.service';
 
 @Component({
   selector: 'app-admin-layout',
@@ -18,7 +19,10 @@ import { AxiomLogoComponent } from '../../shared/axiom-logo/axiom-logo.component
 export class AdminLayoutComponent {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private readonly workspaceEvents = inject(WorkspaceEventsService);
   readonly currentUser = this.authService.getCurrentUser();
+
+  constructor() { this.workspaceEvents.connect(); }
 
   get workspaceName(): string {
     return this.currentUser?.workspaceName || 'Default Workspace';

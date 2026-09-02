@@ -1,0 +1,36 @@
+<div class="verify-page">
+  <div class="verify-card">
+    <div class="card-header">
+      <a class="brand" routerLink="/login" aria-label="Axiom home">
+        <img src="assets/logos/svg/logo-horizontal-light-accent.svg" alt="Axiom" />
+      </a>
+      <div class="divider"></div>
+      <h1 class="title">Confirm email change</h1>
+    </div>
+
+    @if (state() === 'LOADING') {
+      <div class="state-block">
+        <div class="spinner-wrapper"><app-axiom-logo state="loading" [size]="72" iconColor="#6366F1"></app-axiom-logo></div>
+        <p class="primary-text">Confirming your new email address...</p>
+      </div>
+    }
+
+    @if (state() === 'SUCCESS') {
+      <div class="state-block">
+        <div class="axiom-logo-wrapper"><app-axiom-logo state="success" [size]="72" iconColor="#1d9e75" accentColor="#34d399"></app-axiom-logo></div>
+        <h2 class="state-title">Email address changed</h2>
+        <p class="state-message">Your new address is verified. For your security, all active sessions have been signed out.</p>
+        <button type="button" class="btn btn--primary" (click)="goToLogin()">Sign in again</button>
+      </div>
+    }
+
+    @if (state() === 'ERROR') {
+      <div class="state-block">
+        <div class="axiom-logo-wrapper"><app-axiom-logo state="error" [size]="72" iconColor="#ef4444"></app-axiom-logo></div>
+        <h2 class="state-title">Email change could not be confirmed</h2>
+        <p class="state-message state-message--error">{{ errorMessage() }}</p>
+        <a routerLink="/login" class="btn btn--outline">Back to sign in</a>
+      </div>
+    }
+  </div>
+</div>
